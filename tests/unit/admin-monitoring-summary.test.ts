@@ -32,17 +32,38 @@ describe('admin monitoring summary rollout compatibility', () => {
 
   it('falls back to the existing RPC without returning participant rows or unauthorized report metrics', async () => {
     rpc
-      .mockResolvedValueOnce({ data: null, error: { code: 'PGRST202', message: 'function missing' } })
       .mockResolvedValueOnce({
-        data: { total: 1, summary, report, rows: [{ id: 'participant-1', progress: { total: 30, answered: 29 } }] },
+        data: null,
+        error: { code: 'PGRST202', message: 'function missing' },
+      })
+      .mockResolvedValueOnce({
+        data: {
+          total: 1,
+          summary,
+          report,
+          rows: [{ id: 'participant-1', progress: { total: 30, answered: 29 } }],
+        },
         error: null,
       })
 
     const result = await getAdminMonitoringSummary({ event: eventId }, false)
 
-    expect(rpc).toHaveBeenNthCalledWith(1, 'admin_monitoring_summary', expect.objectContaining({ p_event_id: eventId, p_include_report: false }))
-    expect(rpc).toHaveBeenNthCalledWith(2, 'admin_monitoring_page', expect.objectContaining({ p_event_id: eventId, p_page: 1 }))
-    expect(result).toEqual({ context: expect.objectContaining({ title: 'Event QA' }), total: 1, summary, report: null })
+    expect(rpc).toHaveBeenNthCalledWith(
+      1,
+      'admin_monitoring_summary',
+      expect.objectContaining({ p_event_id: eventId, p_include_report: false }),
+    )
+    expect(rpc).toHaveBeenNthCalledWith(
+      2,
+      'admin_monitoring_page',
+      expect.objectContaining({ p_event_id: eventId, p_page: 1 }),
+    )
+    expect(result).toEqual({
+      context: expect.objectContaining({ title: 'Event QA' }),
+      total: 1,
+      summary,
+      report: null,
+    })
     expect(result).not.toHaveProperty('rows')
     expect(requirePermission).toHaveBeenCalledTimes(1)
   })

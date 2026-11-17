@@ -56,11 +56,12 @@ async function verifyGithubOidc(token: string): Promise<Claims> {
   if (parts.length !== 3) throw new Error('OIDC_FORMAT_INVALID')
 
   const header = decodeJson<Record<string, unknown>>(parts[0])
-  if (header.alg !== 'RS256' || typeof header.kid !== 'string') throw new Error('OIDC_HEADER_INVALID')
+  if (header.alg !== 'RS256' || typeof header.kid !== 'string')
+    throw new Error('OIDC_HEADER_INVALID')
 
   const jwksResponse = await fetch(GITHUB_JWKS_URL, { cache: 'no-store' })
   if (!jwksResponse.ok) throw new Error('OIDC_JWKS_UNAVAILABLE')
-  const jwks = await jwksResponse.json() as { keys?: Array<JsonWebKey & { kid?: string }> }
+  const jwks = (await jwksResponse.json()) as { keys?: Array<JsonWebKey & { kid?: string }> }
   const jwk = jwks.keys?.find((candidate) => candidate.kid === header.kid)
   if (!jwk) throw new Error('OIDC_SIGNING_KEY_NOT_FOUND')
 
@@ -87,9 +88,12 @@ async function verifyGithubOidc(token: string): Promise<Claims> {
   if (typeof claims.exp !== 'number' || claims.exp < now - 30) throw new Error('OIDC_EXPIRED')
   if (typeof claims.nbf === 'number' && claims.nbf > now + 30) throw new Error('OIDC_NOT_YET_VALID')
   if (claims.repository !== EXPECTED_REPOSITORY) throw new Error('OIDC_REPOSITORY_INVALID')
-  if (!claims.sub?.startsWith(`repo:${EXPECTED_REPOSITORY}:`)) throw new Error('OIDC_SUBJECT_INVALID')
-  if (!['pull_request', 'workflow_dispatch'].includes(String(claims.event_name ?? ''))) throw new Error('OIDC_EVENT_INVALID')
-  if (!EXPECTED_WORKFLOW_PREFIXES.some((prefix) => claims.workflow_ref?.startsWith(prefix))) throw new Error('OIDC_WORKFLOW_INVALID')
+  if (!claims.sub?.startsWith(`repo:${EXPECTED_REPOSITORY}:`))
+    throw new Error('OIDC_SUBJECT_INVALID')
+  if (!['pull_request', 'workflow_dispatch'].includes(String(claims.event_name ?? '')))
+    throw new Error('OIDC_EVENT_INVALID')
+  if (!EXPECTED_WORKFLOW_PREFIXES.some((prefix) => claims.workflow_ref?.startsWith(prefix)))
+    throw new Error('OIDC_WORKFLOW_INVALID')
   return claims
 }
 
@@ -122,7 +126,11 @@ function expectedEmailPrefix(kind: UserKind) {
   return 'ci-tka-'
 }
 
-async function assignContentRole(admin: ReturnType<typeof adminClient>, userId: string, roleCode: 'CONTENT_EDITOR' | 'CONTENT_REVIEWER') {
+async function assignContentRole(
+  admin: ReturnType<typeof adminClient>,
+  userId: string,
+  roleCode: 'CONTENT_EDITOR' | 'CONTENT_REVIEWER',
+) {
   const { data: role, error: roleError } = await admin
     .from('roles')
     .select('id')
@@ -138,17 +146,25 @@ async function assignContentRole(admin: ReturnType<typeof adminClient>, userId: 
 
 async function provision(body: Body) {
   const kind = body.kind ?? 'tka'
-  if (!['tka', 'content_editor', 'content_reviewer'].includes(kind)) return json({ error: 'CI_USER_KIND_INVALID' }, 400)
+  if (!['tka', 'content_editor', 'content_reviewer'].includes(kind))
+    return json({ error: 'CI_USER_KIND_INVALID' }, 400)
 
   const email = body.email?.trim().toLowerCase() ?? ''
   const password = body.password ?? ''
   const runId = body.runId?.trim() ?? ''
-  if (!CI_EMAIL.test(email) || !email.startsWith(expectedEmailPrefix(kind))) return json({ error: 'CI_EMAIL_INVALID' }, 400)
-  if (password.length < 20 || password.length > 160) return json({ error: 'CI_PASSWORD_INVALID' }, 400)
+  if (!CI_EMAIL.test(email) || !email.startsWith(expectedEmailPrefix(kind)))
+    return json({ error: 'CI_EMAIL_INVALID' }, 400)
+  if (password.length < 20 || password.length > 160)
+    return json({ error: 'CI_PASSWORD_INVALID' }, 400)
   if (!/^[a-zA-Z0-9._-]{1,128}$/.test(runId)) return json({ error: 'CI_RUN_ID_INVALID' }, 400)
 
   const admin = adminClient()
-  const fullName = kind === 'content_editor' ? 'CI Content Editor' : kind === 'content_reviewer' ? 'CI Content Reviewer' : 'CI TKA SMP'
+  const fullName =
+    kind === 'content_editor'
+      ? 'CI Content Editor'
+      : kind === 'content_reviewer'
+        ? 'CI Content Reviewer'
+        : 'CI TKA SMP'
   const { data: created, error: createError } = await admin.auth.admin.createUser({
     email,
     password,
@@ -180,17 +196,29 @@ async function provision(body: Body) {
         .maybeSingle()
       if (trackError || !track) throw trackError ?? new Error('TKA_SMP_TRACK_NOT_FOUND')
 
-      const { error: userTrackError } = await admin
-        .from('user_tracks')
-        .upsert({
+      const { error: userTrackError } = await admin.from('user_tracks').upsert(
+        {
           user_id: userId,
           track_id: track.id,
           status: 'active',
           target_year: 2026,
           started_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-        }, { onConflict: 'user_id,track_id' })
+        },
+        { onConflict: 'user_id,track_id' },
+      )
       if (userTrackError) throw userTrackError
+
+      const { error: walletError } = await admin.from('wallets').upsert(
+        {
+          user_id: userId,
+          wallet_type: 'exam_token_tka',
+          balance: 50,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id,wallet_type' },
+      )
+      if (walletError) throw walletError
     } else if (kind === 'content_editor') {
       await assignContentRole(admin, userId, 'CONTENT_EDITOR')
     } else {
@@ -204,7 +232,10 @@ async function provision(body: Body) {
   }
 }
 
-async function cleanupContentEditorArtifacts(admin: ReturnType<typeof adminClient>, userId: string) {
+async function cleanupContentEditorArtifacts(
+  admin: ReturnType<typeof adminClient>,
+  userId: string,
+) {
   const { data: questions, error: questionError } = await admin
     .from('questions')
     .select('id, question_code')
@@ -214,17 +245,31 @@ async function cleanupContentEditorArtifacts(admin: ReturnType<typeof adminClien
   const questionIds = (questions ?? []).map((row) => String(row.id))
   if (questionIds.length === 0) return
 
-  const [{ count: examRefs, error: examRefError }, { count: attemptRefs, error: attemptRefError }] = await Promise.all([
-    admin.from('exam_question_items').select('id', { count: 'exact', head: true }).in('question_id', questionIds),
-    admin.from('attempt_questions').select('id', { count: 'exact', head: true }).in('question_id', questionIds),
-  ])
+  const [{ count: examRefs, error: examRefError }, { count: attemptRefs, error: attemptRefError }] =
+    await Promise.all([
+      admin
+        .from('exam_question_items')
+        .select('id', { count: 'exact', head: true })
+        .in('question_id', questionIds),
+      admin
+        .from('attempt_questions')
+        .select('id', { count: 'exact', head: true })
+        .in('question_id', questionIds),
+    ])
   if (examRefError) throw examRefError
   if (attemptRefError) throw attemptRefError
-  if ((examRefs ?? 0) > 0 || (attemptRefs ?? 0) > 0) throw new Error('CI_CONTENT_CLEANUP_OPERATIONAL_REFERENCE')
+  if ((examRefs ?? 0) > 0 || (attemptRefs ?? 0) > 0)
+    throw new Error('CI_CONTENT_CLEANUP_OPERATIONAL_REFERENCE')
 
   const cleanupSteps = [
-    () => admin.from('content_reviews').delete().eq('entity_type', 'question').in('entity_id', questionIds),
-    () => admin.from('audit_logs').delete().eq('entity_type', 'question').in('entity_id', questionIds),
+    () =>
+      admin
+        .from('content_reviews')
+        .delete()
+        .eq('entity_type', 'question')
+        .in('entity_id', questionIds),
+    () =>
+      admin.from('audit_logs').delete().eq('entity_type', 'question').in('entity_id', questionIds),
     () => admin.from('questions').delete().in('id', questionIds),
   ]
   for (const step of cleanupSteps) {
@@ -241,9 +286,15 @@ async function cleanupContentEditorArtifacts(admin: ReturnType<typeof adminClien
  * dihapus, lalu `auth.admin.deleteUser` gagal "Database error deleting user".
  */
 async function cleanupReviewerArtifacts(admin: ReturnType<typeof adminClient>, userId: string) {
-  const { error: reviewError } = await admin.from('content_reviews').delete().eq('reviewer_id', userId)
+  const { error: reviewError } = await admin
+    .from('content_reviews')
+    .delete()
+    .eq('reviewer_id', userId)
   if (reviewError) throw reviewError
-  const { error: questionError } = await admin.from('questions').update({ reviewer_id: null }).eq('reviewer_id', userId)
+  const { error: questionError } = await admin
+    .from('questions')
+    .update({ reviewer_id: null })
+    .eq('reviewer_id', userId)
   if (questionError) throw questionError
 }
 
@@ -254,7 +305,8 @@ async function cleanup(body: Body) {
   const admin = adminClient()
   const { data, error: getError } = await admin.auth.admin.getUserById(userId)
   if (getError) {
-    if (String(getError.message).toLowerCase().includes('not found')) return json({ ok: true, alreadyDeleted: true })
+    if (String(getError.message).toLowerCase().includes('not found'))
+      return json({ ok: true, alreadyDeleted: true })
     throw getError
   }
 
@@ -268,7 +320,10 @@ async function cleanup(body: Body) {
   }
   await cleanupReviewerArtifacts(admin, userId)
 
-  const { error: auditActorError } = await admin.from('audit_logs').delete().eq('actor_user_id', userId)
+  const { error: auditActorError } = await admin
+    .from('audit_logs')
+    .delete()
+    .eq('actor_user_id', userId)
   if (auditActorError) throw auditActorError
 
   const { error: deleteError } = await admin.auth.admin.deleteUser(userId)
@@ -284,7 +339,7 @@ Deno.serve(async (req) => {
     if (!authHeader.startsWith('Bearer ')) return json({ error: 'OIDC_REQUIRED' }, 401)
     await verifyGithubOidc(authHeader.slice('Bearer '.length).trim())
 
-    const body = await req.json() as Body
+    const body = (await req.json()) as Body
     if (body.action === 'provision') return await provision(body)
     if (body.action === 'cleanup') return await cleanup(body)
     return json({ error: 'ACTION_INVALID' }, 400)
@@ -292,6 +347,9 @@ Deno.serve(async (req) => {
     const message = error instanceof Error ? error.message : String(error)
     const unauthorized = message.startsWith('OIDC_')
     console.error('[ci-e2e-user]', message)
-    return json({ error: unauthorized ? 'OIDC_INVALID' : 'CI_E2E_USER_FAILED' }, unauthorized ? 401 : 500)
+    return json(
+      { error: unauthorized ? 'OIDC_INVALID' : 'CI_E2E_USER_FAILED' },
+      unauthorized ? 401 : 500,
+    )
   }
 })

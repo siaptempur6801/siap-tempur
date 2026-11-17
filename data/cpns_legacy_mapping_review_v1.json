@@ -30,56 +30,168 @@
       "status": "reviewed",
       "primary": "TIU-FIG-SERIAL",
       "secondary": null,
-      "questionCodes": ["TIU-000057", "TIU-000058", "TIU-000059", "TIU-000060", "TIU-000081", "TIU-000122", "TIU-000123", "TIU-000124"]
+      "questionCodes": [
+        "TIU-000057",
+        "TIU-000058",
+        "TIU-000059",
+        "TIU-000060",
+        "TIU-000081",
+        "TIU-000122",
+        "TIU-000123",
+        "TIU-000124"
+      ]
     },
     {
       "subject": "TIU",
       "status": "reviewed",
       "primary": "TIU-NUM-BERHITUNG",
       "secondary": null,
-      "questionCodes": ["TIU-000017", "TIU-000021", "TIU-000022", "TIU-000023", "TIU-000024", "TIU-000025", "TIU-000097", "TIU-000098", "TIU-000099", "TIU-000100", "TIU-000112"]
+      "questionCodes": [
+        "TIU-000017",
+        "TIU-000021",
+        "TIU-000022",
+        "TIU-000023",
+        "TIU-000024",
+        "TIU-000025",
+        "TIU-000097",
+        "TIU-000098",
+        "TIU-000099",
+        "TIU-000100",
+        "TIU-000112"
+      ]
     },
     {
       "subject": "TIU",
       "status": "reviewed",
       "primary": "TIU-NUM-CERITA",
       "secondary": null,
-      "questionCodes": ["TIU-000045", "TIU-000046", "TIU-000047", "TIU-000048", "TIU-000049", "TIU-000050", "TIU-000051", "TIU-000052", "TIU-000053", "TIU-000054", "TIU-000066", "TIU-000067", "TIU-000068", "TIU-000069", "TIU-000070", "TIU-000071", "TIU-000072", "TIU-000107", "TIU-000108", "TIU-000109", "TIU-000110", "TIU-000111"]
+      "questionCodes": [
+        "TIU-000045",
+        "TIU-000046",
+        "TIU-000047",
+        "TIU-000048",
+        "TIU-000049",
+        "TIU-000050",
+        "TIU-000051",
+        "TIU-000052",
+        "TIU-000053",
+        "TIU-000054",
+        "TIU-000066",
+        "TIU-000067",
+        "TIU-000068",
+        "TIU-000069",
+        "TIU-000070",
+        "TIU-000071",
+        "TIU-000072",
+        "TIU-000107",
+        "TIU-000108",
+        "TIU-000109",
+        "TIU-000110",
+        "TIU-000111"
+      ]
     },
     {
       "subject": "TIU",
       "status": "reviewed",
       "primary": "TIU-NUM-DERET",
       "secondary": null,
-      "questionCodes": ["TIU-000026", "TIU-000027", "TIU-000028", "TIU-000029", "TIU-000030", "TIU-000031", "TIU-000032", "TIU-000034", "TIU-000035", "TIU-000101", "TIU-000102", "TIU-000103"]
+      "questionCodes": [
+        "TIU-000026",
+        "TIU-000027",
+        "TIU-000028",
+        "TIU-000029",
+        "TIU-000030",
+        "TIU-000031",
+        "TIU-000032",
+        "TIU-000034",
+        "TIU-000035",
+        "TIU-000101",
+        "TIU-000102",
+        "TIU-000103"
+      ]
     },
     {
       "subject": "TIU",
       "status": "reviewed",
       "primary": "TIU-NUM-PERBANDINGAN",
       "secondary": null,
-      "questionCodes": ["TIU-000036", "TIU-000037", "TIU-000038", "TIU-000039", "TIU-000040", "TIU-000041", "TIU-000042", "TIU-000043", "TIU-000044", "TIU-000104", "TIU-000105", "TIU-000106"]
+      "questionCodes": [
+        "TIU-000036",
+        "TIU-000037",
+        "TIU-000038",
+        "TIU-000039",
+        "TIU-000040",
+        "TIU-000041",
+        "TIU-000042",
+        "TIU-000043",
+        "TIU-000044",
+        "TIU-000104",
+        "TIU-000105",
+        "TIU-000106"
+      ]
     },
     {
       "subject": "TIU",
       "status": "reviewed",
       "primary": "TIU-VERBAL-ANALITIS",
       "secondary": null,
-      "questionCodes": ["TIU-000013", "TIU-000014", "TIU-000015", "TIU-000016", "TIU-000018", "TIU-000019", "TIU-000020", "TIU-000073", "TIU-000074", "TIU-000075", "TIU-000076", "TIU-000093", "TIU-000094", "TIU-000095", "TIU-000096"]
+      "questionCodes": [
+        "TIU-000013",
+        "TIU-000014",
+        "TIU-000015",
+        "TIU-000016",
+        "TIU-000018",
+        "TIU-000019",
+        "TIU-000020",
+        "TIU-000073",
+        "TIU-000074",
+        "TIU-000075",
+        "TIU-000076",
+        "TIU-000093",
+        "TIU-000094",
+        "TIU-000095",
+        "TIU-000096"
+      ]
     },
     {
       "subject": "TIU",
       "status": "reviewed",
       "primary": "TIU-VERBAL-ANALOGI",
       "secondary": null,
-      "questionCodes": ["TIU-000001", "TIU-000002", "TIU-000003", "TIU-000004", "TIU-000005", "TIU-000006", "TIU-000077", "TIU-000085", "TIU-000086", "TIU-000087", "TIU-000088"]
+      "questionCodes": [
+        "TIU-000001",
+        "TIU-000002",
+        "TIU-000003",
+        "TIU-000004",
+        "TIU-000005",
+        "TIU-000006",
+        "TIU-000077",
+        "TIU-000085",
+        "TIU-000086",
+        "TIU-000087",
+        "TIU-000088"
+      ]
     },
     {
       "subject": "TIU",
       "status": "reviewed",
       "primary": "TIU-VERBAL-SILOGISME",
       "secondary": null,
-      "questionCodes": ["TIU-000007", "TIU-000008", "TIU-000009", "TIU-000010", "TIU-000011", "TIU-000012", "TIU-000061", "TIU-000062", "TIU-000063", "TIU-000089", "TIU-000090", "TIU-000091", "TIU-000092"]
+      "questionCodes": [
+        "TIU-000007",
+        "TIU-000008",
+        "TIU-000009",
+        "TIU-000010",
+        "TIU-000011",
+        "TIU-000012",
+        "TIU-000061",
+        "TIU-000062",
+        "TIU-000063",
+        "TIU-000089",
+        "TIU-000090",
+        "TIU-000091",
+        "TIU-000092"
+      ]
     },
 
     {
@@ -94,7 +206,19 @@
       "status": "reviewed",
       "primary": "TKP-ANTI-RAD",
       "secondary": null,
-      "questionCodes": ["TKP-000270", "TKP-000271", "TKP-000272", "TKP-000273", "TKP-000275", "TKP-000276", "TKP-000277", "TKP-000278", "TKP-000280", "TKP-000282", "TKP-000286"]
+      "questionCodes": [
+        "TKP-000270",
+        "TKP-000271",
+        "TKP-000272",
+        "TKP-000273",
+        "TKP-000275",
+        "TKP-000276",
+        "TKP-000277",
+        "TKP-000278",
+        "TKP-000280",
+        "TKP-000282",
+        "TKP-000286"
+      ]
     },
     {
       "subject": "TKP",
@@ -108,7 +232,21 @@
       "status": "reviewed",
       "primary": "TKP-JEJARING",
       "secondary": null,
-      "questionCodes": ["TKP-000215", "TKP-000217", "TKP-000219", "TKP-000220", "TKP-000221", "TKP-000222", "TKP-000223", "TKP-000224", "TKP-000225", "TKP-000227", "TKP-000228", "TKP-000229", "TKP-000230"]
+      "questionCodes": [
+        "TKP-000215",
+        "TKP-000217",
+        "TKP-000219",
+        "TKP-000220",
+        "TKP-000221",
+        "TKP-000222",
+        "TKP-000223",
+        "TKP-000224",
+        "TKP-000225",
+        "TKP-000227",
+        "TKP-000228",
+        "TKP-000229",
+        "TKP-000230"
+      ]
     },
     {
       "subject": "TKP",
@@ -122,7 +260,28 @@
       "status": "reviewed",
       "primary": "TKP-PELAYANAN",
       "secondary": null,
-      "questionCodes": ["TKP-000175", "TKP-000176", "TKP-000177", "TKP-000178", "TKP-000179", "TKP-000180", "TKP-000181", "TKP-000182", "TKP-000183", "TKP-000184", "TKP-000185", "TKP-000186", "TKP-000187", "TKP-000188", "TKP-000189", "TKP-000190", "TKP-000191", "TKP-000192", "TKP-000193", "TKP-000194"]
+      "questionCodes": [
+        "TKP-000175",
+        "TKP-000176",
+        "TKP-000177",
+        "TKP-000178",
+        "TKP-000179",
+        "TKP-000180",
+        "TKP-000181",
+        "TKP-000182",
+        "TKP-000183",
+        "TKP-000184",
+        "TKP-000185",
+        "TKP-000186",
+        "TKP-000187",
+        "TKP-000188",
+        "TKP-000189",
+        "TKP-000190",
+        "TKP-000191",
+        "TKP-000192",
+        "TKP-000193",
+        "TKP-000194"
+      ]
     },
     {
       "subject": "TKP",
@@ -136,7 +295,31 @@
       "status": "reviewed",
       "primary": "TKP-PROF",
       "secondary": null,
-      "questionCodes": ["TKP-000195", "TKP-000196", "TKP-000197", "TKP-000198", "TKP-000199", "TKP-000200", "TKP-000201", "TKP-000202", "TKP-000203", "TKP-000204", "TKP-000205", "TKP-000206", "TKP-000207", "TKP-000208", "TKP-000209", "TKP-000210", "TKP-000211", "TKP-000212", "TKP-000213", "TKP-000231", "TKP-000279", "TKP-000281", "TKP-000285"]
+      "questionCodes": [
+        "TKP-000195",
+        "TKP-000196",
+        "TKP-000197",
+        "TKP-000198",
+        "TKP-000199",
+        "TKP-000200",
+        "TKP-000201",
+        "TKP-000202",
+        "TKP-000203",
+        "TKP-000204",
+        "TKP-000205",
+        "TKP-000206",
+        "TKP-000207",
+        "TKP-000208",
+        "TKP-000209",
+        "TKP-000210",
+        "TKP-000211",
+        "TKP-000212",
+        "TKP-000213",
+        "TKP-000231",
+        "TKP-000279",
+        "TKP-000281",
+        "TKP-000285"
+      ]
     },
     {
       "subject": "TKP",
@@ -157,14 +340,52 @@
       "status": "reviewed",
       "primary": "TKP-SOSBUD",
       "secondary": null,
-      "questionCodes": ["TKP-000251", "TKP-000252", "TKP-000253", "TKP-000254", "TKP-000255", "TKP-000256", "TKP-000258", "TKP-000259", "TKP-000261", "TKP-000262", "TKP-000264", "TKP-000265", "TKP-000266", "TKP-000267", "TKP-000268", "TKP-000269"]
+      "questionCodes": [
+        "TKP-000251",
+        "TKP-000252",
+        "TKP-000253",
+        "TKP-000254",
+        "TKP-000255",
+        "TKP-000256",
+        "TKP-000258",
+        "TKP-000259",
+        "TKP-000261",
+        "TKP-000262",
+        "TKP-000264",
+        "TKP-000265",
+        "TKP-000266",
+        "TKP-000267",
+        "TKP-000268",
+        "TKP-000269"
+      ]
     },
     {
       "subject": "TKP",
       "status": "reviewed",
       "primary": "TKP-TIK",
       "secondary": null,
-      "questionCodes": ["TKP-000232", "TKP-000233", "TKP-000234", "TKP-000235", "TKP-000236", "TKP-000237", "TKP-000238", "TKP-000239", "TKP-000240", "TKP-000241", "TKP-000242", "TKP-000243", "TKP-000244", "TKP-000245", "TKP-000246", "TKP-000247", "TKP-000248", "TKP-000249", "TKP-000250", "TKP-000287"]
+      "questionCodes": [
+        "TKP-000232",
+        "TKP-000233",
+        "TKP-000234",
+        "TKP-000235",
+        "TKP-000236",
+        "TKP-000237",
+        "TKP-000238",
+        "TKP-000239",
+        "TKP-000240",
+        "TKP-000241",
+        "TKP-000242",
+        "TKP-000243",
+        "TKP-000244",
+        "TKP-000245",
+        "TKP-000246",
+        "TKP-000247",
+        "TKP-000248",
+        "TKP-000249",
+        "TKP-000250",
+        "TKP-000287"
+      ]
     },
 
     {
@@ -186,7 +407,51 @@
       "status": "reviewed",
       "primary": "TWK-BAHASA",
       "secondary": null,
-      "questionCodes": ["TWK-000509", "TWK-000510", "TWK-000511", "TWK-000512", "TWK-000513", "TWK-000514", "TWK-000515", "TWK-000516", "TWK-000517", "TWK-000518", "TWK-000519", "TWK-000520", "TWK-000521", "TWK-000522", "TWK-000523", "TWK-000524", "TWK-000525", "TWK-000526", "TWK-000527", "TWK-000528", "TWK-000529", "TWK-000530", "TWK-000531", "TWK-000532", "TWK-000533", "TWK-000534", "TWK-000535", "TWK-000536", "TWK-000537", "TWK-000538", "TWK-000539", "TWK-000540", "TWK-000541", "TWK-000542", "TWK-000543", "TWK-000544", "TWK-000545", "TWK-000546", "TWK-000547", "TWK-000548", "TWK-000549", "TWK-000550", "TWK-000551"]
+      "questionCodes": [
+        "TWK-000509",
+        "TWK-000510",
+        "TWK-000511",
+        "TWK-000512",
+        "TWK-000513",
+        "TWK-000514",
+        "TWK-000515",
+        "TWK-000516",
+        "TWK-000517",
+        "TWK-000518",
+        "TWK-000519",
+        "TWK-000520",
+        "TWK-000521",
+        "TWK-000522",
+        "TWK-000523",
+        "TWK-000524",
+        "TWK-000525",
+        "TWK-000526",
+        "TWK-000527",
+        "TWK-000528",
+        "TWK-000529",
+        "TWK-000530",
+        "TWK-000531",
+        "TWK-000532",
+        "TWK-000533",
+        "TWK-000534",
+        "TWK-000535",
+        "TWK-000536",
+        "TWK-000537",
+        "TWK-000538",
+        "TWK-000539",
+        "TWK-000540",
+        "TWK-000541",
+        "TWK-000542",
+        "TWK-000543",
+        "TWK-000544",
+        "TWK-000545",
+        "TWK-000546",
+        "TWK-000547",
+        "TWK-000548",
+        "TWK-000549",
+        "TWK-000550",
+        "TWK-000551"
+      ]
     },
     {
       "subject": "TWK",
@@ -235,7 +500,32 @@
       "status": "reviewed",
       "primary": "TWK-BELA",
       "secondary": null,
-      "questionCodes": ["TWK-000428", "TWK-000429", "TWK-000430", "TWK-000431", "TWK-000432", "TWK-000433", "TWK-000434", "TWK-000435", "TWK-000436", "TWK-000437", "TWK-000438", "TWK-000439", "TWK-000440", "TWK-000441", "TWK-000443", "TWK-000445", "TWK-000446", "TWK-000447", "TWK-000452", "TWK-000453", "TWK-000454", "TWK-000455", "TWK-000456", "TWK-000458"]
+      "questionCodes": [
+        "TWK-000428",
+        "TWK-000429",
+        "TWK-000430",
+        "TWK-000431",
+        "TWK-000432",
+        "TWK-000433",
+        "TWK-000434",
+        "TWK-000435",
+        "TWK-000436",
+        "TWK-000437",
+        "TWK-000438",
+        "TWK-000439",
+        "TWK-000440",
+        "TWK-000441",
+        "TWK-000443",
+        "TWK-000445",
+        "TWK-000446",
+        "TWK-000447",
+        "TWK-000452",
+        "TWK-000453",
+        "TWK-000454",
+        "TWK-000455",
+        "TWK-000456",
+        "TWK-000458"
+      ]
     },
     {
       "subject": "TWK",
@@ -256,7 +546,34 @@
       "status": "reviewed",
       "primary": "TWK-INT",
       "secondary": null,
-      "questionCodes": ["TWK-000409", "TWK-000422", "TWK-000459", "TWK-000460", "TWK-000462", "TWK-000463", "TWK-000464", "TWK-000465", "TWK-000466", "TWK-000467", "TWK-000468", "TWK-000469", "TWK-000470", "TWK-000471", "TWK-000472", "TWK-000473", "TWK-000474", "TWK-000475", "TWK-000476", "TWK-000477", "TWK-000478", "TWK-000479", "TWK-000480", "TWK-000481", "TWK-000482", "TWK-000483"]
+      "questionCodes": [
+        "TWK-000409",
+        "TWK-000422",
+        "TWK-000459",
+        "TWK-000460",
+        "TWK-000462",
+        "TWK-000463",
+        "TWK-000464",
+        "TWK-000465",
+        "TWK-000466",
+        "TWK-000467",
+        "TWK-000468",
+        "TWK-000469",
+        "TWK-000470",
+        "TWK-000471",
+        "TWK-000472",
+        "TWK-000473",
+        "TWK-000474",
+        "TWK-000475",
+        "TWK-000476",
+        "TWK-000477",
+        "TWK-000478",
+        "TWK-000479",
+        "TWK-000480",
+        "TWK-000481",
+        "TWK-000482",
+        "TWK-000483"
+      ]
     },
     {
       "subject": "TWK",
@@ -270,7 +587,18 @@
       "status": "reviewed",
       "primary": "TWK-NAS",
       "secondary": "TWK-PILAR-BHINNEKA",
-      "questionCodes": ["TWK-000359", "TWK-000363", "TWK-000420", "TWK-000488", "TWK-000489", "TWK-000503", "TWK-000505", "TWK-000506", "TWK-000507", "TWK-000508"]
+      "questionCodes": [
+        "TWK-000359",
+        "TWK-000363",
+        "TWK-000420",
+        "TWK-000488",
+        "TWK-000489",
+        "TWK-000503",
+        "TWK-000505",
+        "TWK-000506",
+        "TWK-000507",
+        "TWK-000508"
+      ]
     },
     {
       "subject": "TWK",
@@ -291,7 +619,32 @@
       "status": "reviewed",
       "primary": "TWK-NAS",
       "secondary": null,
-      "questionCodes": ["TWK-000401", "TWK-000403", "TWK-000405", "TWK-000408", "TWK-000411", "TWK-000414", "TWK-000416", "TWK-000423", "TWK-000424", "TWK-000484", "TWK-000485", "TWK-000486", "TWK-000491", "TWK-000492", "TWK-000493", "TWK-000494", "TWK-000495", "TWK-000496", "TWK-000497", "TWK-000498", "TWK-000499", "TWK-000501", "TWK-000502", "TWK-000504"]
+      "questionCodes": [
+        "TWK-000401",
+        "TWK-000403",
+        "TWK-000405",
+        "TWK-000408",
+        "TWK-000411",
+        "TWK-000414",
+        "TWK-000416",
+        "TWK-000423",
+        "TWK-000424",
+        "TWK-000484",
+        "TWK-000485",
+        "TWK-000486",
+        "TWK-000491",
+        "TWK-000492",
+        "TWK-000493",
+        "TWK-000494",
+        "TWK-000495",
+        "TWK-000496",
+        "TWK-000497",
+        "TWK-000498",
+        "TWK-000499",
+        "TWK-000501",
+        "TWK-000502",
+        "TWK-000504"
+      ]
     },
     {
       "subject": "TWK",
@@ -340,7 +693,32 @@
       "status": "reviewed",
       "primary": "TWK-PILAR-PANCASILA",
       "secondary": null,
-      "questionCodes": ["TWK-000342", "TWK-000343", "TWK-000344", "TWK-000345", "TWK-000347", "TWK-000348", "TWK-000349", "TWK-000350", "TWK-000351", "TWK-000352", "TWK-000354", "TWK-000356", "TWK-000357", "TWK-000358", "TWK-000360", "TWK-000361", "TWK-000362", "TWK-000364", "TWK-000365", "TWK-000366", "TWK-000367", "TWK-000368", "TWK-000407", "TWK-000418"]
+      "questionCodes": [
+        "TWK-000342",
+        "TWK-000343",
+        "TWK-000344",
+        "TWK-000345",
+        "TWK-000347",
+        "TWK-000348",
+        "TWK-000349",
+        "TWK-000350",
+        "TWK-000351",
+        "TWK-000352",
+        "TWK-000354",
+        "TWK-000356",
+        "TWK-000357",
+        "TWK-000358",
+        "TWK-000360",
+        "TWK-000361",
+        "TWK-000362",
+        "TWK-000364",
+        "TWK-000365",
+        "TWK-000366",
+        "TWK-000367",
+        "TWK-000368",
+        "TWK-000407",
+        "TWK-000418"
+      ]
     },
     {
       "subject": "TWK",
@@ -354,7 +732,38 @@
       "status": "reviewed",
       "primary": "TWK-PILAR-UUD45",
       "secondary": null,
-      "questionCodes": ["TWK-000369", "TWK-000370", "TWK-000371", "TWK-000372", "TWK-000373", "TWK-000374", "TWK-000375", "TWK-000376", "TWK-000377", "TWK-000378", "TWK-000379", "TWK-000380", "TWK-000381", "TWK-000382", "TWK-000383", "TWK-000384", "TWK-000386", "TWK-000387", "TWK-000388", "TWK-000389", "TWK-000391", "TWK-000392", "TWK-000393", "TWK-000394", "TWK-000395", "TWK-000396", "TWK-000397", "TWK-000398", "TWK-000400", "TWK-000412"]
+      "questionCodes": [
+        "TWK-000369",
+        "TWK-000370",
+        "TWK-000371",
+        "TWK-000372",
+        "TWK-000373",
+        "TWK-000374",
+        "TWK-000375",
+        "TWK-000376",
+        "TWK-000377",
+        "TWK-000378",
+        "TWK-000379",
+        "TWK-000380",
+        "TWK-000381",
+        "TWK-000382",
+        "TWK-000383",
+        "TWK-000384",
+        "TWK-000386",
+        "TWK-000387",
+        "TWK-000388",
+        "TWK-000389",
+        "TWK-000391",
+        "TWK-000392",
+        "TWK-000393",
+        "TWK-000394",
+        "TWK-000395",
+        "TWK-000396",
+        "TWK-000397",
+        "TWK-000398",
+        "TWK-000400",
+        "TWK-000412"
+      ]
     }
   ],
   "needsRevisionNotes": {

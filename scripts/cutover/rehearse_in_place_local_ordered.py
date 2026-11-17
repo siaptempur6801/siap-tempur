@@ -160,7 +160,9 @@ def apply_runtime_function_override(db_url: str) -> None:
     text = path.read_text(encoding="utf-8")
     count = len(re.findall(r"(?m)^CREATE OR REPLACE (?:FUNCTION|PROCEDURE)\b", text))
     if count != 80:
-        mod.die(f"canonical runtime function override must contain exactly 80 definitions, got {count}")
+        mod.die(
+            f"canonical runtime function override must contain exactly 80 definitions, got {count}"
+        )
     print(f"    canonical runtime function overlay: {count} definitions from {path}")
     exec_function_fragment(db_url, path)
 

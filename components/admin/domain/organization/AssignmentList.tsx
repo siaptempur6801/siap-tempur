@@ -1,23 +1,23 @@
 import { saveAssignmentAction } from '@/app/actions/admin-organization-exam'
 import AdminSubmitButton from '@/components/admin/AdminSubmitButton'
 import {
-AdminField,
-AdminStatusBadge,
-AdminTh,
-adminInputClass,
-adminSecondaryButtonClass,
-adminTableHeadClass
+  AdminField,
+  AdminStatusBadge,
+  AdminTh,
+  adminInputClass,
+  adminSecondaryButtonClass,
+  adminTableHeadClass,
 } from '@/components/admin/AdminUi'
 import ConfirmSubmit from '@/components/admin/ConfirmSubmit'
 import { AdminDataTable } from '@/components/admin/data-display/AdminDataTable'
-import { formatDateTime,formatLocalDateTimeInput } from '@/lib/admin-format'
+import { formatDateTime, formatLocalDateTimeInput } from '@/lib/admin-format'
 import type { AssignmentRow } from '@/lib/organization-exam'
 import Link from '@/components/admin/navigation/AdminLink'
 export function AssignmentList({
   assignments,
   batchId,
   organizationId,
-  returnTo
+  returnTo,
 }: {
   assignments: AssignmentRow[]
   batchId: string
@@ -41,14 +41,14 @@ export function AssignmentList({
           ? {
               title: 'Belum ada penugasan',
               description:
-                'Pilih assessment di atas untuk menugaskannya kepada seluruh peserta batch.'
+                'Pilih assessment di atas untuk menugaskannya kepada seluruh peserta batch.',
             }
           : undefined
       }
     >
       <thead className={adminTableHeadClass}>
         <tr>
-          {['Assessment', 'Availability', 'Attempts', 'Status', 'Actions'].map((h) => (
+          {['Assessment', 'Masa berlaku', 'Percobaan', 'Status', 'Tindakan'].map((h) => (
             <AdminTh key={h}>{h}</AdminTh>
           ))}
         </tr>

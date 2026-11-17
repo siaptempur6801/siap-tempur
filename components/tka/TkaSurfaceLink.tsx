@@ -13,13 +13,13 @@ import type { AnchorHTMLAttributes, ReactNode } from 'react'
  * memakai `next/link` (tetap instan, tanpa reload).
  */
 export default function TkaSurfaceLink({
-    href,
-    children,
-    ...rest
+  href,
+  children,
+  ...rest
 }: { href: string; children: ReactNode } & AnchorHTMLAttributes<HTMLAnchorElement>) {
-    return (
-        <a href={href} {...rest}>
-            {children}
-        </a>
-    )
+  return (
+    <a href={href} {...rest}>
+      {children}
+    </a>
+  )
 }

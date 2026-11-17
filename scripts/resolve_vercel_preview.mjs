@@ -15,16 +15,20 @@ function diagnostic(hostname, mode, response, returnedSha = null) {
   const location = response.headers.get('location')
   let locationHost = null
   if (location) {
-    try { locationHost = new URL(location).hostname } catch {}
+    try {
+      locationHost = new URL(location).hostname
+    } catch {}
   }
-  console.log(JSON.stringify({
-    previewHost: hostname,
-    bypassMode: mode,
-    status: response.status,
-    contentType: type.split(';')[0],
-    redirectHost: locationHost,
-    returnedSha,
-  }))
+  console.log(
+    JSON.stringify({
+      previewHost: hostname,
+      bypassMode: mode,
+      status: response.status,
+      contentType: type.split(';')[0],
+      redirectHost: locationHost,
+      returnedSha,
+    }),
+  )
 }
 
 async function verifyPreview(candidate) {
@@ -74,11 +78,13 @@ async function verifyPreview(candidate) {
       diagnostic(url.hostname, attempt.mode, response, returnedSha)
       if (returnedSha === expectedSha) return url.origin
     } catch (error) {
-      console.log(JSON.stringify({
-        previewHost: url.hostname,
-        bypassMode: attempt.mode,
-        error: error instanceof Error ? error.name : 'request_error',
-      }))
+      console.log(
+        JSON.stringify({
+          previewHost: url.hostname,
+          bypassMode: attempt.mode,
+          error: error instanceof Error ? error.name : 'request_error',
+        }),
+      )
     }
   }
   return false
@@ -105,14 +111,17 @@ if (!repository || !prNumber || !token) {
 }
 
 async function fetchComments() {
-  const response = await fetch(`${apiUrl}/repos/${repository}/issues/${prNumber}/comments?per_page=100`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/vnd.github+json',
-      'X-GitHub-Api-Version': '2022-11-28',
+  const response = await fetch(
+    `${apiUrl}/repos/${repository}/issues/${prNumber}/comments?per_page=100`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+      },
+      signal: AbortSignal.timeout(15_000),
     },
-    signal: AbortSignal.timeout(15_000),
-  })
+  )
   if (!response.ok) throw new Error(`GitHub PR comments failed: ${response.status}`)
   return response.json()
 }

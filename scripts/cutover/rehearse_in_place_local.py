@@ -35,8 +35,16 @@ from pathlib import Path
 LOCAL_HOSTS = {"127.0.0.1", "localhost"}
 EXPECTED_SEED_GATE = "2|4|32|1086|552|17|11|433|0|0"
 TECH_ACTORS = (
-    ("4cf7114c-7613-4676-9aa9-64793f855f04", "cutover-history-actor@local.invalid", "Cutover History Actor"),
-    ("93b4d35b-a1fb-4a16-9304-fef1116002cf", "cutover-content-actor@local.invalid", "Cutover Content Actor"),
+    (
+        "4cf7114c-7613-4676-9aa9-64793f855f04",
+        "cutover-history-actor@local.invalid",
+        "Cutover History Actor",
+    ),
+    (
+        "93b4d35b-a1fb-4a16-9304-fef1116002cf",
+        "cutover-content-actor@local.invalid",
+        "Cutover Content Actor",
+    ),
 )
 LEGACY_SEQUENCE_VALUES = {
     "question_code_seq": 263,
@@ -169,8 +177,21 @@ select concat_ws('|',
 
 EXPECTED_SOURCE_GATE = "|".join(
     [
-        "426", "426", "426", "430", "5090", "476", "426", "16889", "1273", "88239",
-        "258", "6295630", "64", "2240000", "104",
+        "426",
+        "426",
+        "426",
+        "430",
+        "5090",
+        "476",
+        "426",
+        "16889",
+        "1273",
+        "88239",
+        "258",
+        "6295630",
+        "64",
+        "2240000",
+        "104",
         "aba71998de87af045ca2fbc65c9b82eb",
         "b02379b4056903c5ad5a09971df5a2b9",
         "b94db0fdf0fa3aadf8df9331114dd8bd",
@@ -232,9 +253,31 @@ select concat_ws('|',
 
 EXPECTED_FINAL_GATE = "|".join(
     [
-        "426", "426", "430", "426", "5090", "476", "426", "16889", "16889", "1273",
-        "88239", "21365", "22255", "44603", "322", "322", "50", "272", "4", "104", "31", "0",
-        "433", "0", "0",
+        "426",
+        "426",
+        "430",
+        "426",
+        "5090",
+        "476",
+        "426",
+        "16889",
+        "16889",
+        "1273",
+        "88239",
+        "21365",
+        "22255",
+        "44603",
+        "322",
+        "322",
+        "50",
+        "272",
+        "4",
+        "104",
+        "31",
+        "0",
+        "433",
+        "0",
+        "0",
     ]
 )
 
@@ -281,7 +324,13 @@ FROM actor
 ON CONFLICT (id) DO NOTHING;
 """,
     )
-    if query(db_url, "select count(*) from public.profiles where id in ('4cf7114c-7613-4676-9aa9-64793f855f04','93b4d35b-a1fb-4a16-9304-fef1116002cf');") != "2":
+    if (
+        query(
+            db_url,
+            "select count(*) from public.profiles where id in ('4cf7114c-7613-4676-9aa9-64793f855f04','93b4d35b-a1fb-4a16-9304-fef1116002cf');",
+        )
+        != "2"
+    ):
         die("technical actor profile creation failed")
 
 
@@ -303,7 +352,13 @@ TRUNCATE TABLE auth.users CASCADE;
         exec_sql(db_url, "CREATE SCHEMA public AUTHORIZATION postgres;")
     exec_file(db_url, schema_dump)
 
-    if query(db_url, "select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind in ('r','p');") != "60":
+    if (
+        query(
+            db_url,
+            "select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind in ('r','p');",
+        )
+        != "60"
+    ):
         die("restored legacy public schema does not contain exactly 60 base tables")
 
     manifest = load_manifest(raw_dir / "public_row_counts.csv")
@@ -380,7 +435,7 @@ COMMIT;
     for table, count in sorted(manifest.items()):
         lines.append(
             "INSERT INTO legacy_prod.snapshot_expected_counts(table_name,expected_count) VALUES "
-            f"('{table.replace(chr(39), chr(39)+chr(39))}',{count});"
+            f"('{table.replace(chr(39), chr(39) + chr(39))}',{count});"
         )
     lines.append("COMMIT;")
     meta_sql.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -421,7 +476,9 @@ def bootstrap_canonical(db_url: str, repo_root: Path) -> None:
         exec_file(db_url, path)
     recreate_auth_trigger(db_url)
 
-    verify_manifest_sql(db_url, repo_root / "scripts" / "production_cutover_runtime_schema_verify.sql", 8)
+    verify_manifest_sql(
+        db_url, repo_root / "scripts" / "production_cutover_runtime_schema_verify.sql", 8
+    )
     verify_manifest_sql(db_url, repo_root / "scripts" / "production_cutover_acl_verify.sql", 3)
     auth_gate = query(
         db_url,
@@ -472,13 +529,21 @@ COMMIT;
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Schema V2 exact in-place cutover/rollback rehearsal on Supabase Local only.")
+    parser = argparse.ArgumentParser(
+        description="Schema V2 exact in-place cutover/rollback rehearsal on Supabase Local only."
+    )
     parser.add_argument("artifact_dir", help="Directory created by export_cutover_artifacts.sh")
     parser.add_argument(
         "--db-url",
-        default=os.environ.get("LOCAL_DB_URL", "postgresql://postgres:postgres@127.0.0.1:54322/postgres"),
+        default=os.environ.get(
+            "LOCAL_DB_URL", "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+        ),
     )
-    parser.add_argument("--yes-rehearse-local", action="store_true", help="Required destructive LOCAL-only acknowledgement")
+    parser.add_argument(
+        "--yes-rehearse-local",
+        action="store_true",
+        help="Required destructive LOCAL-only acknowledgement",
+    )
     args = parser.parse_args()
 
     if not args.yes_rehearse_local:
@@ -492,7 +557,13 @@ def main() -> None:
     schema_dump = artifact / "production_public_schema.sql"
     seed_dump = artifact / "canonical_v1_seed.sql"
     raw_dir = artifact / "production_raw"
-    for required in (schema_dump, seed_dump, raw_dir / "public_row_counts.csv", raw_dir / "public_columns.csv", raw_dir / "auth_users_identity.csv"):
+    for required in (
+        schema_dump,
+        seed_dump,
+        raw_dir / "public_row_counts.csv",
+        raw_dir / "public_columns.csv",
+        raw_dir / "auth_users_identity.csv",
+    ):
         if not required.exists():
             die(f"missing cutover artifact: {required}")
 
@@ -530,7 +601,9 @@ def main() -> None:
     run_phases(args.db_url, repo_root)
 
     print("[6/8] Verify canonical schema + migrated production semantics ...")
-    verify_manifest_sql(args.db_url, repo_root / "scripts" / "production_cutover_runtime_schema_verify.sql", 8)
+    verify_manifest_sql(
+        args.db_url, repo_root / "scripts" / "production_cutover_runtime_schema_verify.sql", 8
+    )
     verify_manifest_sql(args.db_url, repo_root / "scripts" / "production_cutover_acl_verify.sql", 3)
     actual_final = final_gate(args.db_url)
     if actual_final != EXPECTED_FINAL_GATE:
@@ -546,11 +619,15 @@ def main() -> None:
     evidence["finished_utc"] = datetime.now(timezone.utc).isoformat()
     evidence["result"] = "PASS"
     evidence_path = artifact / "in_place_rehearsal_evidence.json"
-    evidence_path.write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    evidence_path.write_text(
+        json.dumps(evidence, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     os.chmod(evidence_path, 0o600)
 
     print()
-    print("PASS: exact in-place Schema V2 cutover rehearsal + rollback completed on Supabase Local.")
+    print(
+        "PASS: exact in-place Schema V2 cutover rehearsal + rollback completed on Supabase Local."
+    )
     print("PASS: local state ended back on the frozen legacy production semantic fingerprint.")
     print(f"Evidence: {evidence_path}")
     print("Production and staging were not mutated by this runner.")

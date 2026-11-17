@@ -1,277 +1,327 @@
 -- Make start-session RPCs idempotent under rapid duplicate requests.
 -- UI loading states reduce duplicate clicks, but token/session integrity must be enforced in DB.
-
-create or replace function public.start_tryout_session(p_user_id uuid)
-returns table (
-  session_id uuid,
-  questions json
-)
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
+CREATE OR REPLACE FUNCTION public.start_tryout_session (p_user_id uuid)
+  RETURNS TABLE (
+    session_id uuid,
+    questions json)
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path = public
+  AS $$
+DECLARE
   v_session_id uuid;
   v_existing_session_id uuid;
   v_questions json;
   v_remaining_quota int;
   v_expected_questions int;
   v_selected_questions int;
-begin
-  if coalesce(auth.role(), '') <> 'service_role'
-    and p_user_id <> (select auth.uid())
-  then
-    raise exception 'Not authorized';
-  end if;
+BEGIN
+  IF coalesce(auth.role (), '') <> 'service_role' AND p_user_id <> (
+    SELECT
+      auth.uid ()) THEN
+    RAISE EXCEPTION 'Not authorized';
+  END IF;
 
-  if p_user_id is null then
-    raise exception 'Invalid tryout request';
-  end if;
+  IF p_user_id IS NULL THEN
+    RAISE EXCEPTION 'Invalid tryout request';
+  END IF;
 
-  perform pg_advisory_xact_lock(hashtextextended('start_tryout_session:' || p_user_id::text, 0));
+  PERFORM
+    pg_advisory_xact_lock(hashtextextended('start_tryout_session:' || p_user_id::text, 0));
 
-  select id
-  into v_existing_session_id
-  from public.test_sessions
-  where user_id = p_user_id
-    and mode = 'tryout'
-    and status = 'in_progress'
-  order by last_activity_at desc nulls last, start_time desc
-  limit 1;
+  SELECT
+    id
+  INTO
+    v_existing_session_id
+  FROM
+    public.test_sessions
+  WHERE
+    user_id = p_user_id
+    AND mode = 'tryout'
+    AND status = 'in_progress'
+  ORDER BY
+    last_activity_at DESC nulls LAST,
+    start_time DESC
+  LIMIT 1;
 
-  if v_existing_session_id is not null then
-    return query select v_existing_session_id, null::json;
-    return;
-  end if;
+  IF v_existing_session_id IS NOT NULL THEN
+    RETURN QUERY
+    SELECT
+      v_existing_session_id,
+      NULL::json;
+    RETURN;
+  END IF;
 
-  select coalesce(sum(question_count), 0)
-  into v_expected_questions
-  from public.tryout_configurations
-  where is_active = true;
+  SELECT
+    coalesce(sum(question_count), 0)
+  INTO
+    v_expected_questions
+  FROM
+    public.tryout_configurations
+  WHERE
+    is_active = TRUE;
 
-  if v_expected_questions <> 110 then
-    raise exception 'Konfigurasi tryout tidak valid: expected 110 questions, got %', v_expected_questions;
-  end if;
+  IF v_expected_questions <> 110 THEN
+    RAISE EXCEPTION 'Konfigurasi tryout tidak valid: expected 110 questions, got %', v_expected_questions;
+  END IF;
 
-  create temp table if not exists temp_selected_questions (
+  CREATE temp TABLE IF NOT EXISTS temp_selected_questions (
     question_id uuid,
     sort_order int
-  ) on commit drop;
+  ) ON COMMIT DROP;
 
-  truncate temp_selected_questions;
+  TRUNCATE temp_selected_questions;
 
-  insert into temp_selected_questions (question_id, sort_order)
-  select q.id, tc.sort_order
-  from public.tryout_configurations tc
-  cross join lateral (
-    select id
-    from public.questions q_inner
-    where q_inner.type = tc.type::question_type
-      and q_inner.sub_category = tc.sub_category
-    order by random()
-    limit tc.question_count
-  ) q
-  where tc.is_active = true;
+INSERT INTO temp_selected_questions (question_id, sort_order)
+SELECT
+  q.id,
+  tc.sort_order
+FROM
+  public.tryout_configurations tc
+  CROSS JOIN LATERAL (
+    SELECT
+      id
+    FROM
+      public.questions q_inner
+    WHERE
+      q_inner.type = tc.type::question_type
+      AND q_inner.sub_category = tc.sub_category
+    ORDER BY
+      random()
+    LIMIT tc.question_count) q
+WHERE
+  tc.is_active = TRUE;
 
-  select count(*)
-  into v_selected_questions
-  from temp_selected_questions;
+  SELECT
+    count(*)
+  INTO
+    v_selected_questions
+  FROM
+    temp_selected_questions;
 
-  if v_selected_questions <> v_expected_questions then
-    raise exception 'Bank soal belum lengkap: expected % questions, selected %',
-      v_expected_questions,
-      v_selected_questions;
-  end if;
+  IF v_selected_questions <> v_expected_questions THEN
+    RAISE EXCEPTION 'Bank soal belum lengkap: expected % questions, selected %', v_expected_questions, v_selected_questions;
+  END IF;
 
-  update public.profiles
-  set tryout_quota = tryout_quota - 1
-  where id = p_user_id
-    and coalesce(tryout_quota, 0) > 0
-  returning tryout_quota into v_remaining_quota;
+  UPDATE
+    public.profiles
+  SET
+    tryout_quota = tryout_quota - 1
+  WHERE
+    id = p_user_id
+    AND coalesce(tryout_quota, 0) > 0
+  RETURNING
+    tryout_quota
+  INTO
+    v_remaining_quota;
 
-  if not found then
-    raise exception 'Not enough SKD tickets';
-  end if;
+  IF NOT found THEN
+    RAISE EXCEPTION 'Not enough SKD tickets';
+  END IF;
 
-  insert into public.test_sessions (user_id, mode, status, start_time, last_activity_at)
-  values (p_user_id, 'tryout', 'in_progress', now(), now())
-  returning id into v_session_id;
+INSERT INTO public.test_sessions (user_id, mode, status, start_time, last_activity_at)
+  VALUES (p_user_id, 'tryout', 'in_progress', now(), now())
+RETURNING
+  id
+INTO
+  v_session_id;
 
-  insert into public.test_answers (session_id, question_id)
-  select v_session_id, question_id
-  from temp_selected_questions;
+INSERT INTO public.test_answers (session_id, question_id)
+SELECT
+  v_session_id,
+  question_id
+FROM
+  temp_selected_questions;
 
-  select json_agg(
-    json_build_object(
-      'id', q.id,
-      'content', q.content,
-      'type', q.type,
-      'category', q.category,
-      'sub_category', q.sub_category,
-      'image_url', q.image_url,
-      'options', (
-        select json_agg(
-          json_build_object(
-            'id', o.id,
-            'content', o.content,
-            'image_url', o.image_url
-          ) order by random()
-        )
-        from public.options o
-        where o.question_id = q.id
-      )
-    ) order by tsq.sort_order, random()
-  )
-  into v_questions
-  from temp_selected_questions tsq
-  join public.questions q on q.id = tsq.question_id;
+  SELECT
+    json_agg(json_build_object('id', q.id, 'content', q.content, 'type', q.type, 'category', q.category, 'sub_category', q.sub_category, 'image_url', q.image_url, 'options', (
+          SELECT
+            json_agg(json_build_object('id', o.id, 'content', o.content, 'image_url', o.image_url)
+          ORDER BY random())
+        FROM public.options o
+        WHERE
+          o.question_id = q.id))
+    ORDER BY tsq.sort_order, random())
+  INTO
+    v_questions
+  FROM
+    temp_selected_questions tsq
+    JOIN public.questions q ON q.id = tsq.question_id;
 
-  return query select v_session_id, v_questions;
-end;
+  RETURN QUERY
+  SELECT
+    v_session_id,
+    v_questions;
+END;
 $$;
 
-create or replace function public.start_mini_tryout_session(
-  p_user_id uuid,
-  p_type public.question_type,
-  p_limit int
-)
-returns table (
-  session_id uuid,
-  questions json
-)
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
+CREATE OR REPLACE FUNCTION public.start_mini_tryout_session (p_user_id uuid, p_type public.question_type, p_limit int)
+  RETURNS TABLE (
+    session_id uuid,
+    questions json)
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path = public
+  AS $$
+DECLARE
   v_session_id uuid;
   v_existing_session_id uuid;
   v_questions json;
   v_remaining_quota int;
   v_expected_limit int;
   v_selected_questions int;
-begin
-  if coalesce(auth.role(), '') <> 'service_role'
-    and p_user_id <> (select auth.uid())
-  then
-    raise exception 'Not authorized';
-  end if;
+BEGIN
+  IF coalesce(auth.role (), '') <> 'service_role' AND p_user_id <> (
+    SELECT
+      auth.uid ()) THEN
+    RAISE EXCEPTION 'Not authorized';
+  END IF;
 
-  if p_user_id is null or p_type is null or p_limit is null then
-    raise exception 'Invalid mini tryout request';
-  end if;
+  IF p_user_id IS NULL OR p_type IS NULL OR p_limit IS NULL THEN
+    RAISE EXCEPTION 'Invalid mini tryout request';
+  END IF;
 
-  v_expected_limit := case p_type
-    when 'TWK'::public.question_type then 30
-    when 'TIU'::public.question_type then 35
-    when 'TKP'::public.question_type then 45
-  end;
+  v_expected_limit := CASE p_type
+  WHEN 'TWK'::public.question_type THEN
+    30
+  WHEN 'TIU'::public.question_type THEN
+    35
+  WHEN 'TKP'::public.question_type THEN
+    45
+  END;
 
-  if v_expected_limit is null or p_limit <> v_expected_limit then
-    raise exception 'Invalid mini tryout request';
-  end if;
+  IF v_expected_limit IS NULL OR p_limit <> v_expected_limit THEN
+    RAISE EXCEPTION 'Invalid mini tryout request';
+  END IF;
 
-  perform pg_advisory_xact_lock(hashtextextended('start_mini_tryout_session:' || p_user_id::text || ':' || p_type::text, 0));
+  PERFORM
+    pg_advisory_xact_lock(hashtextextended('start_mini_tryout_session:' || p_user_id::text || ':' || p_type::text, 0));
 
-  select ts.id
-  into v_existing_session_id
-  from public.test_sessions ts
-  where ts.user_id = p_user_id
-    and ts.mode = 'practice'
-    and ts.status = 'in_progress'
-    and exists (
-      select 1
-      from public.test_answers ta
-      join public.questions q on q.id = ta.question_id
-      where ta.session_id = ts.id
-        and q.type = p_type
-    )
-  order by ts.last_activity_at desc nulls last, ts.start_time desc
-  limit 1;
+  SELECT
+    ts.id
+  INTO
+    v_existing_session_id
+  FROM
+    public.test_sessions ts
+  WHERE
+    ts.user_id = p_user_id
+    AND ts.mode = 'practice'
+    AND ts.status = 'in_progress'
+    AND EXISTS (
+      SELECT
+        1
+      FROM
+        public.test_answers ta
+        JOIN public.questions q ON q.id = ta.question_id
+      WHERE
+        ta.session_id = ts.id
+        AND q.type = p_type)
+  ORDER BY
+    ts.last_activity_at DESC nulls LAST,
+    ts.start_time DESC
+  LIMIT 1;
 
-  if v_existing_session_id is not null then
-    return query select v_existing_session_id, null::json;
-    return;
-  end if;
+  IF v_existing_session_id IS NOT NULL THEN
+    RETURN QUERY
+    SELECT
+      v_existing_session_id,
+      NULL::json;
+    RETURN;
+  END IF;
 
-  create temp table if not exists temp_mini_tryout_questions (
+  CREATE temp TABLE IF NOT EXISTS temp_mini_tryout_questions (
     question_id uuid,
     sort_order int
-  ) on commit drop;
+  ) ON COMMIT DROP;
 
-  truncate temp_mini_tryout_questions;
+  TRUNCATE temp_mini_tryout_questions;
 
-  insert into temp_mini_tryout_questions (question_id, sort_order)
-  select selected.id, (row_number() over ())::int
-  from (
-    select q.id
-    from public.questions q
-    where q.type = p_type
-    order by random()
-    limit v_expected_limit
-  ) selected;
+INSERT INTO temp_mini_tryout_questions (question_id, sort_order)
+SELECT
+  selected.id,
+  (row_number() OVER ())::int
+FROM (
+  SELECT
+    q.id
+  FROM
+    public.questions q
+  WHERE
+    q.type = p_type
+  ORDER BY
+    random()
+  LIMIT v_expected_limit) selected;
 
-  select count(*)
-  into v_selected_questions
-  from temp_mini_tryout_questions;
+  SELECT
+    count(*)
+  INTO
+    v_selected_questions
+  FROM
+    temp_mini_tryout_questions;
 
-  if v_selected_questions <> v_expected_limit then
-    raise exception 'Bank soal mini tryout belum lengkap: expected % questions, selected %',
-      v_expected_limit,
-      v_selected_questions;
-  end if;
+  IF v_selected_questions <> v_expected_limit THEN
+    RAISE EXCEPTION 'Bank soal mini tryout belum lengkap: expected % questions, selected %', v_expected_limit, v_selected_questions;
+  END IF;
 
-  update public.profiles
-  set tryout_quota = tryout_quota - 1
-  where id = p_user_id
-    and coalesce(tryout_quota, 0) > 0
-  returning tryout_quota into v_remaining_quota;
+  UPDATE
+    public.profiles
+  SET
+    tryout_quota = tryout_quota - 1
+  WHERE
+    id = p_user_id
+    AND coalesce(tryout_quota, 0) > 0
+  RETURNING
+    tryout_quota
+  INTO
+    v_remaining_quota;
 
-  if not found then
-    raise exception 'Not enough SKD tickets';
-  end if;
+  IF NOT found THEN
+    RAISE EXCEPTION 'Not enough SKD tickets';
+  END IF;
 
-  insert into public.test_sessions (user_id, mode, status, start_time, last_activity_at)
-  values (p_user_id, 'practice', 'in_progress', now(), now())
-  returning id into v_session_id;
+INSERT INTO public.test_sessions (user_id, mode, status, start_time, last_activity_at)
+  VALUES (p_user_id, 'practice', 'in_progress', now(), now())
+RETURNING
+  id
+INTO
+  v_session_id;
 
-  insert into public.test_answers (session_id, question_id)
-  select v_session_id, question_id
-  from temp_mini_tryout_questions;
+INSERT INTO public.test_answers (session_id, question_id)
+SELECT
+  v_session_id,
+  question_id
+FROM
+  temp_mini_tryout_questions;
 
-  select json_agg(
-    json_build_object(
-      'id', q.id,
-      'content', q.content,
-      'type', q.type,
-      'category', q.category,
-      'sub_category', q.sub_category,
-      'image_url', q.image_url,
-      'options', (
-        select json_agg(
-          json_build_object(
-            'id', o.id,
-            'content', o.content,
-            'image_url', o.image_url
-          ) order by random()
-        )
-        from public.options o
-        where o.question_id = q.id
-      )
-    ) order by tmq.sort_order
-  )
-  into v_questions
-  from temp_mini_tryout_questions tmq
-  join public.questions q on q.id = tmq.question_id;
+  SELECT
+    json_agg(json_build_object('id', q.id, 'content', q.content, 'type', q.type, 'category', q.category, 'sub_category', q.sub_category, 'image_url', q.image_url, 'options', (
+          SELECT
+            json_agg(json_build_object('id', o.id, 'content', o.content, 'image_url', o.image_url)
+          ORDER BY random())
+        FROM public.options o
+        WHERE
+          o.question_id = q.id))
+    ORDER BY tmq.sort_order)
+  INTO
+    v_questions
+  FROM
+    temp_mini_tryout_questions tmq
+    JOIN public.questions q ON q.id = tmq.question_id;
 
-  return query select v_session_id, v_questions;
-end;
+  RETURN QUERY
+  SELECT
+    v_session_id,
+    v_questions;
+END;
 $$;
 
-revoke execute on function public.start_practice_session(uuid, public.question_type, int) from public, anon, authenticated;
-grant execute on function public.start_practice_session(uuid, public.question_type, int) to service_role;
+REVOKE EXECUTE ON FUNCTION public.start_practice_session (uuid, public.question_type, int) FROM public, anon, authenticated;
 
-revoke execute on function public.start_mini_tryout_session(uuid, public.question_type, int) from public, anon;
-grant execute on function public.start_mini_tryout_session(uuid, public.question_type, int) to authenticated, service_role;
-revoke execute on function public.start_tryout_session(uuid) from public, anon;
-grant execute on function public.start_tryout_session(uuid) to authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.start_practice_session (uuid, public.question_type, int) TO service_role;
+
+REVOKE EXECUTE ON FUNCTION public.start_mini_tryout_session (uuid, public.question_type, int) FROM public, anon;
+
+GRANT EXECUTE ON FUNCTION public.start_mini_tryout_session (uuid, public.question_type, int) TO authenticated, service_role;
+
+REVOKE EXECUTE ON FUNCTION public.start_tryout_session (uuid) FROM public, anon;
+
+GRANT EXECUTE ON FUNCTION public.start_tryout_session (uuid) TO authenticated, service_role;

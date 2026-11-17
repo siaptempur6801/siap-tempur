@@ -2,7 +2,9 @@ import { adminUrlState } from '../admin-workflow'
 import { expect, test, type Page } from '@playwright/test'
 
 async function expectNoHorizontalOverflow(page: Page) {
-  const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1)
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth > window.innerWidth + 1,
+  )
   expect(overflow).toBe(false)
 }
 
@@ -58,7 +60,19 @@ test.describe('Authenticated Admin Workspace closure', () => {
     // termasuk kontak PIC yang sebelumnya tidak punya kolom sama sekali.
     await page.getByRole('link', { name: 'Instansi baru', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'Instansi baru', exact: true })).toBeVisible()
-    for (const label of ['Nama instansi', 'Kode', 'Jenis', 'Status', 'Kota', 'Provinsi', 'Alamat', 'Nama PIC', 'Telepon PIC', 'Email PIC', 'Catatan']) {
+    for (const label of [
+      'Nama instansi',
+      'Kode',
+      'Jenis',
+      'Status',
+      'Kota',
+      'Provinsi',
+      'Alamat',
+      'Nama PIC',
+      'Telepon PIC',
+      'Email PIC',
+      'Catatan',
+    ]) {
       await expect(page.getByText(label, { exact: true }).first()).toBeVisible()
     }
     await expectNoHorizontalOverflow(page)
@@ -66,38 +80,41 @@ test.describe('Authenticated Admin Workspace closure', () => {
 
   test('Event page keeps assessment context across refresh and Back', async ({ page }) => {
     await page.goto('/admin/assessments?program=CPNS&track=SKD')
-    const row = page.locator('tr[data-assessment-id]').filter({hasText:'Siap'}).first()
-    await row.getByRole('link',{name:'Lihat',exact:true}).click()
-    await page.getByRole('navigation',{name:'Bagian workspace'}).getByRole('link',{name:'Distribusi',exact:true}).click()
+    const row = page.locator('tr[data-assessment-id]').filter({ hasText: 'Siap' }).first()
+    await row.getByRole('link', { name: 'Lihat', exact: true }).click()
+    await page
+      .getByRole('navigation', { name: 'Bagian workspace' })
+      .getByRole('link', { name: 'Distribusi', exact: true })
+      .click()
     await page.waitForURL(/\/distribution(?:\?|$)/)
     const assessmentUrl = page.url()
     const assessmentId = adminUrlState(assessmentUrl).get('assessment')
-    await page.getByRole('link',{name:'Buat Event',exact:true}).click()
+    await page.getByRole('link', { name: 'Buat Event', exact: true }).click()
     await expect(page.locator('input[name="next_exam_id"]')).toHaveValue(assessmentId!)
-    const form = page.locator('form').filter({has: page.locator('input[name="code"]')})
-    await form.getByRole('button',{name:'Lanjut',exact:true}).click()
+    const form = page.locator('form').filter({ has: page.locator('input[name="code"]') })
+    await form.getByRole('button', { name: 'Lanjut', exact: true }).click()
     await expect(form.getByRole('alert')).toHaveText('Nama dan kode event wajib diisi.')
     await form.locator('[name="title"]').fill('Event konteks E2E')
     await form.locator('[name="code"]').fill('E2E-CONTEXT')
-    await form.getByRole('button',{name:'Lanjut',exact:true}).click()
-    const assessmentSelector = form.getByRole('group',{name:'Pilih assessment'})
+    await form.getByRole('button', { name: 'Lanjut', exact: true }).click()
+    const assessmentSelector = form.getByRole('group', { name: 'Pilih assessment' })
     await expect(assessmentSelector).toBeVisible()
-    await expect(assessmentSelector.getByRole('combobox',{name:'Program'})).toBeVisible()
+    await expect(assessmentSelector.getByRole('combobox', { name: 'Program' })).toBeVisible()
     await expect(form.locator('input[name="next_exam_id"]')).toHaveValue(assessmentId!)
-    await expect(form.getByRole('group',{name:'Pendaftaran',exact:true})).toBeVisible()
+    await expect(form.getByRole('group', { name: 'Pendaftaran', exact: true })).toBeVisible()
     const eventCapacity = form.locator('input[name="capacity"]')
     await expect(eventCapacity).toBeVisible()
     await eventCapacity.fill('250')
-    await form.getByRole('button',{name:'Lanjut',exact:true}).click()
-    await expect(form.getByRole('group',{name:'Jadwal event',exact:true})).toBeVisible()
+    await form.getByRole('button', { name: 'Lanjut', exact: true }).click()
+    await expect(form.getByRole('group', { name: 'Jadwal event', exact: true })).toBeVisible()
     await expect(eventCapacity).toHaveValue('250')
-    await form.getByRole('button',{name:'Lanjut',exact:true}).click()
-    await form.getByRole('button',{name:'Lanjut',exact:true}).click()
+    await form.getByRole('button', { name: 'Lanjut', exact: true }).click()
+    await form.getByRole('button', { name: 'Lanjut', exact: true }).click()
     await expect(form.getByRole('alert')).toHaveText('Waktu mulai dan selesai wajib diisi.')
-    await expect(form.getByRole('group',{name:/Jadwal event/})).toBeVisible()
+    await expect(form.getByRole('group', { name: /Jadwal event/ })).toBeVisible()
     await page.reload()
     await expect(page.locator('input[name="next_exam_id"]')).toHaveValue(assessmentId!)
-    await page.getByRole('link',{name:'Batal',exact:true}).click()
+    await page.getByRole('link', { name: 'Batal', exact: true }).click()
     await expect(page).toHaveURL(assessmentUrl)
   })
 
@@ -108,7 +125,9 @@ test.describe('Authenticated Admin Workspace closure', () => {
     // Katalog fitur berasal dari database (40 baris di produksi), bukan daftar
     // yang di-hardcode.
     await expect(page.getByRole('heading', { name: 'Katalog fitur', exact: true })).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Template sertifikat', exact: true })).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: 'Template sertifikat', exact: true }),
+    ).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Periode & track', exact: true })).toBeVisible()
     await expectNoHorizontalOverflow(page)
   })
@@ -118,33 +137,49 @@ test.describe('Authenticated Admin Workspace closure', () => {
     await expect(page.locator('main h1')).toHaveText('Users')
     await expect(page.getByText('Akses tidak tersedia', { exact: true })).toHaveCount(0)
     // Komposisi peran dirender dari database, bukan daftar yang di-hardcode.
-    await page.getByRole('navigation',{name:'Users views'}).getByRole('link',{name:'Roles & Permissions',exact:true}).click()
-    await expect(page.getByRole('heading',{name:'Admin',exact:true})).toBeVisible()
+    await page
+      .getByRole('navigation', { name: 'Users views' })
+      .getByRole('link', { name: 'Roles & Permissions', exact: true })
+      .click()
+    await expect(page.getByRole('heading', { name: 'Admin', exact: true })).toBeVisible()
     await expectNoHorizontalOverflow(page)
   })
 
-  test('Assessment page exposes canonical Drill subject → knowledge-node contract', async ({ page }) => {
+  test('Assessment page exposes canonical Drill subject → knowledge-node contract', async ({
+    page,
+  }) => {
     await page.goto('/admin/assessments?program=CPNS&track=SKD')
     await expect(page.locator('main h1')).toHaveText('Assessment')
 
     await page.getByRole('link', { name: 'Buat Assessment', exact: true }).first().click()
     const dialog = page.locator('main')
-    await expect(dialog.getByRole('heading', { name: 'Buat Assessment', exact: true })).toBeVisible()
+    await expect(
+      dialog.getByRole('heading', { name: 'Buat Assessment', exact: true }),
+    ).toBeVisible()
 
     const examType = dialog.locator('select[name="exam_type_code"]')
     await examType.selectOption('DRILL')
-    await expect(dialog.getByText('Drill mengambil soal dari satu submateri.', { exact: false })).toBeVisible()
-    await expect(dialog.getByRole('combobox', { name: 'Subtes / mata pelajaran', exact: true })).toBeVisible()
+    await expect(
+      dialog.getByText('Drill mengambil soal dari satu submateri.', { exact: false }),
+    ).toBeVisible()
+    await expect(
+      dialog.getByRole('combobox', { name: 'Subtes / mata pelajaran', exact: true }),
+    ).toBeVisible()
     await expect(dialog.getByRole('combobox', { name: 'Submateri', exact: true })).toBeVisible()
     await expect(dialog.locator('select[name="subject_code"]')).toBeVisible()
     await expect(dialog.locator('select[name="knowledge_node_id"]')).toBeVisible()
     await expect(dialog.locator('input[name="question_count"]')).toBeVisible()
 
-    await page.getByRole('navigation', { name: 'Breadcrumb' }).getByRole('link', { name: 'Assessment', exact: true }).click()
+    await page
+      .getByRole('navigation', { name: 'Breadcrumb' })
+      .getByRole('link', { name: 'Assessment', exact: true })
+      .click()
     await expect(page.locator('input[name="question_count"]')).toHaveCount(0)
   })
 
-  test('Program/Track context appears only in relevant workspaces and survives global navigation', async ({ page }) => {
+  test('Program/Track context appears only in relevant workspaces and survives global navigation', async ({
+    page,
+  }) => {
     await page.goto('/admin?program=TKA&track=SMP')
     await expect(page.locator('main h1')).toHaveText('Dashboard')
 
@@ -169,7 +204,9 @@ test.describe('Authenticated Admin Workspace closure', () => {
     await expect(headerSelects.nth(1)).toHaveValue('SMP')
   })
 
-  test('legacy CPNS admin routes resolve inside canonical Admin Workspace when authenticated', async ({ page }) => {
+  test('legacy CPNS admin routes resolve inside canonical Admin Workspace when authenticated', async ({
+    page,
+  }) => {
     await page.goto('/cpns/admin?tab=products&program=CPNS&track=SKD')
     await expect(page).toHaveURL(/\/admin\/commerce\/products/)
     await expect(page.locator('main h1')).toHaveText('Products')
@@ -192,23 +229,30 @@ test.describe('Authenticated Admin Workspace closure', () => {
 
     await page.getByLabel('Buka menu').click()
     // The mobile drawer uses the same navigation model as the desktop sidebar.
-    const drawer = page.getByRole('dialog',{name:'Menu admin',exact:true})
-    await drawer.getByRole('button',{name:'Content',exact:true}).click()
+    const drawer = page.getByRole('dialog', { name: 'Menu admin', exact: true })
+    await drawer.getByRole('button', { name: 'Content', exact: true }).click()
     await expect(drawer.getByRole('link', { name: 'Question Bank', exact: true })).toBeVisible()
     await expect(drawer.getByRole('link', { name: 'Assessment', exact: true })).toBeVisible()
-    await drawer.getByRole('button',{name:'Commerce',exact:true}).click()
+    await drawer.getByRole('button', { name: 'Commerce', exact: true }).click()
     await expect(drawer.getByRole('link', { name: 'Products', exact: true })).toBeVisible()
     await page.getByLabel('Tutup menu').last().click()
 
     // All workspaces remain reachable from the mobile drawer.
-    await page.getByRole('button',{name:'Buka menu',exact:true}).click()
-    await expect(drawer.getByRole('button',{name:'Commerce',exact:true})).toHaveAttribute('aria-expanded','false')
-    await drawer.getByRole('button',{name:'Commerce',exact:true}).click()
-    await expect(drawer.getByRole('link',{name:'Orders',exact:true})).toBeVisible()
-    await drawer.getByRole('link',{name:'Settings',exact:true}).click()
+    await page.getByRole('button', { name: 'Buka menu', exact: true }).click()
+    await expect(drawer.getByRole('button', { name: 'Commerce', exact: true })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    )
+    await drawer.getByRole('button', { name: 'Commerce', exact: true }).click()
+    await expect(drawer.getByRole('link', { name: 'Orders', exact: true })).toBeVisible()
+    await drawer.getByRole('link', { name: 'Settings', exact: true }).click()
     await expect(page.locator('main h1')).toHaveText('Settings')
-    await expect(page.getByRole('navigation',{name:'Settings views'}).getByRole('link',{name:'Audit Log',exact:true})).toBeVisible()
-    await expect(page.getByRole('dialog',{name:'Menu admin',exact:true})).not.toBeVisible()
+    await expect(
+      page
+        .getByRole('navigation', { name: 'Settings views' })
+        .getByRole('link', { name: 'Audit Log', exact: true }),
+    ).toBeVisible()
+    await expect(page.getByRole('dialog', { name: 'Menu admin', exact: true })).not.toBeVisible()
 
     await page.goto('/admin/assessments?program=CPNS&track=SKD')
     await expect(page.locator('main h1')).toHaveText('Assessment')
@@ -251,9 +295,14 @@ const ADMIN_ROUTES: Array<{ path: string; heading: string }> = [
 test.describe('Admin workspace responsive smoke', () => {
   test.setTimeout(300_000)
 
-  for (const viewport of [{ width: 390, height: 844, label: 'mobile' }, { width: 1024, height: 768, label: 'tablet' }]) {
+  for (const viewport of [
+    { width: 390, height: 844, label: 'mobile' },
+    { width: 1024, height: 768, label: 'tablet' },
+  ]) {
     for (const route of ADMIN_ROUTES) {
-      test(`${route.path} tidak overflow di ${viewport.label} ${viewport.width}px`, async ({ page }) => {
+      test(`${route.path} tidak overflow di ${viewport.label} ${viewport.width}px`, async ({
+        page,
+      }) => {
         await page.setViewportSize({ width: viewport.width, height: viewport.height })
         await page.goto(`${route.path}?program=CPNS&track=SKD`)
 
@@ -262,7 +311,9 @@ test.describe('Admin workspace responsive smoke', () => {
         // `Users &amp; Roles` di HTML, dan `toHaveText` membandingkan teks mentah
         // dari DOM alih-alih hasil decode.
         await expect(page.locator('main h1')).toContainText(route.heading)
-        await expect(page.getByText('Halaman ini belum bisa dibuka.', { exact: true })).toHaveCount(0)
+        await expect(page.getByText('Halaman ini belum bisa dibuka.', { exact: true })).toHaveCount(
+          0,
+        )
         await expectNoHorizontalOverflow(page)
 
         // Pengguna yang sudah masuk tidak boleh ditawari tautan masuk lagi.
@@ -275,12 +326,12 @@ test.describe('Admin workspace responsive smoke', () => {
     await page.setViewportSize({ width: 390, height: 844 })
     await page.goto('/admin/settings?program=CPNS&track=SKD')
     await expect(page.locator('main h1')).toHaveText('Settings')
-    await page.getByRole('button', {name: 'Buka menu', exact: true}).click()
-    const drawer = page.getByRole('dialog', {name:'Menu admin', exact:true})
+    await page.getByRole('button', { name: 'Buka menu', exact: true }).click()
+    const drawer = page.getByRole('dialog', { name: 'Menu admin', exact: true })
     await expect(drawer).toBeVisible()
-    await drawer.getByRole('link',{name:'Settings', exact:true}).click()
+    await drawer.getByRole('link', { name: 'Settings', exact: true }).click()
     await expect(drawer).not.toBeVisible()
-    await page.getByRole('link',{name:'Audit Log', exact:true}).click()
+    await page.getByRole('link', { name: 'Audit Log', exact: true }).click()
     await expect(page.locator('main h1')).toHaveText('Audit Log')
     await expectNoHorizontalOverflow(page)
   })
@@ -329,7 +380,7 @@ test.describe('Admin destructive action confirmation', () => {
     await page.goto('/admin/commerce/products?program=CPNS&track=SKD')
     await expect(page.locator('main h1')).toHaveText('Products')
     await expect(page.getByText('Halaman ini belum bisa dibuka.', { exact: true })).toHaveCount(0)
-    await page.locator('summary').filter({hasText:'Lainnya'}).first().click()
+    await page.locator('summary').filter({ hasText: 'Lainnya' }).first().click()
     await expect(page.getByRole('button', { name: 'Arsipkan', exact: true }).first()).toBeVisible()
   })
 })
@@ -343,7 +394,9 @@ test.describe('Admin list pagination and search', () => {
     await expect(page.getByText('Akses tidak tersedia', { exact: true })).toHaveCount(0)
 
     // Daftar menyatakan posisinya alih-alih menampilkan potongan seolah seluruhnya.
-    await expect(page.getByText(/Menampilkan \d+–\d+ dari \d+ soal|Belum ada soal/).first()).toBeVisible()
+    await expect(
+      page.getByText(/Menampilkan \d+–\d+ dari \d+ soal|Belum ada soal/).first(),
+    ).toBeVisible()
 
     // Filter hidup di URL, dan setiap perubahan filter mengembalikan ke halaman 1.
     await page.fill('input[name="q"]', 'TWK')
@@ -355,7 +408,7 @@ test.describe('Admin list pagination and search', () => {
     // Paginasi hanya dirender bila memang ada lebih dari satu halaman — dan bila
     // ada, ia wajib membawa filter yang sedang aktif.
     const next = page.getByRole('link', { name: /Halaman berikutnya/ })
-    if (await next.count() > 0) {
+    if ((await next.count()) > 0) {
       await next.first().click()
       await expect(page).toHaveURL(/[?&]page=2/)
       await expect(page).toHaveURL(/[?&]q=TWK/)
@@ -392,7 +445,9 @@ test.describe('Admin content modules after legacy tree removal', () => {
     // Langkah 1 selalu tampil untuk pemegang content.review; label tombolnya
     // mengikuti keadaan batch (siapkan draft vs sudah disiapkan semua).
     await expect(page.getByRole('heading', { name: 'Langkah 1 · Siapkan & klaim' })).toBeVisible()
-    await expect(page.getByRole('button', { name: /^(Siapkan \d+ soal|Sudah disiapkan)$/ })).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: /^(Siapkan \d+ soal|Sudah disiapkan)$/ }),
+    ).toBeVisible()
     // Panel menjelaskan fungsinya sendiri (bukan sekadar tiga tombol), menyebut
     // posisi tahap, dan menyediakan daftar soal untuk spot-check sebelum
     // memutuskan puluhan soal sekaligus.
@@ -423,7 +478,7 @@ test.describe('Admin content modules after legacy tree removal', () => {
     // satunya harus menautkan ke editor; kalau tidak ada, harus tampil empty state
     // yang jujur — bukan halaman kosong tanpa penjelasan.
     const editLinks = page.getByRole('link', { name: 'Ubah', exact: true })
-    if (await editLinks.count() === 0) {
+    if ((await editLinks.count()) === 0) {
       await expect(page.getByText('Belum ada artikel', { exact: true })).toBeVisible()
     } else {
       await editLinks.first().click()
@@ -444,8 +499,14 @@ test.describe('Admin content modules after legacy tree removal', () => {
     await page.goto('/admin?program=CPNS&track=SKD')
     await expect(page.locator('main h1')).toHaveText('Dashboard')
 
-    await page.getByRole('navigation',{name:'Menu admin'}).getByRole('button',{name:'Content',exact:true}).click()
-    await page.getByRole('navigation',{name:'Menu admin'}).getByRole('link', { name: 'Review', exact: true }).click()
+    await page
+      .getByRole('navigation', { name: 'Menu admin' })
+      .getByRole('button', { name: 'Content', exact: true })
+      .click()
+    await page
+      .getByRole('navigation', { name: 'Menu admin' })
+      .getByRole('link', { name: 'Review', exact: true })
+      .click()
     await expect(page).toHaveURL(/\/admin\/content\/review/)
     await expect(page.locator('main h1')).toHaveText('Review')
 
@@ -478,4 +539,54 @@ test.describe('Admin content modules after legacy tree removal', () => {
       await expect(page, `${path} harus mendarat di dalam /admin`).toHaveURL(/\/admin(\/|\?|$)/)
     }
   })
+})
+
+test('admin confirmation uses safe focus, inert background and bounded mobile layout', async ({
+  page,
+}, testInfo) => {
+  for (const viewport of [
+    { width: 1440, height: 900 },
+    { width: 390, height: 568 },
+  ]) {
+    await page.setViewportSize(viewport)
+    await page.goto('/admin/commerce/products?program=CPNS&track=SKD')
+    await expect(page.locator('html')).toHaveAttribute('data-interaction-guard', 'ready')
+    await page.locator('summary').filter({ hasText: 'Lainnya' }).first().click()
+    const trigger = page.getByRole('button', { name: 'Arsipkan', exact: true }).first()
+    await trigger.click()
+    const dialog = page.getByRole('alertdialog')
+    await expect(dialog).toBeVisible()
+    await expect(dialog.getByRole('button', { name: 'Batal', exact: true })).toBeFocused()
+    expect(await dialog.evaluate((el) => el.tagName)).toBe('DIALOG')
+    if (viewport.width < 768) {
+      for (const button of await dialog.getByRole('button').all()) {
+        expect((await button.boundingBox())!.height).toBeGreaterThanOrEqual(44)
+      }
+    }
+    const description = await dialog.getAttribute('aria-describedby')
+    expect(description).toBeTruthy()
+    expect(await page.locator(`[id="${description}"]`).textContent()).toContain('arsip')
+    await page
+      .getByRole('banner')
+      .locator('select')
+      .first()
+      .evaluate((el) => (el as HTMLSelectElement).focus())
+    await expect(dialog.getByRole('button', { name: 'Batal', exact: true })).toBeFocused()
+    expect(await page.evaluate(() => document.body.style.overflow)).toBe('hidden')
+    for (let i = 0; i < 8; i += 1) {
+      await page.keyboard.press(i % 2 ? 'Shift+Tab' : 'Tab')
+      expect(await dialog.evaluate((el) => el.contains(document.activeElement))).toBe(true)
+    }
+    const bounds = await dialog.boundingBox()
+    expect(bounds!.y).toBeGreaterThanOrEqual(16)
+    expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(viewport.height - 16)
+    // Panel padding is not a backdrop click.
+    await page.mouse.click(bounds!.x + 2, bounds!.y + 2)
+    await expect(dialog).toBeVisible()
+    await page.screenshot({ path: testInfo.outputPath(`admin-confirm-${viewport.width}.png`) })
+    await page.keyboard.press('Escape')
+    await expect(dialog).not.toBeVisible()
+    await expect(trigger).toBeFocused()
+    expect(await page.evaluate(() => document.body.style.overflow)).toBe('')
+  }
 })

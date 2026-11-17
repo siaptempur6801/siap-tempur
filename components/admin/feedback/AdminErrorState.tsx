@@ -6,7 +6,7 @@ import { adminSecondaryButtonClass } from '../AdminUi'
 export function AdminErrorState({
   noun,
   retryHref,
-  action
+  action,
 }: {
   noun: string
   retryHref?: string

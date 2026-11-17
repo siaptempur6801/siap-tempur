@@ -43,96 +43,101 @@ import { logger } from '@/lib/logger'
  */
 
 const REVIEW_STAGES = [
-    { key: 'editorial', label: 'Editorial' },
-    { key: 'academic', label: 'Akademik' },
-    { key: 'technical_qa', label: 'QA Teknis' },
+  { key: 'editorial', label: 'Editorial' },
+  { key: 'academic', label: 'Akademik' },
+  { key: 'technical_qa', label: 'QA Teknis' },
 ] as const
 
 function batchFrom(form: FormData): ReviewBatchCode {
-    const raw = text(form, 'batch')
-    if (!isReviewBatchCode(raw)) {
-        throw new Error('BATCH_CODE_INVALID')
-    }
-    return raw
+  const raw = text(form, 'batch')
+  if (!isReviewBatchCode(raw)) {
+    throw new Error('BATCH_CODE_INVALID')
+  }
+  return raw
 }
 
 function text(form: FormData, key: string) {
-    const value = form.get(key)
-    return typeof value === 'string' ? value.trim() : ''
+  const value = form.get(key)
+  return typeof value === 'string' ? value.trim() : ''
 }
 
 function contextFrom(form: FormData): ProgramTrackContext {
-    return {
-        programCode: (text(form, 'program_code') || 'CPNS').toUpperCase(),
-        trackCode: (text(form, 'track_code') || 'SKD').toUpperCase(),
-    }
+  return {
+    programCode: (text(form, 'program_code') || 'CPNS').toUpperCase(),
+    trackCode: (text(form, 'track_code') || 'SKD').toUpperCase(),
+  }
 }
 
 async function requireAny(permissions: PermissionCode[]) {
-    const authorization = await authorizationService.requireAuthenticated()
-    if (!permissions.some((permission) => authorization.permissions.includes(permission))) {
-        throw new AuthorizationError(`Missing one of permissions: ${permissions.join(', ')}`)
-    }
-    return authorization
+  const authorization = await authorizationService.requireAuthenticated()
+  if (!permissions.some((permission) => authorization.permissions.includes(permission))) {
+    throw new AuthorizationError(`Missing one of permissions: ${permissions.join(', ')}`)
+  }
+  return authorization
 }
 
 function friendlyError(error: unknown) {
-    const message = error instanceof Error ? error.message : 'BATCH_REVIEW_FAILED'
-    const known: Record<string, string> = {
-        BATCH_CODE_INVALID: 'Kode batch tidak dikenal.',
-        BATCH_EMPTY: 'Tidak ada soal di batch ini.',
-        BATCH_TOO_LARGE: 'Batch terlalu besar untuk satu tindakan (maksimal 1.000 soal).',
-        'Keputusan review tidak valid.': 'Keputusan review tidak valid.',
-        'Authentication required': 'Sesi tidak valid. Silakan masuk ulang.',
-        'Content review permission required': 'Akun ini tidak punya permission review.',
-        'Content publish permission required': 'Akun ini tidak punya permission publish.',
-        'Reviewer assignment permission required': 'Akun ini tidak punya permission menugaskan reviewer.',
-        'Author cannot review their own question': 'Anda adalah author soal ini, jadi tidak boleh mereviewnya sendiri.',
-        'Target user is not an active content reviewer': 'Reviewer tujuan tidak aktif atau tanpa permission review.',
-        'Question is not assigned to current reviewer': 'Soal ini tidak ditugaskan kepada Anda. Jalankan "Siapkan & klaim" lebih dulu.',
-        'Question is not in an active review stage': 'Soal tidak berada di tahap review yang aktif.',
-        'No pending assigned review found': 'Tidak ada review pending untuk Anda di tahap ini.',
-        'Only approved questions can be published': 'Hanya soal berstatus approved yang dapat diterbitkan.',
-        'Pending review still exists': 'Masih ada review yang menggantung pada soal ini.',
-        'Invalid review decision': 'Keputusan review tidak valid.',
-        CATATAN_WAJIB: 'Catatan wajib diisi untuk Tolak atau Minta revisi.',
-    }
-    return known[message] || message
+  const message = error instanceof Error ? error.message : 'BATCH_REVIEW_FAILED'
+  const known: Record<string, string> = {
+    BATCH_CODE_INVALID: 'Kode batch tidak dikenal.',
+    BATCH_EMPTY: 'Tidak ada soal di batch ini.',
+    BATCH_TOO_LARGE: 'Batch terlalu besar untuk satu tindakan (maksimal 1.000 soal).',
+    'Keputusan review tidak valid.': 'Keputusan review tidak valid.',
+    'Authentication required': 'Sesi tidak valid. Silakan masuk ulang.',
+    'Content review permission required': 'Akun ini tidak punya permission review.',
+    'Content publish permission required': 'Akun ini tidak punya permission publish.',
+    'Reviewer assignment permission required':
+      'Akun ini tidak punya permission menugaskan reviewer.',
+    'Author cannot review their own question':
+      'Anda adalah author soal ini, jadi tidak boleh mereviewnya sendiri.',
+    'Target user is not an active content reviewer':
+      'Reviewer tujuan tidak aktif atau tanpa permission review.',
+    'Question is not assigned to current reviewer':
+      'Soal ini tidak ditugaskan kepada Anda. Jalankan "Siapkan & klaim" lebih dulu.',
+    'Question is not in an active review stage': 'Soal tidak berada di tahap review yang aktif.',
+    'No pending assigned review found': 'Tidak ada review pending untuk Anda di tahap ini.',
+    'Only approved questions can be published':
+      'Hanya soal berstatus approved yang dapat diterbitkan.',
+    'Pending review still exists': 'Masih ada review yang menggantung pada soal ini.',
+    'Invalid review decision': 'Keputusan review tidak valid.',
+    CATATAN_WAJIB: 'Catatan wajib diisi untuk Tolak atau Minta revisi.',
+  }
+  return known[message] || message
 }
 
 function workspaceUrl(context: ProgramTrackContext, ok?: string | null, error?: unknown) {
-    const params = new URLSearchParams({
-        program: context.programCode,
-        track: context.trackCode,
-    })
-    params.set('bulk', '1')
-    if (ok) params.set('ok', ok)
-    if (error) params.set('error', friendlyError(error))
-    return `/admin/content/review?${params.toString()}`
+  const params = new URLSearchParams({
+    program: context.programCode,
+    track: context.trackCode,
+  })
+  params.set('bulk', '1')
+  if (ok) params.set('ok', ok)
+  if (error) params.set('error', friendlyError(error))
+  return `/admin/content/review?${params.toString()}`
 }
 
 function finish(context: ProgramTrackContext, ok: string, error?: unknown): never {
-    revalidatePath('/admin/content/review')
-    redirect(workspaceUrl(context, error ? null : ok, error))
+  revalidatePath('/admin/content/review')
+  redirect(workspaceUrl(context, error ? null : ok, error))
 }
 
 function countFrom(data: unknown, key: string) {
-    const payload = (data ?? {}) as Record<string, unknown>
-    const value = Number(payload[key] ?? 0)
-    return Number.isFinite(value) ? value : 0
+  const payload = (data ?? {}) as Record<string, unknown>
+  const value = Number(payload[key] ?? 0)
+  return Number.isFinite(value) ? value : 0
 }
 
 type BatchClient = Awaited<ReturnType<typeof createClient>>
 
 /** Soal di batch ini beserta statusnya (dipakai untuk memutuskan langkah aman). */
 async function listBatchQuestions(client: BatchClient, batch: ReviewBatchCode) {
-    const { data, error } = await client
-        .from('questions')
-        .select('id, status')
-        .contains('response_config', { pilotBatch: batch })
-        .limit(500)
-    if (error) throw error
-    return data ?? []
+  const { data, error } = await client
+    .from('questions')
+    .select('id, status')
+    .contains('response_config', { pilotBatch: batch })
+    .limit(500)
+  if (error) throw error
+  return data ?? []
 }
 
 /**
@@ -149,49 +154,51 @@ async function listBatchQuestions(client: BatchClient, batch: ReviewBatchCode) {
  * diulang.
  */
 export async function prepareReviewBatchAction(form: FormData) {
-    const context = contextFrom(form)
-    let failure: unknown = null
-    let submitted = 0
-    let skipped = 0
-    let claimed = 0
+  const context = contextFrom(form)
+  let failure: unknown = null
+  let submitted = 0
+  let skipped = 0
+  let claimed = 0
 
-    try {
-        await validateCsrf()
-        await requireAny([PERMISSIONS.CONTENT_REVIEW, PERMISSIONS.QUESTION_MANAGE])
-        const batch = batchFrom(form)
-        const client = await createClient()
-        const questions = await listBatchQuestions(client, batch)
+  try {
+    await validateCsrf()
+    await requireAny([PERMISSIONS.CONTENT_REVIEW, PERMISSIONS.QUESTION_MANAGE])
+    const batch = batchFrom(form)
+    const client = await createClient()
+    const questions = await listBatchQuestions(client, batch)
 
-        if (questions.length === 0) throw new Error('BATCH_EMPTY')
+    if (questions.length === 0) throw new Error('BATCH_EMPTY')
 
-        // Satu panggilan untuk seluruh batch: dulu satu RPC per soal (N+1) —
-        // 500 soal berarti 500 round-trip sebelum satu pun selesai.
-        const toSubmit = questions.filter((question) => SUBMITTABLE_STATUSES.has(question.status)).map((question) => question.id)
-        skipped = questions.length - toSubmit.length
-        if (toSubmit.length > 0) {
-            const result = await client.rpc('submit_questions_for_review', { p_question_ids: toSubmit })
-            if (result.error) throw new Error(result.error.message)
-            submitted = countFrom(result.data, 'submitted')
-        }
-
-        // Satu panggilan untuk seluruh batch: tugaskan diri sendiri sebagai
-        // reviewer pada semua review pending yang belum punya reviewer.
-        const claim = await client.rpc('claim_pilot_review_stage', { p_batch: batch })
-        if (claim.error) throw new Error(claim.error.message)
-        claimed = countFrom(claim.data, 'claimed_questions')
-    } catch (error) {
-        failure = error
-        logger.warn('[prepareReviewBatchAction] gagal', {
-            error: error instanceof Error ? error.message : String(error),
-        })
+    // Satu panggilan untuk seluruh batch: dulu satu RPC per soal (N+1) —
+    // 500 soal berarti 500 round-trip sebelum satu pun selesai.
+    const toSubmit = questions
+      .filter((question) => SUBMITTABLE_STATUSES.has(question.status))
+      .map((question) => question.id)
+    skipped = questions.length - toSubmit.length
+    if (toSubmit.length > 0) {
+      const result = await client.rpc('submit_questions_for_review', { p_question_ids: toSubmit })
+      if (result.error) throw new Error(result.error.message)
+      submitted = countFrom(result.data, 'submitted')
     }
 
-    if (failure) finish(context, '', failure)
-    finish(
-        context,
-        `${submitted} soal dikirim ke review, ${claimed} soal diklaim untuk Anda. ` +
-            `${skipped} dilewati karena sudah di alur review atau sudah diputuskan.`,
-    )
+    // Satu panggilan untuk seluruh batch: tugaskan diri sendiri sebagai
+    // reviewer pada semua review pending yang belum punya reviewer.
+    const claim = await client.rpc('claim_pilot_review_stage', { p_batch: batch })
+    if (claim.error) throw new Error(claim.error.message)
+    claimed = countFrom(claim.data, 'claimed_questions')
+  } catch (error) {
+    failure = error
+    logger.warn('[prepareReviewBatchAction] gagal', {
+      error: error instanceof Error ? error.message : String(error),
+    })
+  }
+
+  if (failure) finish(context, '', failure)
+  finish(
+    context,
+    `${submitted} soal dikirim ke review, ${claimed} soal diklaim untuk Anda. ` +
+      `${skipped} dilewati karena sudah di alur review atau sudah diputuskan.`,
+  )
 }
 
 /**
@@ -206,54 +213,54 @@ export async function prepareReviewBatchAction(form: FormData) {
  * Setiap klik hanya memutuskan SATU tahap, dan keputusannya Anda yang tentukan.
  */
 export async function reviewReviewBatchStageAction(form: FormData) {
-    const context = contextFrom(form)
-    const decision = text(form, 'decision')
-    const notes = text(form, 'notes') || null
-    const stageLabel = REVIEW_STAGES.find((stage) => stage.key === text(form, 'stage'))?.label
-    let failure: unknown = null
-    let reviewed = 0
-    let claimed = 0
+  const context = contextFrom(form)
+  const decision = text(form, 'decision')
+  const notes = text(form, 'notes') || null
+  const stageLabel = REVIEW_STAGES.find((stage) => stage.key === text(form, 'stage'))?.label
+  let failure: unknown = null
+  let reviewed = 0
+  let claimed = 0
 
-    try {
-        await validateCsrf()
-        await requireAny([PERMISSIONS.CONTENT_REVIEW])
-        const batch = batchFrom(form)
-        if (!['approve', 'revision_required', 'reject'].includes(decision)) {
-            throw new Error('Keputusan review tidak valid.')
-        }
-        // Keputusan destruktif massal wajib beralasan — jejaknya dibaca penulis
-        // dan reviewer tahap berikutnya. Klien sudah mencegahnya; server tetap
-        // memeriksa karena input klien tidak boleh dipercaya.
-        if (decision !== 'approve' && !notes) {
-            throw new Error('CATATAN_WAJIB')
-        }
-
-        const client = await createClient()
-
-        const claim = await client.rpc('claim_pilot_review_stage', { p_batch: batch })
-        if (claim.error) throw new Error(claim.error.message)
-        claimed = countFrom(claim.data, 'claimed_questions')
-
-        const { data, error } = await client.rpc('bulk_review_pilot_stage', {
-            p_batch: batch,
-            p_decision: decision,
-            p_notes: notes,
-        })
-        if (error) throw new Error(error.message)
-        reviewed = countFrom(data, 'reviewed_questions')
-    } catch (error) {
-        failure = error
-        logger.warn('[reviewReviewBatchStageAction] gagal', {
-            error: error instanceof Error ? error.message : String(error),
-        })
+  try {
+    await validateCsrf()
+    await requireAny([PERMISSIONS.CONTENT_REVIEW])
+    const batch = batchFrom(form)
+    if (!['approve', 'revision_required', 'reject'].includes(decision)) {
+      throw new Error('Keputusan review tidak valid.')
+    }
+    // Keputusan destruktif massal wajib beralasan — jejaknya dibaca penulis
+    // dan reviewer tahap berikutnya. Klien sudah mencegahnya; server tetap
+    // memeriksa karena input klien tidak boleh dipercaya.
+    if (decision !== 'approve' && !notes) {
+      throw new Error('CATATAN_WAJIB')
     }
 
-    if (failure) finish(context, '', failure)
-    finish(
-        context,
-        `${reviewed} soal diputuskan${stageLabel ? ` pada tahap ${stageLabel}` : ''}` +
-            `${claimed > 0 ? ` (${claimed} diklaim ulang)` : ''}.`,
-    )
+    const client = await createClient()
+
+    const claim = await client.rpc('claim_pilot_review_stage', { p_batch: batch })
+    if (claim.error) throw new Error(claim.error.message)
+    claimed = countFrom(claim.data, 'claimed_questions')
+
+    const { data, error } = await client.rpc('bulk_review_pilot_stage', {
+      p_batch: batch,
+      p_decision: decision,
+      p_notes: notes,
+    })
+    if (error) throw new Error(error.message)
+    reviewed = countFrom(data, 'reviewed_questions')
+  } catch (error) {
+    failure = error
+    logger.warn('[reviewReviewBatchStageAction] gagal', {
+      error: error instanceof Error ? error.message : String(error),
+    })
+  }
+
+  if (failure) finish(context, '', failure)
+  finish(
+    context,
+    `${reviewed} soal diputuskan${stageLabel ? ` pada tahap ${stageLabel}` : ''}` +
+      `${claimed > 0 ? ` (${claimed} diklaim ulang)` : ''}.`,
+  )
 }
 
 /**
@@ -264,40 +271,42 @@ export async function reviewReviewBatchStageAction(form: FormData) {
  * satu klik, dan setiap kegagalan dilaporkan apa adanya.
  */
 export async function publishReviewBatchAction(form: FormData) {
-    const context = contextFrom(form)
-    let failure: unknown = null
-    let published = 0
-    let notApproved = 0
+  const context = contextFrom(form)
+  let failure: unknown = null
+  let published = 0
+  let notApproved = 0
 
-    try {
-        await validateCsrf()
-        await requireAny([PERMISSIONS.CONTENT_PUBLISH])
-        const batch = batchFrom(form)
-        const client = await createClient()
-        const questions = await listBatchQuestions(client, batch)
+  try {
+    await validateCsrf()
+    await requireAny([PERMISSIONS.CONTENT_PUBLISH])
+    const batch = batchFrom(form)
+    const client = await createClient()
+    const questions = await listBatchQuestions(client, batch)
 
-        if (questions.length === 0) throw new Error('BATCH_EMPTY')
+    if (questions.length === 0) throw new Error('BATCH_EMPTY')
 
-        // Satu panggilan batch; `publish_question` tetap satu-satunya penjaga
-        // aturan (hanya approved, tanpa pending review).
-        const toPublish = questions.filter((question) => question.status === 'approved').map((question) => question.id)
-        notApproved = questions.length - toPublish.length
-        if (toPublish.length > 0) {
-            const result = await client.rpc('publish_questions', { p_question_ids: toPublish })
-            if (result.error) throw new Error(result.error.message)
-            published = countFrom(result.data, 'published')
-        }
-    } catch (error) {
-        failure = error
-        logger.warn('[publishReviewBatchAction] gagal', {
-            error: error instanceof Error ? error.message : String(error),
-        })
+    // Satu panggilan batch; `publish_question` tetap satu-satunya penjaga
+    // aturan (hanya approved, tanpa pending review).
+    const toPublish = questions
+      .filter((question) => question.status === 'approved')
+      .map((question) => question.id)
+    notApproved = questions.length - toPublish.length
+    if (toPublish.length > 0) {
+      const result = await client.rpc('publish_questions', { p_question_ids: toPublish })
+      if (result.error) throw new Error(result.error.message)
+      published = countFrom(result.data, 'published')
     }
+  } catch (error) {
+    failure = error
+    logger.warn('[publishReviewBatchAction] gagal', {
+      error: error instanceof Error ? error.message : String(error),
+    })
+  }
 
-    if (failure) finish(context, '', failure)
-    finish(
-        context,
-        `${published} soal diterbitkan` +
-            `${notApproved > 0 ? `, ${notApproved} belum berstatus approved sehingga dilewati` : ''}.`,
-    )
+  if (failure) finish(context, '', failure)
+  finish(
+    context,
+    `${published} soal diterbitkan` +
+      `${notApproved > 0 ? `, ${notApproved} belum berstatus approved sehingga dilewati` : ''}.`,
+  )
 }

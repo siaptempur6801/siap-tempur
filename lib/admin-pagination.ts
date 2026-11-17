@@ -34,34 +34,34 @@ export const ADMIN_MAX_PAGE = 10_000
 
 /** Nomor halaman dari query string, selalu ≥1 dan tidak melewati batas. */
 export function parseAdminPage(value: string | string[] | undefined): number {
-    const raw = Array.isArray(value) ? value[0] : value
-    const parsed = Number.parseInt(String(raw ?? ''), 10)
-    if (!Number.isFinite(parsed) || parsed < 1) return 1
-    return Math.min(parsed, ADMIN_MAX_PAGE)
+  const raw = Array.isArray(value) ? value[0] : value
+  const parsed = Number.parseInt(String(raw ?? ''), 10)
+  if (!Number.isFinite(parsed) || parsed < 1) return 1
+  return Math.min(parsed, ADMIN_MAX_PAGE)
 }
 
 /** Offset database untuk halaman ke-`page`. */
 export function adminOffset(page: number, pageSize = ADMIN_PAGE_SIZE): number {
-    return (Math.max(1, page) - 1) * pageSize
+  return (Math.max(1, page) - 1) * pageSize
 }
 
 export function adminTotalPages(total: number, pageSize = ADMIN_PAGE_SIZE): number {
-    if (!Number.isFinite(total) || total <= 0) return 1
-    return Math.max(1, Math.ceil(total / pageSize))
+  if (!Number.isFinite(total) || total <= 0) return 1
+  return Math.max(1, Math.ceil(total / pageSize))
 }
 
 export type AdminPageSummary = {
-    /** Jumlah baris yang benar-benar ditampilkan di halaman ini. */
-    shown: number
-    /** Indeks baris pertama pada halaman ini (1-based); 0 bila tidak ada baris. */
-    from: number
-    /** Indeks baris terakhir pada halaman ini (1-based); 0 bila tidak ada baris. */
-    to: number
-    total: number
-    page: number
-    totalPages: number
-    /** Benar bila masih ada baris yang belum ditampilkan. */
-    capped: boolean
+  /** Jumlah baris yang benar-benar ditampilkan di halaman ini. */
+  shown: number
+  /** Indeks baris pertama pada halaman ini (1-based); 0 bila tidak ada baris. */
+  from: number
+  /** Indeks baris terakhir pada halaman ini (1-based); 0 bila tidak ada baris. */
+  to: number
+  total: number
+  page: number
+  totalPages: number
+  /** Benar bila masih ada baris yang belum ditampilkan. */
+  capped: boolean
 }
 
 /**
@@ -70,21 +70,30 @@ export type AdminPageSummary = {
  * `capped` yang membedakan "ini memang seluruh datanya" dari "ini baru
  * sepotong" — pembeda yang sebelumnya tidak ada di UI mana pun.
  */
-export function adminPageSummary(page: number, shown: number, total: number, pageSize = ADMIN_PAGE_SIZE): AdminPageSummary {
-    const totalPages = adminTotalPages(total, pageSize)
-    const from = shown === 0 ? 0 : adminOffset(page, pageSize) + 1
-    const to = shown === 0 ? 0 : from + shown - 1
-    return { shown, from, to, total, page, totalPages, capped: total > to }
+export function adminPageSummary(
+  page: number,
+  shown: number,
+  total: number,
+  pageSize = ADMIN_PAGE_SIZE,
+): AdminPageSummary {
+  const totalPages = adminTotalPages(total, pageSize)
+  const from = shown === 0 ? 0 : adminOffset(page, pageSize) + 1
+  const to = shown === 0 ? 0 : from + shown - 1
+  return { shown, from, to, total, page, totalPages, capped: total > to }
 }
 
 /** Kalimat status daftar, dipakai sebagai deskripsi section. */
-export function adminPageSummaryLabel(summary: AdminPageSummary, noun: string, plural = noun): string {
-    const word = (count: number) => (count === 1 ? noun : plural)
-    if (summary.total === 0) return `Belum ada ${noun}.`
-    if (summary.shown === 0) return `Tidak ada ${noun} pada halaman ${summary.page}.`
-    const range = `Menampilkan ${summary.from}–${summary.to} dari ${summary.total} ${word(summary.total)}.`
-    if (!summary.capped) return range
-    return `${range} Halaman ${summary.page} dari ${summary.totalPages}.`
+export function adminPageSummaryLabel(
+  summary: AdminPageSummary,
+  noun: string,
+  plural = noun,
+): string {
+  const word = (count: number) => (count === 1 ? noun : plural)
+  if (summary.total === 0) return `Belum ada ${noun}.`
+  if (summary.shown === 0) return `Tidak ada ${noun} pada halaman ${summary.page}.`
+  const range = `Menampilkan ${summary.from}–${summary.to} dari ${summary.total} ${word(summary.total)}.`
+  if (!summary.capped) return range
+  return `${range} Halaman ${summary.page} dari ${summary.totalPages}.`
 }
 
 /**
@@ -94,17 +103,17 @@ export function adminPageSummaryLabel(summary: AdminPageSummary, noun: string, p
  * terakhir agar tidak bisa tertimpa filter.
  */
 export function adminPageHref(
-    pathname: string,
-    current: Record<string, string | undefined>,
-    page: number,
+  pathname: string,
+  current: Record<string, string | undefined>,
+  page: number,
 ): string {
-    const query = new URLSearchParams()
-    for (const [key, value] of Object.entries(current)) {
-        if (key === 'page') continue
-        if (value === undefined || value === '') continue
-        query.set(key, value)
-    }
-    if (page > 1) query.set('page', String(page))
-    const search = query.toString()
-    return search ? `${pathname}?${search}` : pathname
+  const query = new URLSearchParams()
+  for (const [key, value] of Object.entries(current)) {
+    if (key === 'page') continue
+    if (value === undefined || value === '') continue
+    query.set(key, value)
+  }
+  if (page > 1) query.set('page', String(page))
+  const search = query.toString()
+  return search ? `${pathname}?${search}` : pathname
 }

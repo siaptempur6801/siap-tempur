@@ -1,0 +1,86 @@
+import { expect, type Page, type TestInfo } from '@playwright/test'
+
+/** UI validation never sends a password change or account deletion to the server. */
+export async function verifyProfileSettingsDialogs(page: Page, path: string, testInfo: TestInfo) {
+  await page.setViewportSize({ width: 390, height: 568 })
+  const mutations: string[] = []
+  page.on('request', (request) => {
+    if (request.method() === 'POST' && request.headers()['next-action'])
+      mutations.push(request.url())
+  })
+  await page.goto(path)
+  await expect(page.locator('html')).toHaveAttribute('data-interaction-guard', 'ready')
+  const trigger = page.getByRole('button', { name: /^Ubah kata sandi/ })
+  await trigger.click()
+  const passwordDialog = page.getByRole('dialog', { name: 'Ubah kata sandi', exact: true })
+  await expect(passwordDialog).toBeVisible()
+  await expect(passwordDialog.getByRole('button', { name: 'Tutup', exact: true })).toBeFocused()
+  expect(
+    (await passwordDialog.getByRole('button', { name: 'Tutup', exact: true }).boundingBox())!
+      .height,
+  ).toBeGreaterThanOrEqual(44)
+  const bounds = await passwordDialog.boundingBox()
+  expect(bounds!.y).toBeGreaterThanOrEqual(16)
+  expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(552)
+  await passwordDialog.getByRole('button', { name: 'Simpan kata sandi', exact: true }).click()
+  for (const label of ['Kata sandi saat ini', 'Kata sandi baru', 'Konfirmasi kata sandi baru']) {
+    const field = passwordDialog.getByLabel(label, { exact: true })
+    await expect(field).toHaveAttribute('aria-invalid', 'true')
+    const errorId = await field.getAttribute('aria-describedby')
+    expect(errorId).toBeTruthy()
+    await expect(page.locator(`[id="${errorId}"]`)).toHaveAttribute('role', 'alert')
+  }
+  await expect(passwordDialog.getByLabel('Kata sandi saat ini', { exact: true })).toBeFocused()
+  await expect(page.locator('[data-sonner-toast][data-type="error"]')).toHaveCount(0)
+  await page.screenshot({ path: testInfo.outputPath('profile-password-errors-mobile.png') })
+  await page.keyboard.press('Escape')
+  await expect(passwordDialog).not.toBeVisible()
+  await expect(trigger).toBeFocused()
+  await trigger.click()
+  await passwordDialog.getByLabel('Kata sandi saat ini', { exact: true }).fill('ui-validation-only')
+  await passwordDialog.getByLabel('Kata sandi baru', { exact: true }).fill('UiValidation123')
+  const confirmation = passwordDialog.getByLabel('Konfirmasi kata sandi baru', { exact: true })
+  await confirmation.fill('Mismatch123')
+  await confirmation.press('Enter')
+  await expect(
+    passwordDialog.getByText('Konfirmasi kata sandi baru belum sama.', { exact: true }),
+  ).toBeVisible()
+  await expect(confirmation).toHaveAttribute('aria-invalid', 'true')
+  await expect(confirmation).toBeFocused()
+  await expect(page.locator('[data-sonner-toast][data-type="error"]')).toHaveCount(0)
+  await page.keyboard.press('Escape')
+  await expect(passwordDialog).not.toBeVisible()
+  await trigger.click()
+  await expect(passwordDialog.getByLabel('Kata sandi saat ini', { exact: true })).toHaveValue('')
+  await expect(passwordDialog.getByLabel('Kata sandi saat ini', { exact: true })).toHaveAttribute(
+    'aria-invalid',
+    'false',
+  )
+  await passwordDialog.getByRole('button', { name: 'Batal', exact: true }).click()
+
+  const deleteTrigger = page.getByRole('button', { name: /^Hapus akun/ }).first()
+  const deleteDialog = page.getByRole('alertdialog', { name: 'Hapus akun?', exact: true })
+  await deleteTrigger.click()
+  await expect(deleteDialog).toBeVisible()
+  expect(await deleteDialog.getAttribute('aria-describedby')).toBeTruthy()
+  await deleteDialog.getByRole('textbox').fill('HAPUS')
+  await expect(
+    deleteDialog.getByRole('button', { name: 'Hapus akun permanen', exact: true }),
+  ).toBeEnabled()
+  await page.keyboard.press('Escape')
+  await expect(deleteDialog).not.toBeVisible()
+  await expect(deleteTrigger).toBeFocused()
+  await deleteTrigger.click()
+  await expect(deleteDialog.getByRole('textbox')).toHaveValue('')
+  await expect(
+    deleteDialog.getByRole('button', { name: 'Hapus akun permanen', exact: true }),
+  ).toBeDisabled()
+  // Disabled controls are excluded from the shared Tab cycle.
+  await deleteDialog.getByRole('button', { name: 'Batal', exact: true }).focus()
+  await page.keyboard.press('Tab')
+  await expect(deleteDialog.getByRole('textbox')).toBeFocused()
+  await page.mouse.click(2, 2)
+  await expect(deleteDialog).not.toBeVisible()
+  await expect(deleteTrigger).toBeFocused()
+  expect(mutations).toEqual([])
+}

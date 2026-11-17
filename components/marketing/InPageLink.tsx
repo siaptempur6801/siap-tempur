@@ -16,39 +16,39 @@ import Link from 'next/link'
  * berperilaku bawaan, dan tautan non-anchor tetap memakai `next/link` seperti biasa.
  */
 export default function InPageLink({
-    href,
-    children,
-    onClick,
-    ...rest
+  href,
+  children,
+  onClick,
+  ...rest
 }: { href: string; children: ReactNode } & AnchorHTMLAttributes<HTMLAnchorElement>) {
-    const targetId = href.startsWith('#') && href.length > 1 ? href.slice(1) : null
+  const targetId = href.startsWith('#') && href.length > 1 ? href.slice(1) : null
 
-    if (!targetId) {
-        return (
-            <Link href={href} onClick={onClick as never} {...rest}>
-                {children}
-            </Link>
-        )
-    }
-
-    const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
-        onClick?.(event)
-        if (event.defaultPrevented) return
-        // Biarkan browser menangani klik dengan modifier (buka tab baru, salin tautan, dsb.).
-        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
-
-        const target = document.getElementById(targetId)
-        if (!target) return
-
-        event.preventDefault()
-        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-        target.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' })
-        window.history.replaceState(null, '', href)
-    }
-
+  if (!targetId) {
     return (
-        <a href={href} onClick={handleClick} {...rest}>
-            {children}
-        </a>
+      <Link href={href} onClick={onClick as never} {...rest}>
+        {children}
+      </Link>
     )
+  }
+
+  const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    onClick?.(event)
+    if (event.defaultPrevented) return
+    // Biarkan browser menangani klik dengan modifier (buka tab baru, salin tautan, dsb.).
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+
+    const target = document.getElementById(targetId)
+    if (!target) return
+
+    event.preventDefault()
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    target.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' })
+    window.history.replaceState(null, '', href)
+  }
+
+  return (
+    <a href={href} onClick={handleClick} {...rest}>
+      {children}
+    </a>
+  )
 }

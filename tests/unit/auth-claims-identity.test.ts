@@ -23,77 +23,87 @@ const getClaims = vi.fn()
 const getUser = vi.fn()
 
 vi.mock('@supabase/ssr', () => ({
-    createServerClient: () => ({ auth: { getClaims, getUser } }),
+  createServerClient: () => ({ auth: { getClaims, getUser } }),
 }))
 
 vi.mock('next/headers', () => ({
-    cookies: async () => ({
-        getAll: () => [{ name: 'sb-lpgrivowdcepcxradavu-auth-token', value: 'jwt' }],
-        set: () => undefined,
-    }),
+  cookies: async () => ({
+    getAll: () => [{ name: 'sb-lpgrivowdcepcxradavu-auth-token', value: 'jwt' }],
+    set: () => undefined,
+  }),
 }))
 
 vi.mock('@/lib/env', () => ({
-    env: {
-        supabaseUrl: () => 'https://staging.example.supabase.co',
-        supabaseAnonKey: () => 'anon-key',
-    },
+  env: {
+    supabaseUrl: () => 'https://staging.example.supabase.co',
+    supabaseAnonKey: () => 'anon-key',
+  },
 }))
 
 beforeEach(() => {
-    getClaims.mockReset()
-    getUser.mockReset()
+  getClaims.mockReset()
+  getUser.mockReset()
 })
 
 async function load() {
-    const mod = await import('@/lib/utils/supabase/server')
-    return mod.getAuthUserIdVerified
+  const mod = await import('@/lib/utils/supabase/server')
+  return mod.getAuthUserIdVerified
 }
 
 describe('getAuthUserIdVerified', () => {
-    it('mengembalikan sub dari klaim yang terverifikasi', async () => {
-        getClaims.mockResolvedValue({
-            data: { claims: { sub: 'user-123', role: 'authenticated' }, header: {}, signature: new Uint8Array() },
-            error: null,
-        })
-
-        const getAuthUserIdVerified = await load()
-        await expect(getAuthUserIdVerified()).resolves.toBe('user-123')
+  it('mengembalikan sub dari klaim yang terverifikasi', async () => {
+    getClaims.mockResolvedValue({
+      data: {
+        claims: { sub: 'user-123', role: 'authenticated' },
+        header: {},
+        signature: new Uint8Array(),
+      },
+      error: null,
     })
 
-    it('TIDAK memanggil getUser — inti optimasinya', async () => {
-        getClaims.mockResolvedValue({
-            data: { claims: { sub: 'user-123' }, header: {}, signature: new Uint8Array() },
-            error: null,
-        })
+    const getAuthUserIdVerified = await load()
+    await expect(getAuthUserIdVerified()).resolves.toBe('user-123')
+  })
 
-        const getAuthUserIdVerified = await load()
-        await getAuthUserIdVerified()
-
-        expect(getClaims).toHaveBeenCalled()
-        expect(getUser).not.toHaveBeenCalled()
+  it('TIDAK memanggil getUser — inti optimasinya', async () => {
+    getClaims.mockResolvedValue({
+      data: { claims: { sub: 'user-123' }, header: {}, signature: new Uint8Array() },
+      error: null,
     })
 
-    it('mengembalikan null saat tidak ada sesi', async () => {
-        getClaims.mockResolvedValue({ data: null, error: null })
+    const getAuthUserIdVerified = await load()
+    await getAuthUserIdVerified()
 
-        const getAuthUserIdVerified = await load()
-        await expect(getAuthUserIdVerified()).resolves.toBeNull()
+    expect(getClaims).toHaveBeenCalled()
+    expect(getUser).not.toHaveBeenCalled()
+  })
+
+  it('mengembalikan null saat tidak ada sesi', async () => {
+    getClaims.mockResolvedValue({ data: null, error: null })
+
+    const getAuthUserIdVerified = await load()
+    await expect(getAuthUserIdVerified()).resolves.toBeNull()
+  })
+
+  it('mengembalikan null saat klaim tidak sah (tanda tangan/exp gagal)', async () => {
+    getClaims.mockResolvedValue({
+      data: null,
+      error: { name: 'AuthInvalidJwtError', message: 'Invalid JWT signature' },
     })
 
-    it('mengembalikan null saat klaim tidak sah (tanda tangan/exp gagal)', async () => {
-        getClaims.mockResolvedValue({ data: null, error: { name: 'AuthInvalidJwtError', message: 'Invalid JWT signature' } })
+    const getAuthUserIdVerified = await load()
+    await expect(getAuthUserIdVerified()).resolves.toBeNull()
+  })
 
-        const getAuthUserIdVerified = await load()
-        await expect(getAuthUserIdVerified()).resolves.toBeNull()
-    })
+  it('mengembalikan null bila sub hilang atau bukan string', async () => {
+    const getAuthUserIdVerified = await load()
 
-    it('mengembalikan null bila sub hilang atau bukan string', async () => {
-        const getAuthUserIdVerified = await load()
-
-        for (const claims of [{}, { sub: 123 }, { sub: '' }, { sub: null }]) {
-            getClaims.mockResolvedValue({ data: { claims, header: {}, signature: new Uint8Array() }, error: null })
-            await expect(getAuthUserIdVerified()).resolves.toBeNull()
-        }
-    })
+    for (const claims of [{}, { sub: 123 }, { sub: '' }, { sub: null }]) {
+      getClaims.mockResolvedValue({
+        data: { claims, header: {}, signature: new Uint8Array() },
+        error: null,
+      })
+      await expect(getAuthUserIdVerified()).resolves.toBeNull()
+    }
+  })
 })

@@ -13,119 +13,177 @@
 --      diri; manager/assigner tetap boleh memindahkannya.
 --
 -- `claim_pilot_review_stage` (klaim massal) sudah self-only dan tidak berubah.
-begin;
-
-insert into public.permissions(code, name, description)
-select 'content.assign', 'Assign Reviewer', 'Menugaskan atau memindahkan reviewer konten'
-where not exists (select 1 from public.permissions where code='content.assign');
-
-insert into public.role_permissions(role_id, permission_id)
-select r.id, p.id
-from public.roles r
-join public.permissions p on p.code='content.assign'
-where r.code in ('ADMIN','SUPER_ADMIN')
-  and not exists (
-    select 1 from public.role_permissions rp
-    where rp.role_id=r.id and rp.permission_id=p.id
-  );
-
-create or replace function app_private.assign_question_reviewer(p_question_id uuid, p_reviewer_id uuid)
- returns jsonb
- language plpgsql
- security definer
- set search_path to ''
-as $function$
-declare
-  v_actor uuid := auth.uid();
+BEGIN;
+INSERT INTO public.permissions (code, name, description)
+SELECT
+  'content.assign',
+  'Assign Reviewer',
+  'Menugaskan atau memindahkan reviewer konten'
+WHERE
+  NOT EXISTS (
+    SELECT
+      1
+    FROM
+      public.permissions
+    WHERE
+      code = 'content.assign');
+INSERT INTO public.role_permissions (role_id, permission_id)
+SELECT
+  r.id,
+  p.id
+FROM
+  public.roles r
+  JOIN public.permissions p ON p.code = 'content.assign'
+WHERE
+  r.code IN ('ADMIN', 'SUPER_ADMIN')
+  AND NOT EXISTS (
+    SELECT
+      1
+    FROM
+      public.role_permissions rp
+    WHERE
+      rp.role_id = r.id
+      AND rp.permission_id = p.id);
+CREATE OR REPLACE FUNCTION app_private.assign_question_reviewer (p_question_id uuid, p_reviewer_id uuid)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+DECLARE
+  v_actor uuid := auth.uid ();
   v_q public.questions%rowtype;
   v_stage text;
   v_review public.content_reviews%rowtype;
   v_reviewer_ok boolean;
   v_can_assign_others boolean;
-begin
-  if v_actor is null then raise exception 'Authentication required'; end if;
-  if not app_private.current_user_has_permission('content.review')
-     and not app_private.current_user_has_permission('question.manage')
-     and not app_private.current_user_has_permission('content.assign') then
-    raise exception 'Reviewer assignment permission required';
-  end if;
+BEGIN
+  IF v_actor IS NULL THEN
+    RAISE EXCEPTION 'Authentication required';
+  END IF;
+  IF NOT app_private.current_user_has_permission ('content.review') AND NOT app_private.current_user_has_permission ('question.manage') AND NOT app_private.current_user_has_permission ('content.assign') THEN
+    RAISE EXCEPTION 'Reviewer assignment permission required';
+  END IF;
 
-  select * into v_q from public.questions where id=p_question_id for update;
-  if not found then raise exception 'Question not found'; end if;
+  SELECT
+    *
+  INTO
+    v_q
+  FROM
+    public.questions
+  WHERE
+    id = p_question_id
+  FOR UPDATE;
+  IF NOT found THEN
+    RAISE EXCEPTION 'Question not found';
+  END IF;
 
-  if p_reviewer_id = v_q.author_id then
-    raise exception 'Author cannot review their own question';
-  end if;
+  IF p_reviewer_id = v_q.author_id THEN
+    RAISE EXCEPTION 'Author cannot review their own question';
+  END IF;
 
-  v_can_assign_others := app_private.current_user_has_permission('content.assign')
-    or app_private.current_user_has_permission('question.manage');
-
+  v_can_assign_others := app_private.current_user_has_permission ('content.assign')
+    OR app_private.current_user_has_permission ('question.manage');
   -- Menugaskan ke ORANG LAIN adalah aksi manajerial.
-  if p_reviewer_id is distinct from v_actor and not v_can_assign_others then
-    raise exception 'Reviewer assignment permission required';
-  end if;
+  IF p_reviewer_id IS DISTINCT FROM v_actor AND NOT v_can_assign_others THEN
+    RAISE EXCEPTION 'Reviewer assignment permission required';
+  END IF;
 
-  select exists(
-    select 1
-    from public.profiles pr
-    where pr.id=p_reviewer_id and pr.status='active'
-  ) and exists(
-    select 1
-    from public.user_roles ur
-    join public.role_permissions rp on rp.role_id=ur.role_id
-    join public.permissions pe on pe.id=rp.permission_id
-    where ur.user_id=p_reviewer_id and pe.code='content.review'
-  ) into v_reviewer_ok;
+  SELECT
+    EXISTS (
+      SELECT
+        1
+      FROM
+        public.profiles pr
+      WHERE
+        pr.id = p_reviewer_id
+        AND pr.status = 'active')
+    AND EXISTS (
+      SELECT
+        1
+      FROM
+        public.user_roles ur
+        JOIN public.role_permissions rp ON rp.role_id = ur.role_id
+        JOIN public.permissions pe ON pe.id = rp.permission_id
+      WHERE
+        ur.user_id = p_reviewer_id
+        AND pe.code = 'content.review')
+  INTO
+    v_reviewer_ok;
 
-  if not v_reviewer_ok then
-    raise exception 'Target user is not an active content reviewer';
-  end if;
+  IF NOT v_reviewer_ok THEN
+    RAISE EXCEPTION 'Target user is not an active content reviewer';
+  END IF;
 
-  v_stage := case v_q.status
-    when 'submitted' then 'editorial'
-    when 'editorial_review' then 'editorial'
-    when 'academic_review' then 'academic'
-    when 'technical_qa' then 'technical_qa'
-    else null end;
+  v_stage := CASE v_q.status
+  WHEN 'submitted' THEN
+    'editorial'
+  WHEN 'editorial_review' THEN
+    'editorial'
+  WHEN 'academic_review' THEN
+    'academic'
+  WHEN 'technical_qa' THEN
+    'technical_qa'
+  ELSE
+    NULL
+  END;
 
-  if v_stage is null then
-    raise exception 'Question cannot receive reviewer in status %', v_q.status;
-  end if;
+  IF v_stage IS NULL THEN
+    RAISE EXCEPTION 'Question cannot receive reviewer in status %', v_q.status;
+  END IF;
 
-  select * into v_review
-  from public.content_reviews
-  where entity_type='question' and entity_id=p_question_id
-    and review_stage=v_stage and status='pending'
-  order by review_round desc, created_at desc
-  limit 1
-  for update;
+  SELECT
+    *
+  INTO
+    v_review
+  FROM
+    public.content_reviews
+  WHERE
+    entity_type = 'question'
+    AND entity_id = p_question_id
+    AND review_stage = v_stage
+    AND status = 'pending'
+  ORDER BY
+    review_round DESC,
+    created_at DESC
+  LIMIT 1
+  FOR UPDATE;
 
-  if v_review.id is null then
-    raise exception 'No pending % review found', v_stage;
-  end if;
-
+  IF v_review.id IS NULL THEN
+    RAISE EXCEPTION 'No pending % review found', v_stage;
+  END IF;
   -- Klaim diri tidak boleh merebut review yang sudah dipegang reviewer lain.
-  if p_reviewer_id = v_actor
-     and v_review.reviewer_id is not null
-     and v_review.reviewer_id is distinct from v_actor
-     and not v_can_assign_others then
-    raise exception 'Review is already assigned to another reviewer';
-  end if;
+  IF p_reviewer_id = v_actor AND v_review.reviewer_id IS NOT NULL AND v_review.reviewer_id IS DISTINCT FROM v_actor AND NOT v_can_assign_others THEN
+    RAISE EXCEPTION 'Review is already assigned to another reviewer';
+  END IF;
 
-  update public.content_reviews
-     set reviewer_id=p_reviewer_id, assigned_at=now(), updated_at=now()
-   where id=v_review.id;
+  UPDATE
+    public.content_reviews
+  SET
+    reviewer_id = p_reviewer_id,
+    assigned_at = now(),
+    updated_at = now()
+  WHERE
+    id = v_review.id;
 
-  perform set_config('app.workflow_action', 'assign_reviewer', true);
-  update public.questions
-     set reviewer_id=p_reviewer_id,
-         status=case when status='submitted' then 'editorial_review' else status end,
-         updated_at=now()
-   where id=p_question_id;
+  PERFORM
+    set_config('app.workflow_action', 'assign_reviewer', TRUE);
+  UPDATE
+    public.questions
+  SET
+    reviewer_id = p_reviewer_id,
+    status = CASE WHEN status = 'submitted' THEN
+      'editorial_review'
+    ELSE
+      status
+    END,
+    updated_at = now()
+  WHERE
+    id = p_question_id;
 
-  return jsonb_build_object('question_id',p_question_id,'review_stage',v_stage,'review_round',v_review.review_round,'reviewer_id',p_reviewer_id);
-end;
+  RETURN jsonb_build_object('question_id', p_question_id, 'review_stage', v_stage, 'review_round', v_review.review_round, 'reviewer_id', p_reviewer_id);
+END;
 $function$;
-
-notify pgrst,'reload schema';
-commit;
+NOTIFY pgrst,
+'reload schema';
+COMMIT;

@@ -1,53 +1,69 @@
 -- Ensure Tryout Akbar event questions receive a global 1..N order.
 -- The previous generator used the blueprint/category sort_order for every
 -- question in that category, so multiple questions could show the same number.
-
-create or replace function public.generate_tryout_event_questions(p_event_id uuid)
-returns int
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
+CREATE OR REPLACE FUNCTION public.generate_tryout_event_questions (p_event_id uuid)
+  RETURNS int
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path = public
+  AS $$
+DECLARE
   inserted_count int;
-begin
-  if p_event_id is null then
-    raise exception 'Event ID wajib diisi';
-  end if;
+BEGIN
+  IF p_event_id IS NULL THEN
+    RAISE EXCEPTION 'Event ID wajib diisi';
+  END IF;
 
-  if not exists (select 1 from public.tryout_events where id = p_event_id) then
-    raise exception 'Event tidak ditemukan';
-  end if;
+  IF NOT EXISTS (
+    SELECT
+      1
+    FROM
+      public.tryout_events
+    WHERE
+      id = p_event_id) THEN
+  RAISE EXCEPTION 'Event tidak ditemukan';
+END IF;
 
-  delete from public.tryout_event_questions where event_id = p_event_id;
+  DELETE FROM public.tryout_event_questions
+  WHERE event_id = p_event_id;
 
-  with selected_questions as (
-    select
-      q.id as question_id,
-      tc.sort_order as category_order,
-      random() as question_order
-    from public.tryout_configurations tc
-    cross join lateral (
-      select q_inner.id
-      from public.questions q_inner
-      where q_inner.type = tc.type::question_type
-        and q_inner.sub_category = tc.sub_category
-      order by random()
-      limit tc.question_count
-    ) q
-    where tc.is_active = true
-  ),
-  ordered_questions as (
-    select
-      question_id,
-      row_number() over (order by category_order, question_order)::int as sort_order
-    from selected_questions
-  )
-  insert into public.tryout_event_questions (event_id, question_id, sort_order)
-  select p_event_id, question_id, sort_order
-  from ordered_questions;
+  WITH selected_questions AS (
+    SELECT
+      q.id AS question_id,
+      tc.sort_order AS category_order,
+      random() AS question_order
+    FROM
+      public.tryout_configurations tc
+    CROSS JOIN LATERAL (
+      SELECT
+        q_inner.id
+      FROM
+        public.questions q_inner
+      WHERE
+        q_inner.type = tc.type::question_type
+        AND q_inner.sub_category = tc.sub_category
+      ORDER BY
+        random()
+      LIMIT tc.question_count) q
+  WHERE
+    tc.is_active = TRUE
+),
+ordered_questions AS (
+  SELECT
+    question_id,
+    row_number() OVER (ORDER BY category_order,
+      question_order)::int AS sort_order
+  FROM
+    selected_questions)
+INSERT INTO public.tryout_event_questions (event_id, question_id, sort_order)
+SELECT
+  p_event_id,
+  question_id,
+  sort_order
+FROM
+  ordered_questions;
 
   get diagnostics inserted_count = row_count;
-  return inserted_count;
-end;
+  RETURN inserted_count;
+END;
 $$;

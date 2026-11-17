@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '@playwright/test'
 
 test.describe('Dashboard Flow', () => {
   // Dalam pengujian nyata, kita menggunakan global setup untuk melewati login screen (menyimpan cookies session)
@@ -6,23 +6,23 @@ test.describe('Dashboard Flow', () => {
 
   test.beforeEach(async ({ page }) => {
     // Kita arahkan ke dashboard
-    await page.goto('/cpns/dashboard');
-  });
+    await page.goto('/cpns/dashboard')
+  })
 
   test('menampilkan profil dan statistik ujian', async ({ page }) => {
     // Dashboard siap dirender dengan data user.
-    await expect(page.getByTestId('cpns-dashboard-ready')).toBeVisible();
+    await expect(page.getByTestId('cpns-dashboard-ready')).toBeVisible()
 
     // Locator berbasis href, bukan label: label navigasi berubah ("Riwayat" -> "Hasil")
     // dan sebelumnya membuat test ini gagal padahal produknya benar.
-    await expect(page.locator('a[href="/cpns/dashboard/profile"]').first()).toBeVisible();
-    await expect(page.locator('a[href="/cpns/dashboard/tryout"]').first()).toBeVisible();
-    await expect(page.locator('a[href="/cpns/dashboard/riwayat"]').first()).toBeVisible();
-  });
+    await expect(page.locator('a[href="/cpns/dashboard/profile"]').first()).toBeVisible()
+    await expect(page.locator('a[href="/cpns/dashboard/tryout"]').first()).toBeVisible()
+    await expect(page.locator('a[href="/cpns/dashboard/riwayat"]').first()).toBeVisible()
+  })
 
   test('alur Beli Paket memuat paket yang tersedia', async ({ page }) => {
-    await page.goto('/cpns/dashboard/beli-paket');
-    await expect(page.getByRole('heading', { name: /Beli Paket/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Pilih|Ambil/i }).first()).toBeVisible();
-  });
-});
+    await page.goto('/cpns/dashboard/beli-paket')
+    await expect(page.getByRole('heading', { name: /Beli Paket/i })).toBeVisible()
+    await expect(page.getByRole('button', { name: /Pilih|Ambil/i }).first()).toBeVisible()
+  })
+})

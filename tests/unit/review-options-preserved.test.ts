@@ -10,17 +10,19 @@ import { describe, expect, it } from 'vitest'
  */
 const repoRoot = resolve(__dirname, '../..')
 function source(relativePath: string) {
-    return readFileSync(resolve(repoRoot, relativePath), 'utf8')
+  return readFileSync(resolve(repoRoot, relativePath), 'utf8')
 }
 
 describe('form edit Review mempertahankan opsi tersimpan', () => {
-    it('ReviewQuestionFields meneruskan defaultValue ke QuestionOptionsEditor', () => {
-        const component = source('components/admin/ReviewQuestionFields.tsx')
-        expect(component).toContain('optionsDefaultValue')
-        expect(component).toContain('defaultValue={optionsDefaultValue}')
-    })
+  it('ReviewQuestionFields meneruskan defaultValue ke QuestionOptionsEditor', () => {
+    const component = source('components/admin/ReviewQuestionFields.tsx')
+    expect(component).toContain('optionsDefaultValue')
+    expect(component).toContain('defaultValue={optionsDefaultValue}')
+  })
 
-    it('form edit mengirim opsi dari detail soal', () => {
-        expect(source('components/admin/domain/content/ReviewWorkspace.tsx')).toContain('optionsDefaultValue={serializeOptionRows(data.options)}')
-    })
+  it('form edit mengirim opsi dari detail soal', () => {
+    expect(source('components/admin/domain/content/ReviewWorkspace.tsx')).toContain(
+      'optionsDefaultValue={serializeOptionRows(data.options)}',
+    )
+  })
 })

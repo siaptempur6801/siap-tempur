@@ -1,138 +1,275 @@
 -- Generated from canonical staging lpgrivowdcepcxradavu.
 -- Explicit runtime indexes A-P only; PK/UNIQUE-backed indexes are excluded.
 -- DO NOT apply to production before explicit final GO.
-
 CREATE INDEX articles_author_status_updated_idx ON public.articles USING btree (author_id, status, updated_at DESC);
+
 CREATE INDEX articles_status_published_at_idx ON public.articles USING btree (status, published_at DESC);
+
 CREATE INDEX idx_attempt_answer_options_option_id ON public.attempt_answer_options USING btree (option_id);
+
 CREATE INDEX idx_attempt_answers_selected_option_id ON public.attempt_answers USING btree (selected_option_id);
+
 CREATE INDEX idx_attempt_events_attempt_created ON public.attempt_events USING btree (attempt_id, created_at);
+
 CREATE INDEX idx_attempt_events_question ON public.attempt_events USING btree (question_id);
+
 CREATE INDEX idx_attempt_questions_attempt_id_section_id ON public.attempt_questions USING btree (attempt_id, section_id);
+
 CREATE INDEX idx_attempt_questions_question_id ON public.attempt_questions USING btree (question_id);
+
 CREATE INDEX idx_fk_attempt_questions_fk_attempt_questions_sect_edf702b6 ON public.attempt_questions USING btree (section_id);
+
 CREATE INDEX idx_attempt_scores_attempt_id ON public.attempt_scores USING btree (attempt_id);
+
 CREATE INDEX idx_fk_attempt_scores_fk_attempt_scores_subject_id_9669471e ON public.attempt_scores USING btree (subject_id);
+
 CREATE INDEX idx_attempt_section_states_attempt_status ON public.attempt_section_states USING btree (attempt_id, status);
+
 CREATE INDEX idx_attempt_section_states_section_id ON public.attempt_section_states USING btree (section_id);
+
 CREATE INDEX idx_audit_logs_actor_user_id_created_at ON public.audit_logs USING btree (actor_user_id, created_at);
+
 CREATE INDEX idx_audit_logs_created_at ON public.audit_logs USING btree (created_at);
+
 CREATE INDEX idx_audit_logs_entity_type_entity_id_created_at ON public.audit_logs USING btree (entity_type, entity_id, created_at);
+
 CREATE INDEX idx_certificates_event_id ON public.certificates USING btree (event_id);
+
 CREATE INDEX idx_certificates_user_id_issued_at ON public.certificates USING btree (user_id, issued_at);
+
 CREATE INDEX idx_fk_certificates_fk_certificates_template_id_ce_6792c722 ON public.certificates USING btree (template_id);
+
 CREATE INDEX idx_class_members_user_id ON public.class_members USING btree (user_id);
+
 CREATE INDEX idx_classes_organization_id_status ON public.classes USING btree (organization_id, status);
+
 CREATE INDEX idx_classes_teacher_id ON public.classes USING btree (teacher_id);
+
 CREATE INDEX idx_content_reviews_entity_type_entity_id_status ON public.content_reviews USING btree (entity_type, entity_id, status);
-CREATE INDEX idx_content_reviews_question_queue ON public.content_reviews USING btree (entity_type, review_stage, status, assigned_at, created_at) WHERE (entity_type = 'question'::text);
+
+CREATE INDEX idx_content_reviews_question_queue ON public.content_reviews USING btree (entity_type, review_stage, status, assigned_at, created_at)
+WHERE (entity_type = 'question'::text);
+
 CREATE INDEX idx_content_reviews_reviewer_id_status ON public.content_reviews USING btree (reviewer_id, status);
-CREATE UNIQUE INDEX uq_content_reviews_pending_stage_round ON public.content_reviews USING btree (entity_type, entity_id, review_stage, review_round) WHERE (status = 'pending'::text);
-CREATE UNIQUE INDEX entitlements_order_item_source_uq ON public.entitlements USING btree (user_id, feature_id, source_type, source_id) WHERE ((source_id IS NOT NULL) AND (source_type = 'order_item'::text));
-CREATE INDEX idx_entitlements_active ON public.entitlements USING btree (user_id, feature_id, expires_at) WHERE (status = 'active'::text);
+
+CREATE UNIQUE INDEX uq_content_reviews_pending_stage_round ON public.content_reviews USING btree (entity_type, entity_id, review_stage, review_round)
+WHERE (status = 'pending'::text);
+
+CREATE UNIQUE INDEX entitlements_order_item_source_uq ON public.entitlements USING btree (user_id, feature_id, source_type, source_id)
+WHERE ((source_id IS NOT NULL) AND (source_type = 'order_item'::text));
+
+CREATE INDEX idx_entitlements_active ON public.entitlements USING btree (user_id, feature_id, expires_at)
+WHERE (status = 'active'::text);
+
 CREATE INDEX idx_entitlements_source_type_source_id ON public.entitlements USING btree (source_type, source_id);
+
 CREATE INDEX idx_entitlements_user_id_feature_id_status_expires_at ON public.entitlements USING btree (user_id, feature_id, status, expires_at);
+
 CREATE INDEX idx_fk_entitlements_fk_entitlements_feature_id_fea_14202ccb ON public.entitlements USING btree (feature_id);
+
 CREATE INDEX idx_event_products_event_id_status ON public.event_products USING btree (event_id, status);
+
 CREATE INDEX idx_event_products_session_id ON public.event_products USING btree (session_id);
+
 CREATE INDEX idx_event_rankings_event_id_rank ON public.event_rankings USING btree (event_id, rank);
+
 CREATE INDEX idx_event_rankings_event_id_score_duration_seconds ON public.event_rankings USING btree (event_id, score, duration_seconds);
+
 CREATE INDEX idx_fk_event_rankings_fk_event_rankings_attempt_id_dee3fd96 ON public.event_rankings USING btree (attempt_id);
+
 CREATE INDEX idx_fk_event_rankings_fk_event_rankings_user_id_pr_30b7dde0 ON public.event_rankings USING btree (user_id);
+
 CREATE INDEX idx_event_registrations_event_id_status ON public.event_registrations USING btree (event_id, status);
+
 CREATE INDEX idx_event_registrations_session_id_status ON public.event_registrations USING btree (session_id, status);
+
 CREATE INDEX idx_fk_event_registrations_fk_event_registrations__6ab20328 ON public.event_registrations USING btree (user_id);
+
 CREATE INDEX idx_fk_event_registrations_fk_event_registrations__b2afe842 ON public.event_registrations USING btree (order_id);
+
 CREATE INDEX idx_event_sessions_event_id_starts_at ON public.event_sessions USING btree (event_id, starts_at);
+
 CREATE INDEX idx_fk_event_sessions_fk_event_sessions_exam_id_ex_ba2d9b10 ON public.event_sessions USING btree (exam_id);
+
 CREATE INDEX idx_events_track_id_status_starts_at ON public.events USING btree (track_id, status, starts_at);
+
 CREATE INDEX idx_fk_events_fk_events_program_id_programs_d84fb897 ON public.events USING btree (program_id);
+
 CREATE INDEX idx_exam_attempts_exam_id_status ON public.exam_attempts USING btree (exam_id, status);
+
 CREATE INDEX idx_exam_attempts_exam_id_submitted_at ON public.exam_attempts USING btree (exam_id, submitted_at);
+
 CREATE INDEX idx_exam_attempts_user_id_created_at ON public.exam_attempts USING btree (user_id, created_at);
+
 CREATE INDEX idx_exam_blueprint_rules_blueprint_id_sort_order ON public.exam_blueprint_rules USING btree (blueprint_id, sort_order);
+
 CREATE INDEX idx_exam_blueprint_rules_knowledge_node_id ON public.exam_blueprint_rules USING btree (knowledge_node_id);
+
 CREATE INDEX idx_fk_exam_blueprint_rules_fk_exam_blueprint_rule_97deefda ON public.exam_blueprint_rules USING btree (subject_id);
+
 CREATE INDEX idx_exam_blueprints_track_id_period_id_status ON public.exam_blueprints USING btree (track_id, period_id, status);
+
 CREATE INDEX idx_fk_exam_blueprints_fk_exam_blueprints_period_i_fc879cf6 ON public.exam_blueprints USING btree (period_id);
+
 CREATE INDEX idx_fk_exam_blueprints_fk_exam_blueprints_program__de93a6af ON public.exam_blueprints USING btree (program_id);
+
 CREATE INDEX idx_exam_question_items_exam_id_section_id ON public.exam_question_items USING btree (exam_id, section_id);
+
 CREATE INDEX idx_exam_question_items_question_id ON public.exam_question_items USING btree (question_id);
+
 CREATE INDEX idx_fk_exam_question_items_fk_exam_question_items__bbb298c6 ON public.exam_question_items USING btree (section_id);
+
 CREATE INDEX idx_exam_rules_effective_from_effective_until ON public.exam_rules USING btree (effective_from, effective_until);
+
 CREATE INDEX idx_exam_rules_track_id_period_id_status ON public.exam_rules USING btree (track_id, period_id, status);
+
 CREATE INDEX idx_fk_exam_rules_fk_exam_rules_period_id_periods_d4e55de3 ON public.exam_rules USING btree (period_id);
+
 CREATE INDEX idx_fk_exam_rules_fk_exam_rules_program_id_program_120807fe ON public.exam_rules USING btree (program_id);
+
 CREATE INDEX idx_exam_sections_exam_id_sort_order ON public.exam_sections USING btree (exam_id, sort_order);
+
 CREATE INDEX idx_fk_exam_sections_fk_exam_sections_subject_id_s_cdeba7d9 ON public.exam_sections USING btree (subject_id);
+
 CREATE INDEX idx_exams_access_type_status ON public.exams USING btree (access_type, status);
-CREATE INDEX idx_exams_active ON public.exams USING btree (track_id, starts_at) WHERE (status = ANY (ARRAY['scheduled'::text, 'active'::text]));
+
+CREATE INDEX idx_exams_active ON public.exams USING btree (track_id, starts_at)
+WHERE (status = ANY (ARRAY['scheduled'::text, 'active'::text]));
+
 CREATE INDEX idx_exams_exam_type_id_status ON public.exams USING btree (exam_type_id, status);
+
 CREATE INDEX idx_exams_required_feature_status ON public.exams USING btree (required_feature_id, status);
+
 CREATE INDEX idx_exams_track_id_status_starts_at ON public.exams USING btree (track_id, status, starts_at);
+
 CREATE INDEX idx_fk_exams_fk_exams_blueprint_id_exam_blueprints_bcd7991b ON public.exams USING btree (blueprint_id);
+
 CREATE INDEX idx_fk_exams_fk_exams_created_by_profiles_bed37d8c ON public.exams USING btree (created_by);
+
 CREATE INDEX idx_fk_exams_fk_exams_exam_rule_id_exam_rules_c3e2c0f6 ON public.exams USING btree (exam_rule_id);
+
 CREATE INDEX idx_fk_exams_fk_exams_period_id_periods_3e95c0d5 ON public.exams USING btree (period_id);
+
 CREATE INDEX idx_fk_exams_fk_exams_program_id_programs_ea619783 ON public.exams USING btree (program_id);
+
 CREATE INDEX idx_feature_flag_overrides_subject_type_subject_id ON public.feature_flag_overrides USING btree (subject_type, subject_id);
+
 CREATE INDEX idx_fk_generated_reports_generated_reports_generat_89c64b1d ON public.generated_reports USING btree (generated_by);
+
 CREATE INDEX idx_generated_reports_org_generated ON public.generated_reports USING btree (organization_id, generated_at DESC);
+
 CREATE INDEX idx_knowledge_node_paths_descendant_id_depth ON public.knowledge_node_paths USING btree (descendant_id, depth);
+
 CREATE INDEX idx_knowledge_nodes_parent_id ON public.knowledge_nodes USING btree (parent_id);
+
 CREATE INDEX idx_knowledge_nodes_subject_id_parent_id_sort_order ON public.knowledge_nodes USING btree (subject_id, parent_id, sort_order);
+
 CREATE INDEX idx_knowledge_nodes_subject_id_status ON public.knowledge_nodes USING btree (subject_id, status);
+
 CREATE INDEX idx_fk_leaderboard_entries_fk_leaderboard_entries__ee5f4247 ON public.leaderboard_entries USING btree (user_id);
+
 CREATE INDEX idx_leaderboard_entries_leaderboard_id_rank ON public.leaderboard_entries USING btree (leaderboard_id, rank);
+
 CREATE INDEX idx_leaderboard_entries_leaderboard_id_score ON public.leaderboard_entries USING btree (leaderboard_id, score);
+
 CREATE INDEX idx_fk_leaderboards_fk_leaderboards_program_id_pro_7efaef02 ON public.leaderboards USING btree (program_id);
+
 CREATE INDEX idx_leaderboards_track_id_status_starts_at ON public.leaderboards USING btree (track_id, status, starts_at);
+
 CREATE INDEX idx_fk_learning_recommendations_fk_learning_recomm_cf8f4bcf ON public.learning_recommendations USING btree (knowledge_node_id);
+
 CREATE INDEX idx_learning_recommendations_track_id_status ON public.learning_recommendations USING btree (track_id, status);
+
 CREATE INDEX idx_learning_recommendations_user_id_status_priority ON public.learning_recommendations USING btree (user_id, status, priority);
+
 CREATE UNIQUE INDEX learning_recommendations_user_track_type_node_uq ON public.learning_recommendations USING btree (user_id, track_id, recommendation_type, knowledge_node_id);
+
 CREATE INDEX idx_material_knowledge_nodes_knowledge_node_id ON public.material_knowledge_nodes USING btree (knowledge_node_id);
+
 CREATE INDEX idx_fk_materials_fk_materials_reviewer_id_profiles_3b1f2918 ON public.materials USING btree (reviewer_id);
+
 CREATE INDEX idx_fk_materials_materials_required_feature_id_fke_28bdcf74 ON public.materials USING btree (required_feature_id);
+
 CREATE INDEX idx_materials_access_feature ON public.materials USING btree (access_type, required_feature_id, status);
+
 CREATE INDEX idx_materials_author_id ON public.materials USING btree (author_id);
+
 CREATE INDEX idx_materials_status_published_at ON public.materials USING btree (status, published_at);
+
 CREATE INDEX idx_fk_notification_campaigns_fk_notification_camp_617c34e2 ON public.notification_campaigns USING btree (created_by);
+
 CREATE INDEX idx_notification_campaigns_status_scheduled_at ON public.notification_campaigns USING btree (status, scheduled_at);
+
 CREATE INDEX idx_notification_deliveries_campaign_id_status ON public.notification_deliveries USING btree (campaign_id, status);
+
 CREATE INDEX idx_notification_deliveries_user_id ON public.notification_deliveries USING btree (user_id);
+
 CREATE INDEX idx_notifications_user_id_read_at_created_at ON public.notifications USING btree (user_id, read_at, created_at);
+
 CREATE INDEX idx_order_items_order_id ON public.order_items USING btree (order_id);
+
 CREATE INDEX idx_order_items_product_id ON public.order_items USING btree (product_id);
+
 CREATE INDEX idx_orders_status_created_at ON public.orders USING btree (status, created_at);
+
 CREATE INDEX idx_orders_user_id_created_at ON public.orders USING btree (user_id, created_at);
+
 CREATE INDEX idx_fk_organization_exam_assignments_fk_organizati_7542bbab ON public.organization_exam_assignments USING btree (assigned_by);
+
 CREATE INDEX idx_fk_organization_exam_assignments_fk_organizati_81b02d05 ON public.organization_exam_assignments USING btree (exam_id);
+
 CREATE INDEX idx_organization_exam_assignments_class_id_due_at ON public.organization_exam_assignments USING btree (class_id, due_at);
+
 CREATE INDEX idx_organization_exam_assignments_organization_id_due_at ON public.organization_exam_assignments USING btree (organization_id, due_at);
+
 CREATE INDEX idx_fk_organization_licenses_fk_organization_licen_d9988075 ON public.organization_licenses USING btree (product_id);
+
 CREATE INDEX idx_organization_licenses_organization_id_status_expires_at ON public.organization_licenses USING btree (organization_id, status, expires_at);
-CREATE INDEX idx_organization_members_organization_id_role_status ON public.organization_members USING btree (organization_id, role, status);
+
+CREATE INDEX idx_organization_members_organization_id_role_status ON public.organization_members USING btree (organization_id, ROLE, status);
+
 CREATE INDEX idx_organization_members_user_id_status ON public.organization_members USING btree (user_id, status);
+
 CREATE INDEX idx_organizations_city_province ON public.organizations USING btree (city, province);
+
 CREATE INDEX idx_organizations_type_status ON public.organizations USING btree (type, status);
+
 CREATE INDEX idx_payment_webhook_events_processed_created_at ON public.payment_webhook_events USING btree (processed, created_at);
+
 CREATE UNIQUE INDEX payment_webhook_events_provider_event_uq ON public.payment_webhook_events USING btree (provider, event_id);
+
 CREATE INDEX idx_payments_order_id_status ON public.payments USING btree (order_id, status);
+
 CREATE INDEX idx_payments_provider_provider_transaction_id ON public.payments USING btree (provider, provider_transaction_id);
+
 CREATE UNIQUE INDEX payments_order_provider_uq ON public.payments USING btree (order_id, provider);
+
 CREATE INDEX idx_periods_start_date_end_date ON public.periods USING btree (start_date, end_date);
+
 CREATE INDEX idx_periods_status ON public.periods USING btree (status);
+
 CREATE INDEX idx_product_features_feature_id ON public.product_features USING btree (feature_id);
+
 CREATE INDEX idx_product_prices_ends_at ON public.product_prices USING btree (ends_at);
+
 CREATE INDEX idx_product_prices_product_id_status_starts_at ON public.product_prices USING btree (product_id, status, starts_at);
+
 CREATE INDEX idx_fk_products_fk_products_program_id_programs_185f90d3 ON public.products USING btree (program_id);
+
 CREATE INDEX idx_products_product_type_status ON public.products USING btree (product_type, status);
+
 CREATE INDEX idx_products_track_id_status ON public.products USING btree (track_id, status);
+
 CREATE INDEX idx_profiles_status ON public.profiles USING btree (status);
+
 CREATE INDEX idx_programs_status ON public.programs USING btree (status);
+
 CREATE INDEX idx_promotion_products_product_id ON public.promotion_products USING btree (product_id);
+
 CREATE INDEX idx_fk_promotion_redemptions_fk_promotion_redempti_2d037107 ON public.promotion_redemptions USING btree (user_id);
+
 CREATE INDEX idx_promotion_redemptions_order_id ON public.promotion_redemptions USING btree (order_id);
+
 CREATE INDEX idx_promotion_redemptions_promotion_id_user_id ON public.promotion_redemptions USING btree (promotion_id, user_id);
+
 CREATE INDEX idx_promotions_status_starts_at_ends_at ON public.promotions USING btree (status, starts_at, ends_at);

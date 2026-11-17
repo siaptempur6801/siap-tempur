@@ -104,13 +104,17 @@ def main() -> None:
 
     print("Safety gate: LOCAL ONLY 127.0.0.1:54322")
     print("Phase 3: 258 transactions + 64 event payments + 104 participants")
-    print("Double-grant guard: historical settlements are recorded but token grants are NOT replayed.")
+    print(
+        "Double-grant guard: historical settlements are recorded but token grants are NOT replayed."
+    )
 
     try:
         typed_script, replacements = normalized_typed_copy(script_path)
     except Exception as exc:
         die(f"could not normalize Phase 3 SQL for exact typed legacy clone: {exc}")
-    print(f"Exact-clone compatibility: normalized {replacements} NULLIF empty-string expression(s).")
+    print(
+        f"Exact-clone compatibility: normalized {replacements} NULLIF empty-string expression(s)."
+    )
     try:
         proc = subprocess.run(
             ["psql", args.db_url, "-X", "-v", "ON_ERROR_STOP=1", "-f", str(typed_script)]
@@ -125,9 +129,13 @@ def main() -> None:
 
     print()
     print("PASS: Phase 3 committed to Supabase Local only.")
-    print("Expected gates: 322 orders/payments/items, 50 settlement, 272 expire, 4 events, 104 registrations.")
+    print(
+        "Expected gates: 322 orders/payments/items, 50 settlement, 272 expire, 4 events, 104 registrations."
+    )
     print("Expected amounts: transactions=6295630, events=2240000, total=8535630.")
-    print("Expected grant state: 31 settled event registrations linked; 0 expired links; wallet remains 5090.")
+    print(
+        "Expected grant state: 31 settled event registrations linked; 0 expired links; wallet remains 5090."
+    )
     print("Production and staging were not modified.")
 
 

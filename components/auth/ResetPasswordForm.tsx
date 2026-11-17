@@ -8,118 +8,142 @@ import { toast } from 'sonner'
 import { acquireSingleFlightLock, releaseSingleFlightLock } from '@/lib/single-flight-lock'
 
 export default function ResetPasswordForm() {
-    const [showPassword, setShowPassword] = useState(false)
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-    const [loading, setLoading] = useState(false)
-    const submitLockRef = useRef(false)
-    const router = useRouter()
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const submitLockRef = useRef(false)
+  const router = useRouter()
 
-    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault()
-        if (!acquireSingleFlightLock(submitLockRef)) return
-        setLoading(true)
-        const formData = new FormData(event.currentTarget)
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!acquireSingleFlightLock(submitLockRef)) return
+    setLoading(true)
+    const formData = new FormData(event.currentTarget)
 
-        const password = formData.get('password') as string
-        const confirmPassword = formData.get('confirmPassword') as string
+    const password = formData.get('password') as string
+    const confirmPassword = formData.get('confirmPassword') as string
 
-        if (password !== confirmPassword) {
-            toast.error('Password tidak cocok', {
-                description: 'Pastikan password baru dan konfirmasi password sama.'
-            })
-            releaseSingleFlightLock(submitLockRef)
-            setLoading(false)
-            return
-        }
-
-        let isNavigating = false
-        try {
-            const result = await resetPassword(formData)
-            if (result?.error) {
-                toast.error(result.error)
-            } else {
-                toast.success('Password Berhasil Diubah!', {
-                    description: 'Silakan login kembali dengan password baru Anda.'
-                })
-                router.push('/login')
-                isNavigating = true
-            }
-        } catch {
-            toast.error('Gagal mengubah password')
-        } finally {
-            if (!isNavigating) {
-                releaseSingleFlightLock(submitLockRef)
-                setLoading(false)
-            }
-        }
+    if (password !== confirmPassword) {
+      toast.error('Password tidak cocok', {
+        description: 'Pastikan password baru dan konfirmasi password sama.',
+      })
+      releaseSingleFlightLock(submitLockRef)
+      setLoading(false)
+      return
     }
 
-    return (
-        <div className="w-full max-w-md space-y-8 relative z-10 bg-white p-8 border-2 border-gray-900 st-shadow-lg rounded-xl rotate-1">
-            {/* Tape Effect */}
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-green-100/80 border-l border-r border-white/50 shadow-sm -rotate-2"></div>
+    let isNavigating = false
+    try {
+      const result = await resetPassword(formData)
+      if (result?.error) {
+        toast.error(result.error)
+      } else {
+        toast.success('Password Berhasil Diubah!', {
+          description: 'Silakan login kembali dengan password baru Anda.',
+        })
+        router.push('/login')
+        isNavigating = true
+      }
+    } catch {
+      toast.error('Gagal mengubah password')
+    } finally {
+      if (!isNavigating) {
+        releaseSingleFlightLock(submitLockRef)
+        setLoading(false)
+      }
+    }
+  }
 
-            <div className="text-center">
-                <h2 className="font-display text-4xl font-bold tracking-tight text-gray-900">Buat Password Baru</h2>
-                <p className="mt-2 text-gray-600 font-display text-xl">Masukkan password baru untuk akun Anda.</p>
-            </div>
+  return (
+    <div className="st-card-lg relative z-10 w-full max-w-lg space-y-6 bg-card p-6 sm:p-8">
+      {/* Tape Effect */}
+      <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-green-100/80 border-l border-r border-white/50 shadow-sm -rotate-2"></div>
 
-            <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-                {/* Field Password Baru */}
-                <div className="relative">
-                    <label htmlFor="password" className="sr-only">Password Baru</label>
-                    <input
-                        id="password"
-                        name="password"
-                        type={showPassword ? "text" : "password"}
-                        autoComplete="new-password"
-                        required
-                        minLength={8}
-                        className="relative block w-full rounded-lg border-2 border-gray-900 bg-[#fdfbf7] px-4 py-3 pr-12 text-gray-900 placeholder-gray-500 focus:border-blue-600 focus:outline-none focus:ring-0 sm:text-lg font-display"
-                        placeholder="Password Baru (Min. 8 karakter)"
-                    />
-                    <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-900 transition focus:outline-none"
-                    >
-                        {showPassword ? <EyeOff size={24} /> : <Eye size={24} />}
-                    </button>
-                </div>
+      <div className="text-center">
+        <h1 className="font-display text-3xl font-bold leading-tight tracking-tight text-foreground sm:text-4xl">
+          Buat Password Baru
+        </h1>
+        <p className="mt-3 text-sm leading-relaxed text-muted-foreground sm:text-base">
+          Masukkan password baru untuk akun Anda.
+        </p>
+      </div>
 
-                {/* Field Konfirmasi Password Baru */}
-                <div className="relative">
-                    <label htmlFor="confirmPassword" className="sr-only">Konfirmasi Password Baru</label>
-                    <input
-                        id="confirmPassword"
-                        name="confirmPassword"
-                        type={showConfirmPassword ? "text" : "password"}
-                        autoComplete="new-password"
-                        required
-                        minLength={8}
-                        className="relative block w-full rounded-lg border-2 border-gray-900 bg-[#fdfbf7] px-4 py-3 pr-12 text-gray-900 placeholder-gray-500 focus:border-blue-600 focus:outline-none focus:ring-0 sm:text-lg font-display"
-                        placeholder="Ulangi Password Baru"
-                    />
-                    <button
-                        type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-900 transition focus:outline-none"
-                    >
-                        {showConfirmPassword ? <EyeOff size={24} /> : <Eye size={24} />}
-                    </button>
-                </div>
-
-                <div>
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="group relative flex w-full justify-center items-center gap-2 rounded-lg bg-gray-900 px-4 py-3 text-xl font-bold font-display text-white hover:bg-blue-600 hover:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2 transition-all border-2 border-transparent shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)] active:shadow-none active:translate-x-[2px] active:translate-y-[2px] disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {loading && <Loader2 className="animate-spin" size={24} />}
-                        {loading ? 'Menyimpan...' : 'Simpan Password'}
-                    </button>
-                </div>
-            </form>
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Field Password Baru */}
+        <div>
+          <label htmlFor="password" className="mb-2 block text-sm font-semibold text-foreground">
+            Password Baru
+          </label>
+          <div className="relative">
+            <input
+              id="password"
+              name="password"
+              type={showPassword ? 'text' : 'password'}
+              autoComplete="new-password"
+              required
+              minLength={8}
+              className="st-input !pr-14 text-base placeholder:text-sm placeholder:font-normal placeholder:text-muted-foreground"
+              aria-describedby="new-password-hint"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              aria-label={showPassword ? 'Sembunyikan password baru' : 'Tampilkan password baru'}
+              className="st-focus absolute right-1 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              {showPassword ? <EyeOff size={24} /> : <Eye size={24} />}
+            </button>
+          </div>
+          <p id="new-password-hint" className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            Password Baru (Min. 8 karakter)
+          </p>
         </div>
-    )
+
+        {/* Field Konfirmasi Password Baru */}
+        <div>
+          <label
+            htmlFor="confirmPassword"
+            className="mb-2 block text-sm font-semibold text-foreground"
+          >
+            Konfirmasi Password Baru
+          </label>
+          <div className="relative">
+            <input
+              id="confirmPassword"
+              name="confirmPassword"
+              type={showConfirmPassword ? 'text' : 'password'}
+              autoComplete="new-password"
+              required
+              minLength={8}
+              className="st-input !pr-14 text-base placeholder:text-sm placeholder:font-normal placeholder:text-muted-foreground"
+              placeholder="Ulangi Password Baru"
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              aria-label={
+                showConfirmPassword
+                  ? 'Sembunyikan konfirmasi password'
+                  : 'Tampilkan konfirmasi password'
+              }
+              className="st-focus absolute right-1 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              {showConfirmPassword ? <EyeOff size={24} /> : <Eye size={24} />}
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="st-button st-focus flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-base font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed"
+          >
+            {loading && <Loader2 className="animate-spin" size={24} />}
+            {loading ? 'Menyimpan...' : 'Simpan Password'}
+          </button>
+        </div>
+      </form>
+    </div>
+  )
 }

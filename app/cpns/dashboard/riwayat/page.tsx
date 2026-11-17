@@ -4,11 +4,13 @@ import HistoryClient from './HistoryClient'
 import { practiceOverviewService } from '@/src/services/practice-overview.service'
 
 export default async function RiwayatPage() {
-    const supabase = await createV2Client()
-    const { data: { user } } = await supabase.auth.getUser()
+  const supabase = await createV2Client()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-    if (!user) redirect('/login')
+  if (!user) redirect('/login')
 
-    const sessions = await practiceOverviewService.getHistoryPageData(user.id)
-    return <HistoryClient sessions={sessions} />
+  const sessions = await practiceOverviewService.getHistoryPageData(user.id)
+  return <HistoryClient sessions={sessions} />
 }

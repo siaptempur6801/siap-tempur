@@ -8,23 +8,28 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 export default async function TkaRemedialPage({
-    params,
+  params,
 }: {
-    params: Promise<{ level: string; sessionId: string }>
+  params: Promise<{ level: string; sessionId: string }>
 }) {
-    const { level: rawLevel, sessionId } = await params
-    const level = parseTkaLevel(rawLevel)
-    if (!level) notFound()
+  const { level: rawLevel, sessionId } = await params
+  const level = parseTkaLevel(rawLevel)
+  if (!level) notFound()
 
-    const base = tkaLevelPath(level)
-    if (!isTkaLevelAvailable(level)) redirect(base)
+  const base = tkaLevelPath(level)
+  if (!isTkaLevelAvailable(level)) redirect(base)
+  if (level !== 'SMP') redirect(`${base}/tryout`)
 
-    const supabase = await createV2Client()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) redirect(`/login?returnTo=${encodeURIComponent(`${base}/remedial/${sessionId}`)}`)
+  const supabase = await createV2Client()
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
+  if (authError || !user)
+    redirect(`/login?returnTo=${encodeURIComponent(`${base}/remedial/${sessionId}`)}`)
 
-    const remedial = await tkaRemedialService.getSession(sessionId)
-    if (!remedial.session) redirect(base)
+  const remedial = await tkaRemedialService.getSession(sessionId)
+  if (!remedial.session) redirect(base)
 
-    return <TkaRemedialModeClient initialSession={remedial.session} initialItems={remedial.items}/>
+  return <TkaRemedialModeClient initialSession={remedial.session} initialItems={remedial.items} />
 }

@@ -1,12 +1,41 @@
 # STATUS — Siap Tempur
 
 > **Ini satu-satunya sumber kebenaran status project.**
-> Terakhir diperbarui: **2026-10-07**
+> Terakhir diperbarui: **2026-10-13**
 > Dokumen roadmap/checklist lama bersifat **historis** dan tidak boleh dijadikan acuan status — lihat [Peta dokumen](#peta-dokumen).
 
 ---
 
 ## 1. Produk
+
+### Sinkronisasi database — 2026-10-12
+
+Staging dan production telah diselaraskan melalui tiga migrasi baru: proyeksi
+dashboard peserta, definisi fungsi runtime TKA, serta bucket dan policy Storage
+konten. Perbandingan katalog setelah migrasi cocok untuk 1.259 objek runtime;
+pengecualian yang disengaja hanya tabel impor internal khusus staging beserta
+primary key dan indeksnya. Data pengguna, soal, transaksi, jawaban, dan hasil ujian
+tidak disalin atau diubah. Riwayat migrasi lama dipertahankan; timestamp penerapan
+remote berbeda dari nama file lokal. Detail dan bukti pemeriksaan ada di
+[catatan sinkronisasi](releases/2026-10-12-database-sync.md).
+
+### Sinkronisasi akses token TKA — 2026-10-13
+
+Dua migration diterapkan berurutan di staging lalu production: `enforce_tka_smp_token_cost`
+dan `reverse_tka_tokens_on_payment_reversal`. Ledger staging: `20261013082343` dan
+`20261013082408`; production: `20261013082430` dan `20261013082447`. Keduanya sehat
+dan aktif. Tiga paket TKA SMP (1/5/10 token) beserta harga dan wallet grant cocok di
+kedua lingkungan. Seluruh 25 assessment TKA SMP aktif (22 drill, 1 tryout penuh,
+2 mini tryout) berbiaya 1 token; trigger mencegah assessment aktif baru tanpa biaya token. RPC reversal
+dibatasi ke `service_role`, memakai `search_path` kosong, dan debit refund idempoten.
+
+Fingerprint read-only objek runtime bersama cocok: 167 fungsi, 110 tabel, 100 policy, 419 indeks,
+20 baris trigger-event, 5 bucket Storage, dan 9 policy Storage. Ledger tetap menyimpan
+riwayat historis yang berbeda: tiga nama migration lama hanya tercatat di staging
+(`learner_overview_read_models`, `learner_reward_totals`, `learner_overview_aggregates`)
+dan sebagian versi remote memang berbeda. Riwayat tidak diperbaiki atau ditulis ulang;
+tidak ada data pengguna, soal, order, saldo, attempt, jawaban, atau hasil ujian yang
+disalin maupun diubah.
 
 Platform tryout/latihan ujian berbasis web (B2C): **CPNS/SKD** dan **TKA** (jenjang sekolah).
 
@@ -794,9 +823,9 @@ Test: 6 test `event-auto-close` + 2 test cron baru (termasuk kegagalan auto-clos
 - ✅ **Flow CPNS terverifikasi end-to-end di browser (2026-09-16):** drill, mini tryout, dan full tryout (110 soal) — mulai → jawab → kumpulkan → halaman hasil dengan skor & pembahasan (full tryout termasuk breakdown TWK/TIU/TKP); 0 critical console error. **TKA SMP** juga: Mini Tryout → submit → hasil. RLS lintas-user diverifikasi (browser + database).
 - ✅ **`/admin/assessment/exams` diperbaiki (2026-09-16):** halaman gagal render (jatuh ke error boundary) untuk admin mana pun karena URL PostgREST mencapai 22.594 karakter → `HeadersOverflowError (UND_ERR_HEADERS_OVERFLOW)`. Filter `.in()` besar kini di-batch lewat `lib/supabase-batch.ts`. Seluruh **9 route `/admin`** kini merender normal.
 - ✅ **Validasi zod server-side di auth action (2026-09-16)** — `login`, `signup`, `forgotPassword`, `resetPassword`, `resendVerificationEmail`, `updatePassword`; cast `FormData` yang bisa bernilai `null` juga dihapus. Test: `tests/unit/auth-validation-contract.test.ts`.
-- ✅ **Rate limit aplikasi di auth action (2026-09-16)** — `login` 10/5 menit per IP; `signup` 5/15 menit per IP; `forgotPassword` & `resendVerificationEmail` 10/15 menit per IP **dan** 3/15 menit per email (email di-hash, tidak disimpan mentah). Memakai `checkRateLimit` yang sudah ada (Upstash Redis, fallback in-memory, fail-open saat Redis mati). Test: `tests/unit/auth-rate-limit.test.ts`.
-- ⚠️ **Aksi di luar kode:** set `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` di Vercel (staging & produksi). Tanpa itu limiter jatuh ke in-memory yang **per-instance** dan mudah ditembus di serverless.
-- ✅ **Urutan header IP terverifikasi di produksi (2026-09-16):** `/api/health` kini melaporkan `clientIpSource` (nama header, bukan IP). Diuji dengan mengirim header palsu — `x-real-ip` palsu, `x-forwarded-for` palsu, bahkan `x-vercel-forwarded-for` palsu — sumbernya **tetap** `x-vercel-forwarded-for`, jadi header kiriman client tidak pernah menang. Catatan cakupan: yang terbukti adalah **prioritas nama header** di kode kita; jaminan bahwa Vercel menimpa *nilai* `x-vercel-forwarded-for` adalah kontrak platform Vercel, bukan sesuatu yang bisa dibuktikan dari repo ini. Rate limit Supabase Auth tetap jaring pengaman otoritatif.
+- ✅ **Rate limit aplikasi di auth action (2026-09-16; perilaku kode saat ini)** — `login` 10/5 menit per IP; `signup` 5/15 menit per IP; `forgotPassword` & `resendVerificationEmail` 10/15 menit per IP **dan** 3/15 menit per email (email di-hash, tidak disimpan mentah). `checkRateLimit` memakai Upstash Redis bila terkonfigurasi; memory hanya fallback lokal/staging. Di production, limiter fail-closed saat Redis tidak terkonfigurasi atau tidak tersedia. Test: `tests/unit/auth-rate-limit.test.ts`.
+- ⚠️ **Status environment Upstash perlu dicek ulang pada deployment aktif:** PING/INCR pernah berhasil dan dikonfirmasi di Vercel Production pada deployment `589b824` (2026-09-16); catatan itu tidak membuktikan konfigurasi deployment sekarang. Preview/staging belum terverifikasi. `/api/health` kini menandai konfigurasi Redis production yang hilang sebagai degraded/503, tetapi tidak melakukan ping konektivitas Redis.
+- ✅ **Sumber header IP (2026-09-16; cakupan verifikasi terbatas):** pengujian header palsu membuktikan resolver memilih sumber bernama `x-vercel-forwarded-for`; pengujian tersebut tidak memvalidasi nilai IP yang diterima ingress. Dokumentasi Vercel saat ini menyatakan `x-vercel-forwarded-for` dan `x-real-ip` identik dengan `x-forwarded-for`, serta Vercel menimpa `x-forwarded-for` untuk mencegah spoofing. Jika ada proxy/CDN tambahan di depan Vercel, sanitasi di jalur itu tetap perlu diverifikasi.
 - [ ] Belum ada regression test untuk replay webhook secara end-to-end (unit webhook sudah ada).
 
 #### Stabilisasi admin Fase 1 — S1–S12 (2026-09-20)

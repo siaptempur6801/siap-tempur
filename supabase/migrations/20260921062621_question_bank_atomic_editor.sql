@@ -1,160 +1,548 @@
 -- Question Bank: authenticated, transactional writes with optimistic concurrency.
 -- Apply to staging first. Production requires explicit GO.
-begin;
-create or replace function app_private.assert_question_bank_permission(p_permission text)
-returns void language plpgsql security definer set search_path = '' as $$
-begin
-  if auth.uid() is null or not exists(select 1 from public.profiles where id=auth.uid() and lower(status)='active') then
-    raise exception 'QUESTION_ACCESS_DENIED';
-  end if;
-  if not exists(select 1 from public.user_roles ur join public.role_permissions rp on rp.role_id=ur.role_id
-    join public.permissions p on p.id=rp.permission_id where ur.user_id=auth.uid() and ur.scope_type is null and p.code=p_permission) then
-    raise exception 'QUESTION_ACCESS_DENIED';
-  end if;
-end $$;
-revoke all on function app_private.assert_question_bank_permission(text) from public, anon, authenticated;
-
-create or replace function app_private.question_bank_editor(p_program text, p_track text, p_id uuid)
-returns jsonb language plpgsql security definer set search_path = '' as $$
-declare v_program uuid; v_track uuid; v_q public.questions%rowtype;
-begin
-  perform app_private.assert_question_bank_permission('question.manage');
-  select p.id,t.id into v_program,v_track from public.programs p join public.tracks t on t.program_id=p.id
-    where p.code=p_program and t.code=p_track and upper(p.status)='ACTIVE' and upper(t.status)='ACTIVE';
-  if v_track is null then raise exception 'QUESTION_CATALOG_MISMATCH'; end if;
+BEGIN;
+CREATE OR REPLACE FUNCTION app_private.assert_question_bank_permission (p_permission text)
+  RETURNS void
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path = ''
+  AS $$
+BEGIN
+  IF auth.uid () IS NULL OR NOT EXISTS (
+    SELECT
+      1
+    FROM
+      public.profiles
+    WHERE
+      id = auth.uid () AND lower(status) = 'active') THEN
+    RAISE EXCEPTION 'QUESTION_ACCESS_DENIED';
+  END IF;
+  IF NOT EXISTS (
+    SELECT
+      1
+    FROM
+      public.user_roles ur
+      JOIN public.role_permissions rp ON rp.role_id = ur.role_id
+      JOIN public.permissions p ON p.id = rp.permission_id
+    WHERE
+      ur.user_id = auth.uid ()
+      AND ur.scope_type IS NULL
+      AND p.code = p_permission) THEN
+  RAISE EXCEPTION 'QUESTION_ACCESS_DENIED';
+END IF;
+END
+$$;
+REVOKE ALL ON FUNCTION app_private.assert_question_bank_permission (text) FROM public, anon, authenticated;
+CREATE OR REPLACE FUNCTION app_private.question_bank_editor (p_program text, p_track text, p_id uuid)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path = ''
+  AS $$
+DECLARE
+  v_program uuid;
+  v_track uuid;
+  v_q public.questions%rowtype;
+BEGIN
+  PERFORM
+    app_private.assert_question_bank_permission ('question.manage');
+  SELECT
+    p.id,
+    t.id
+  INTO
+    v_program,
+    v_track
+  FROM
+    public.programs p
+    JOIN public.tracks t ON t.program_id = p.id
+  WHERE
+    p.code = p_program
+    AND t.code = p_track
+    AND upper(p.status) = 'ACTIVE'
+    AND upper(t.status) = 'ACTIVE';
+  IF v_track IS NULL THEN
+    RAISE EXCEPTION 'QUESTION_CATALOG_MISMATCH';
+  END IF;
   -- A single SQL statement below reads question, options and version from one MVCC snapshot.
-  if p_id is not null and not exists(select 1 from public.questions where id=p_id and program_id=v_program and track_id=v_track) then
-    raise exception 'QUESTION_NOT_FOUND';
-  end if;
-  return jsonb_build_object(
-    'question',(select to_jsonb(q) from public.questions q where q.id=p_id and q.track_id=v_track),
-    'options',coalesce((select jsonb_agg(to_jsonb(o) order by o.sort_order,o.id) from public.question_options o where question_id=p_id),'[]'),
-    'explanation',coalesce((select content from public.question_explanations where question_id=p_id order by version desc,created_at desc limit 1),''),
-    'knowledgeNodeId',coalesce((select knowledge_node_id::text from public.question_knowledge_nodes where question_id=p_id and relation_type='primary' limit 1),''),
-    'stimuli',coalesce((select jsonb_agg(jsonb_build_object('id',s.id,'subject_id',s.subject_id,'title',s.title,'content',s.content,'image_url',s.image_url) order by s.stimulus_code) from public.question_stimuli s where s.track_id=v_track),'[]'),
-    'knowledgeNodes',coalesce((select jsonb_agg(jsonb_build_object('id',k.id,'subject_id',k.subject_id,'name',k.name) order by k.name) from public.knowledge_nodes k join public.subjects s on s.id=k.subject_id where s.track_id=v_track and upper(k.status)='ACTIVE'),'[]'),
-    'versions',coalesce((select jsonb_agg(to_jsonb(v) order by v.version desc) from (select version,change_reason,created_at from public.question_versions where question_id=p_id order by version desc limit 20) v),'[]')
-  );
-end $$;
-
-create or replace function app_private.mutate_question_bank(p_payload jsonb)
-returns jsonb language plpgsql security definer set search_path = '' as $$
-declare
-  v_actor uuid := auth.uid(); v_q public.questions%rowtype; v_id uuid := nullif(p_payload->>'id','')::uuid;
-  v_program uuid; v_track uuid; v_subject uuid; v_version integer; v_snapshot jsonb; v_old_action text;
-  v_op text := p_payload->>'operation'; v_options jsonb := p_payload->'options'; v_type text := p_payload->>'questionType';
-  v_count integer; v_correct integer; v_stimulus uuid := nullif(p_payload->>'stimulusId','')::uuid;
-  v_node uuid := nullif(p_payload->>'knowledgeNodeId','')::uuid; v_reason text := btrim(p_payload->>'changeReason');
+  IF p_id IS NOT NULL AND NOT EXISTS (
+    SELECT
+      1
+    FROM
+      public.questions
+    WHERE
+      id = p_id AND program_id = v_program AND track_id = v_track) THEN
+    RAISE EXCEPTION 'QUESTION_NOT_FOUND';
+  END IF;
+  RETURN jsonb_build_object('question', (
+      SELECT
+        to_jsonb (q)
+      FROM public.questions q
+      WHERE
+        q.id = p_id
+        AND q.track_id = v_track), 'options', coalesce((
+        SELECT
+          jsonb_agg(to_jsonb (o)
+        ORDER BY o.sort_order, o.id)
+        FROM public.question_options o
+        WHERE
+          question_id = p_id), '[]'), 'explanation', coalesce((
+        SELECT
+          content
+        FROM public.question_explanations
+      WHERE
+        question_id = p_id ORDER BY version DESC, created_at DESC LIMIT 1), ''), 'knowledgeNodeId', coalesce((
+  SELECT
+    knowledge_node_id::text
+  FROM public.question_knowledge_nodes
+WHERE
+  question_id = p_id
+    AND relation_type = 'primary' LIMIT 1), ''), 'stimuli', coalesce((
+  SELECT
+    jsonb_agg(jsonb_build_object('id', s.id, 'subject_id', s.subject_id, 'title', s.title, 'content', s.content, 'image_url', s.image_url)
+  ORDER BY s.stimulus_code)
+  FROM public.question_stimuli s
+WHERE
+  s.track_id = v_track), '[]'), 'knowledgeNodes', coalesce((
+  SELECT
+    jsonb_agg(jsonb_build_object('id', k.id, 'subject_id', k.subject_id, 'name', k.name)
+    ORDER BY k.name)
+  FROM public.knowledge_nodes k
+  JOIN public.subjects s ON s.id = k.subject_id
+WHERE
+  s.track_id = v_track
+    AND upper(k.status) = 'ACTIVE'), '[]'), 'versions', coalesce((
+  SELECT
+    jsonb_agg(to_jsonb (v)
+    ORDER BY v.version DESC)
+  FROM (
+    SELECT
+      version, change_reason, created_at
+    FROM public.question_versions
+  WHERE
+    question_id = p_id ORDER BY version DESC LIMIT 20) v), '[]'));
+END
+$$;
+CREATE OR REPLACE FUNCTION app_private.mutate_question_bank (p_payload jsonb)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path = ''
+  AS $$
+DECLARE
+  v_actor uuid := auth.uid ();
+  v_q public.questions%rowtype;
+  v_id uuid := nullif (p_payload ->> 'id', '')::uuid;
+  v_program uuid;
+  v_track uuid;
+  v_subject uuid;
+  v_version integer;
+  v_snapshot jsonb;
+  v_old_action text;
+  v_op text := p_payload ->> 'operation';
+  v_options jsonb := p_payload -> 'options';
+  v_type text := p_payload ->> 'questionType';
+  v_count integer;
+  v_correct integer;
+  v_stimulus uuid := nullif (p_payload ->> 'stimulusId', '')::uuid;
+  v_node uuid := nullif (p_payload ->> 'knowledgeNodeId', '')::uuid;
+  v_reason text := btrim(p_payload ->> 'changeReason');
   v_explanation public.question_explanations%rowtype;
-begin
-  perform app_private.assert_question_bank_permission('question.manage');
-  if v_op is null or v_op not in ('save','publish','archive','revise') then raise exception 'QUESTION_OPERATION_INVALID'; end if;
-  if v_reason is null or length(v_reason)=0 or length(v_reason)>2000 then raise exception 'QUESTION_REASON_REQUIRED'; end if;
-  select p.id,t.id into v_program,v_track from public.programs p join public.tracks t on t.program_id=p.id
-    where p.code=p_payload->>'program' and t.code=p_payload->>'track' and upper(p.status)='ACTIVE' and upper(t.status)='ACTIVE';
-  if v_track is null then raise exception 'QUESTION_CATALOG_MISMATCH'; end if;
-  if v_id is not null then
-    select * into v_q from public.questions where id=v_id for update;
-    if not found or v_q.program_id<>v_program or v_q.track_id<>v_track then raise exception 'QUESTION_NOT_FOUND'; end if;
-    if (p_payload->>'expectedVersion')::integer is distinct from v_q.version
-       or (p_payload->>'expectedUpdatedAt')::timestamptz is distinct from v_q.updated_at then raise exception 'QUESTION_VERSION_CONFLICT'; end if;
-    v_snapshot := app_private.question_snapshot_json(v_id);
-  elsif v_op<>'save' then raise exception 'QUESTION_NOT_FOUND';
-  end if;
-  v_old_action := current_setting('app.workflow_action',true);
-  perform set_config('app.workflow_action','question_bank',true);
+BEGIN
+  PERFORM
+    app_private.assert_question_bank_permission ('question.manage');
+  IF v_op IS NULL OR v_op NOT IN ('save', 'publish', 'archive', 'revise') THEN
+    RAISE EXCEPTION 'QUESTION_OPERATION_INVALID';
+  END IF;
+  IF v_reason IS NULL OR length(v_reason) = 0 OR length(v_reason) > 2000 THEN
+    RAISE EXCEPTION 'QUESTION_REASON_REQUIRED';
+  END IF;
+  SELECT
+    p.id,
+    t.id
+  INTO
+    v_program,
+    v_track
+  FROM
+    public.programs p
+    JOIN public.tracks t ON t.program_id = p.id
+  WHERE
+    p.code = p_payload ->> 'program'
+    AND t.code = p_payload ->> 'track'
+    AND upper(p.status) = 'ACTIVE'
+    AND upper(t.status) = 'ACTIVE';
+  IF v_track IS NULL THEN
+    RAISE EXCEPTION 'QUESTION_CATALOG_MISMATCH';
+  END IF;
+  IF v_id IS NOT NULL THEN
+    SELECT
+      *
+    INTO
+      v_q
+    FROM
+      public.questions
+    WHERE
+      id = v_id
+    FOR UPDATE;
+    IF NOT found OR v_q.program_id <> v_program OR v_q.track_id <> v_track THEN
+      RAISE EXCEPTION 'QUESTION_NOT_FOUND';
+    END IF;
+    IF (p_payload ->> 'expectedVersion')::integer IS DISTINCT FROM v_q.version OR (p_payload ->> 'expectedUpdatedAt')::timestamptz IS DISTINCT FROM v_q.updated_at THEN
+      RAISE EXCEPTION 'QUESTION_VERSION_CONFLICT';
+    END IF;
+    v_snapshot := app_private.question_snapshot_json (v_id);
+  ELSIF v_op <> 'save' THEN
+    RAISE EXCEPTION 'QUESTION_NOT_FOUND';
+  END IF;
+  v_old_action := current_setting('app.workflow_action', TRUE);
+  PERFORM
+    set_config('app.workflow_action', 'question_bank', TRUE);
 
-  if v_op='publish' then
-    perform app_private.assert_question_bank_permission('content.publish');
-    perform app_private.publish_question(v_id);
-  elsif v_op in ('archive','revise') then
-    if v_q.status='published' then perform app_private.assert_question_bank_permission('content.publish'); end if;
-    if v_op='revise' and v_q.status not in ('approved','published','archived','rejected') then raise exception 'QUESTION_WORKFLOW_LOCKED'; end if;
+  IF v_op = 'publish' THEN
+    PERFORM
+      app_private.assert_question_bank_permission ('content.publish');
+    PERFORM
+      app_private.publish_question (v_id);
+  ELSIF v_op IN ('archive', 'revise') THEN
+    IF v_q.status = 'published' THEN
+      PERFORM
+        app_private.assert_question_bank_permission ('content.publish');
+    END IF;
+    IF v_op = 'revise' AND v_q.status NOT IN ('approved', 'published', 'archived', 'rejected') THEN
+      RAISE EXCEPTION 'QUESTION_WORKFLOW_LOCKED';
+    END IF;
     -- Returning to draft invalidates old review approvals; subsequent submission creates a fresh round.
-    update public.content_reviews set status='cancelled' where entity_type='question' and entity_id=v_id and status='pending';
-    update public.questions set status=case when v_op='archive' then 'archived' else 'draft' end,
-      reviewer_id=null,updated_at=clock_timestamp() where id=v_id;
-  else
-    if v_id is not null and v_q.status not in ('draft','revision_required','rejected') then raise exception 'QUESTION_WORKFLOW_LOCKED'; end if;
-    select id into v_subject from public.subjects where track_id=v_track and code=p_payload->>'subject' and upper(status)='ACTIVE';
-    if v_subject is null then raise exception 'SUBJECT_INVALID'; end if;
-    if v_type is null or v_type not in ('single_choice','multiple_choice','category') then raise exception 'QUESTION_TYPE_INVALID'; end if;
-    if coalesce(length(btrim(p_payload->>'stem')),0)=0 or length(p_payload->>'stem')>50000 then raise exception 'QUESTION_STEM_REQUIRED'; end if;
-    if coalesce(p_payload->>'difficulty','') not in ('easy','medium','hard') then raise exception 'QUESTION_DIFFICULTY_INVALID'; end if;
-    if length(coalesce(p_payload->>'explanation',''))>50000 or length(coalesce(p_payload->>'sourceReference',''))>2000 or length(coalesce(p_payload->>'cognitiveLevel',''))>100 then raise exception 'QUESTION_FIELDS_TOO_LONG'; end if;
-    if nullif(p_payload->>'estimatedSeconds','') is not null and (p_payload->>'estimatedSeconds')::integer not between 1 and 86400 then raise exception 'QUESTION_ESTIMATED_SECONDS_INVALID'; end if;
-    if v_stimulus is not null and not exists(select 1 from public.question_stimuli where id=v_stimulus and program_id=v_program and track_id=v_track and subject_id=v_subject) then raise exception 'QUESTION_STIMULUS_MISMATCH'; end if;
-    if v_node is not null and not exists(select 1 from public.knowledge_nodes where id=v_node and subject_id=v_subject and upper(status)='ACTIVE') then raise exception 'QUESTION_NODE_MISMATCH'; end if;
-    if v_options is null or jsonb_typeof(v_options)<>'array' then raise exception 'QUESTION_OPTIONS_REQUIRED'; end if;
+    UPDATE
+      public.content_reviews
+    SET
+      status = 'cancelled'
+    WHERE
+      entity_type = 'question'
+      AND entity_id = v_id
+      AND status = 'pending';
+    UPDATE
+      public.questions
+    SET
+      status = CASE WHEN v_op = 'archive' THEN
+        'archived'
+      ELSE
+        'draft'
+      END,
+      reviewer_id = NULL,
+      updated_at = clock_timestamp()
+    WHERE
+      id = v_id;
+  ELSE
+    IF v_id IS NOT NULL AND v_q.status NOT IN ('draft', 'revision_required', 'rejected') THEN
+      RAISE EXCEPTION 'QUESTION_WORKFLOW_LOCKED';
+    END IF;
+    SELECT
+      id
+    INTO
+      v_subject
+    FROM
+      public.subjects
+    WHERE
+      track_id = v_track
+      AND code = p_payload ->> 'subject'
+      AND upper(status) = 'ACTIVE';
+    IF v_subject IS NULL THEN
+      RAISE EXCEPTION 'SUBJECT_INVALID';
+    END IF;
+    IF v_type IS NULL OR v_type NOT IN ('single_choice', 'multiple_choice', 'category') THEN
+      RAISE EXCEPTION 'QUESTION_TYPE_INVALID';
+    END IF;
+    IF coalesce(length(btrim(p_payload ->> 'stem')), 0) = 0 OR length(p_payload ->> 'stem') > 50000 THEN
+      RAISE EXCEPTION 'QUESTION_STEM_REQUIRED';
+    END IF;
+    IF coalesce(p_payload ->> 'difficulty', '')
+      NOT IN ('easy', 'medium', 'hard') THEN
+      RAISE EXCEPTION 'QUESTION_DIFFICULTY_INVALID';
+    END IF;
+    IF length(coalesce(p_payload ->> 'explanation', ''))>50000 or length(coalesce(p_payload->>'sourceReference','')) > 2000 OR length(coalesce(p_payload ->> 'cognitiveLevel', '')) > 100 THEN
+      RAISE EXCEPTION 'QUESTION_FIELDS_TOO_LONG';
+    END IF;
+    IF nullif (p_payload ->> 'estimatedSeconds', '') IS NOT NULL AND (p_payload ->> 'estimatedSeconds')::integer NOT BETWEEN 1 AND 86400 THEN
+      RAISE EXCEPTION 'QUESTION_ESTIMATED_SECONDS_INVALID';
+    END IF;
+    IF v_stimulus IS NOT NULL AND NOT EXISTS (
+      SELECT
+        1
+      FROM
+        public.question_stimuli
+      WHERE
+        id = v_stimulus AND program_id = v_program AND track_id = v_track AND subject_id = v_subject) THEN
+      RAISE EXCEPTION 'QUESTION_STIMULUS_MISMATCH';
+    END IF;
+    IF v_node IS NOT NULL AND NOT EXISTS (
+      SELECT
+        1
+      FROM
+        public.knowledge_nodes
+      WHERE
+        id = v_node AND subject_id = v_subject AND upper(status) = 'ACTIVE') THEN
+      RAISE EXCEPTION 'QUESTION_NODE_MISMATCH';
+    END IF;
+    IF v_options IS NULL OR jsonb_typeof(v_options) <> 'array' THEN
+      RAISE EXCEPTION 'QUESTION_OPTIONS_REQUIRED';
+    END IF;
     v_count := jsonb_array_length(v_options);
-    if v_count<2 or v_count>100 then raise exception 'QUESTION_OPTIONS_REQUIRED'; end if;
-    if exists(select 1 from jsonb_array_elements(v_options) o where jsonb_typeof(o)<>'object'
-      or coalesce(o->>'key','') !~ '^[A-Z0-9_-]{1,16}$' or coalesce(length(btrim(o->>'content')),0)=0
-      or length(o->>'content')>20000 or length(coalesce(o->>'responseGroup',''))>200
-      or (o->'isCorrect' is not null and jsonb_typeof(o->'isCorrect') not in ('boolean','null'))
-      or (nullif(o->>'score','') is not null and ((o->>'score')::numeric not between 0 and 99999999.99 or (o->>'score')::numeric<>round((o->>'score')::numeric,2)))
-      or (nullif(o->>'responseGroupOrder','') is not null and (o->>'responseGroupOrder')::integer<1)
-      or (nullif(o->>'imageUrl','') is not null and (length(o->>'imageUrl')>2000 or o->>'imageUrl' !~ '^https://[^/@[:space:]]+([/:?#][^[:space:]]*)?$'))
-    ) then raise exception 'QUESTION_OPTIONS_INVALID'; end if;
-    if (select count(distinct o->>'key') from jsonb_array_elements(v_options) o)<>v_count then raise exception 'QUESTION_OPTION_KEYS_DUPLICATE'; end if;
-    select count(*) into v_correct from jsonb_array_elements(v_options) o where (o->>'isCorrect')::boolean is true;
-    if v_type='single_choice' and v_correct<>1 then raise exception 'QUESTION_CORRECT_OPTION_REQUIRED'; end if;
-    if v_type='multiple_choice' and (v_count<3 or v_correct<2 or v_correct>=v_count) then raise exception 'QUESTION_MULTIPLE_CHOICE_INVALID'; end if;
-    if v_type='category' then
-      if (select count(distinct nullif(btrim(o->>'responseGroup'),'')) from jsonb_array_elements(v_options) o)<2 then raise exception 'QUESTION_CATEGORY_INVALID'; end if;
-      if exists(select 1 from jsonb_array_elements(v_options) o group by nullif(btrim(o->>'responseGroup'),'')
-        having nullif(btrim(o->>'responseGroup'),'') is null or count(*)<2 or count(*) filter(where (o->>'isCorrect')::boolean is true)<>1) then raise exception 'QUESTION_CATEGORY_INVALID'; end if;
-    end if;
-    if v_id is not null and exists(select 1 from public.attempt_questions aq join public.exam_attempts ea on ea.id=aq.attempt_id where aq.question_id=v_id and lower(ea.status) in ('created','in_progress')) then raise exception 'QUESTION_LOCKED_BY_ACTIVE_ATTEMPT'; end if;
-    if v_id is null then
-      insert into public.questions(question_code,program_id,track_id,subject_id,question_type,stem,difficulty,author_id,status,version)
-      values('QB-'||upper(substr(replace(gen_random_uuid()::text,'-',''),1,16)),v_program,v_track,v_subject,v_type,p_payload->>'stem',p_payload->>'difficulty',v_actor,'draft',1) returning id into v_id;
-      v_version := 1;
-    else
-      -- Preserve canonical snapshots without overwriting a historical version.
-      perform app_private.ensure_question_snapshot(v_id,v_actor,v_reason);
-      select greatest(q.version,coalesce((select max(version) from public.question_versions where question_id=v_id),0))+1 into v_version from public.questions q where q.id=v_id;
-    end if;
-    update public.questions set subject_id=v_subject,question_type=v_type,stem=p_payload->>'stem',difficulty=p_payload->>'difficulty',
-      cognitive_level=nullif(p_payload->>'cognitiveLevel',''),source_reference=nullif(p_payload->>'sourceReference',''),
-      estimated_seconds=nullif(p_payload->>'estimatedSeconds','')::integer,stimulus_id=v_stimulus,
-      status=case when v_q.status='revision_required' then 'revision_required' else 'draft' end,
-      version=v_version,reviewer_id=null,updated_at=clock_timestamp() where id=v_id;
-    delete from public.question_options where question_id=v_id and option_key not in (select o->>'key' from jsonb_array_elements(v_options) o);
-    insert into public.question_options(question_id,option_key,content,is_correct,score,sort_order,response_group,response_group_order,image_url)
-    select v_id,o->>'key',o->>'content',(o->>'isCorrect')::boolean,nullif(o->>'score','')::numeric,ord::integer,
-      nullif(btrim(o->>'responseGroup'),''),nullif(o->>'responseGroupOrder','')::integer,nullif(o->>'imageUrl','')
-    from jsonb_array_elements(v_options) with ordinality as opts(o,ord)
-    on conflict(question_id,option_key) do update set content=excluded.content,is_correct=excluded.is_correct,score=excluded.score,
-      sort_order=excluded.sort_order,response_group=excluded.response_group,response_group_order=excluded.response_group_order,image_url=excluded.image_url;
-    select * into v_explanation from public.question_explanations where question_id=v_id order by version desc,created_at desc limit 1;
-    if found then
-      update public.question_explanations set content=coalesce(p_payload->>'explanation',''),version=v_version,updated_at=clock_timestamp() where id=v_explanation.id;
-    elsif coalesce(p_payload->>'explanation','')<>'' then
-      insert into public.question_explanations(question_id,content,version) values(v_id,p_payload->>'explanation',v_version);
-    end if;
-    -- A subject move must not leave secondary mappings pointing into the old subject.
-    -- The pre-edit snapshot retains all previous mappings for history.
-    delete from public.question_knowledge_nodes qk using public.knowledge_nodes k
-      where qk.question_id=v_id and qk.knowledge_node_id=k.id and k.subject_id<>v_subject;
-    delete from public.question_knowledge_nodes where question_id=v_id and relation_type='primary' and knowledge_node_id is distinct from v_node;
-    if v_node is not null then insert into public.question_knowledge_nodes(question_id,knowledge_node_id,relation_type) values(v_id,v_node,'primary')
-      on conflict(question_id,knowledge_node_id) do update set relation_type='primary'; end if;
-  end if;
-  insert into public.audit_logs(actor_user_id,action,entity_type,entity_id,old_data,new_data)
-    values(v_actor,case v_op when 'publish' then 'PUBLISH_QUESTION' when 'archive' then 'ARCHIVE_QUESTION' when 'revise' then 'REVISE_QUESTION'
-      else case when v_q.id is null then 'CREATE_QUESTION' else 'UPDATE_QUESTION' end end,'question',v_id,
-      case when v_q.id is null then null else jsonb_build_object('version',v_q.version,'status',v_q.status) end,
-      jsonb_build_object('reason',v_reason,'label',(select question_code from public.questions where id=v_id),'version',(select version from public.questions where id=v_id)));
-  perform set_config('app.workflow_action',coalesce(v_old_action,''),true);
-  return (select jsonb_build_object('id',id,'version',version,'status',status,'updated_at',updated_at) from public.questions where id=v_id);
-end $$;
-
-create or replace function public.get_question_bank_editor(p_program text,p_track text,p_id uuid default null)
-returns jsonb language sql security invoker set search_path='' as $$ select app_private.question_bank_editor(p_program,p_track,p_id); $$;
-create or replace function public.mutate_question_bank(p_payload jsonb)
-returns jsonb language sql security invoker set search_path='' as $$ select app_private.mutate_question_bank(p_payload); $$;
-revoke all on function app_private.question_bank_editor(text,text,uuid),app_private.mutate_question_bank(jsonb),public.get_question_bank_editor(text,text,uuid),public.mutate_question_bank(jsonb) from public,anon;
-grant execute on function app_private.question_bank_editor(text,text,uuid),app_private.mutate_question_bank(jsonb),public.get_question_bank_editor(text,text,uuid),public.mutate_question_bank(jsonb) to authenticated;
-notify pgrst,'reload schema';
-commit;
+    IF v_count < 2 OR v_count > 100 THEN
+      RAISE EXCEPTION 'QUESTION_OPTIONS_REQUIRED';
+    END IF;
+    IF EXISTS (
+      SELECT
+        1
+      FROM
+        jsonb_array_elements(v_options) o
+      WHERE
+        jsonb_typeof(o) <> 'object'
+        OR coalesce(o ->> 'key', '') !~ '^[A-Z0-9_-]{1,16}$'
+        OR coalesce(length(btrim(o ->> 'content')), 0) = 0
+        OR length(o ->> 'content') > 20000
+        OR length(coalesce(o ->> 'responseGroup', '')) > 200
+        OR (o -> 'isCorrect' IS NOT NULL
+          AND jsonb_typeof(o -> 'isCorrect')
+          NOT IN ('boolean', 'null'))
+        OR (nullif (o ->> 'score', '') IS NOT NULL
+          AND ((o ->> 'score')::numeric NOT BETWEEN 0 AND 99999999.99
+            OR (o ->> 'score')::numeric <> round((o ->> 'score')::numeric, 2)))
+        OR (nullif (o ->> 'responseGroupOrder', '') IS NOT NULL
+          AND (o ->> 'responseGroupOrder')::integer < 1)
+        OR (nullif (o ->> 'imageUrl', '') IS NOT NULL
+          AND (length(o ->> 'imageUrl') > 2000
+            OR o ->> 'imageUrl' !~ '^https://[^/@[:space:]]+([/:?#][^[:space:]]*)?$'))) THEN
+    RAISE EXCEPTION 'QUESTION_OPTIONS_INVALID';
+  END IF;
+  IF (
+    SELECT
+      count(DISTINCT o ->> 'key')
+    FROM
+      jsonb_array_elements(v_options) o) <> v_count THEN
+    RAISE EXCEPTION 'QUESTION_OPTION_KEYS_DUPLICATE';
+  END IF;
+  SELECT
+    count(*)
+  INTO
+    v_correct
+  FROM
+    jsonb_array_elements(v_options) o
+WHERE (o ->> 'isCorrect')::boolean IS TRUE;
+  IF v_type = 'single_choice' AND v_correct <> 1 THEN
+    RAISE EXCEPTION 'QUESTION_CORRECT_OPTION_REQUIRED';
+  END IF;
+  IF v_type = 'multiple_choice' AND (v_count < 3 OR v_correct < 2 OR v_correct >= v_count) THEN
+    RAISE EXCEPTION 'QUESTION_MULTIPLE_CHOICE_INVALID';
+  END IF;
+  IF v_type = 'category' THEN
+    IF (
+      SELECT
+        count(DISTINCT nullif (btrim(o ->> 'responseGroup'), ''))
+      FROM
+        jsonb_array_elements(v_options) o) < 2 THEN
+      RAISE EXCEPTION 'QUESTION_CATEGORY_INVALID';
+    END IF;
+    IF EXISTS (
+      SELECT
+        1
+      FROM
+        jsonb_array_elements(v_options) o
+      GROUP BY
+        nullif (btrim(o ->> 'responseGroup'), '')
+      HAVING
+        nullif (btrim(o ->> 'responseGroup'), '') IS NULL
+        OR count(*) < 2
+        OR count(*) FILTER (WHERE (o ->> 'isCorrect')::boolean IS TRUE) <> 1) THEN
+  RAISE EXCEPTION 'QUESTION_CATEGORY_INVALID';
+  END IF;
+END IF;
+  IF v_id IS NOT NULL AND EXISTS (
+    SELECT
+      1
+    FROM
+      public.attempt_questions aq
+      JOIN public.exam_attempts ea ON ea.id = aq.attempt_id
+    WHERE
+      aq.question_id = v_id AND lower(ea.status) IN ('created', 'in_progress')) THEN
+    RAISE EXCEPTION 'QUESTION_LOCKED_BY_ACTIVE_ATTEMPT';
+  END IF;
+  IF v_id IS NULL THEN
+    INSERT INTO public.questions (question_code, program_id, track_id, subject_id, question_type, stem, difficulty, author_id, status, version)
+      VALUES ('QB-' || upper(substr(replace(gen_random_uuid ()::text, '-', ''), 1, 16)), v_program, v_track, v_subject, v_type, p_payload ->> 'stem', p_payload ->> 'difficulty', v_actor, 'draft', 1)
+    RETURNING
+      id
+    INTO
+      v_id;
+    v_version := 1;
+  ELSE
+    -- Preserve canonical snapshots without overwriting a historical version.
+    PERFORM
+      app_private.ensure_question_snapshot (v_id, v_actor, v_reason);
+    SELECT
+      greatest (q.version, coalesce((
+          SELECT
+            max(version)
+          FROM public.question_versions
+          WHERE
+            question_id = v_id), 0)) + 1
+    INTO
+      v_version
+    FROM
+      public.questions q
+    WHERE
+      q.id = v_id;
+  END IF;
+  UPDATE
+    public.questions
+  SET
+    subject_id = v_subject,
+    question_type = v_type,
+    stem = p_payload ->> 'stem',
+    difficulty = p_payload ->> 'difficulty',
+    cognitive_level = nullif (p_payload ->> 'cognitiveLevel', ''),source_reference=nullif(p_payload->>'sourceReference',''),
+    estimated_seconds = nullif (p_payload ->> 'estimatedSeconds', '')::integer,
+    stimulus_id = v_stimulus,
+    status = CASE WHEN v_q.status = 'revision_required' THEN
+      'revision_required'
+    ELSE
+      'draft'
+    END,
+    version = v_version,
+    reviewer_id = NULL,
+    updated_at = clock_timestamp()
+  WHERE
+    id = v_id;
+  DELETE FROM public.question_options
+  WHERE question_id = v_id
+    AND option_key NOT IN (
+      SELECT
+        o ->> 'key'
+      FROM
+        jsonb_array_elements(v_options) o);
+  INSERT INTO public.question_options (question_id, option_key, content, is_correct, score, sort_order, response_group, response_group_order, image_url)
+  SELECT
+    v_id,
+    o ->> 'key',
+    o ->> 'content',
+    (o ->> 'isCorrect')::boolean,
+    nullif (o ->> 'score', '')::numeric,
+    ord::integer,
+    nullif (btrim(o ->> 'responseGroup'), ''),nullif(o->>'responseGroupOrder','')::integer,
+    nullif (o ->> 'imageUrl', '')
+  FROM
+    jsonb_array_elements(v_options)
+  WITH ORDINALITY AS opts (o, ord)
+ON CONFLICT (question_id, option_key)
+  DO UPDATE SET
+    content = excluded.content,
+    is_correct = excluded.is_correct,
+    score = excluded.score,
+    sort_order = excluded.sort_order,
+    response_group = excluded.response_group,
+    response_group_order = excluded.response_group_order,
+    image_url = excluded.image_url;
+  SELECT
+    *
+  INTO
+    v_explanation
+  FROM
+    public.question_explanations
+  WHERE
+    question_id = v_id
+  ORDER BY
+    version DESC,
+    created_at DESC
+  LIMIT 1;
+  IF found THEN
+    UPDATE
+      public.question_explanations
+    SET
+      content = coalesce(p_payload ->> 'explanation', ''),
+      version = v_version,
+      updated_at = clock_timestamp()
+    WHERE
+      id = v_explanation.id;
+  ELSIF coalesce(p_payload ->> 'explanation', '')<>'' THEN
+      INSERT INTO public.question_explanations (question_id, content, version)
+        VALUES (v_id, p_payload ->> 'explanation', v_version);
+  END IF;
+  -- A subject move must not leave secondary mappings pointing into the old subject.
+  -- The pre-edit snapshot retains all previous mappings for history.
+  DELETE FROM public.question_knowledge_nodes qk USING public.knowledge_nodes k
+WHERE qk.question_id = v_id
+  AND qk.knowledge_node_id = k.id
+  AND k.subject_id <> v_subject;
+  DELETE FROM public.question_knowledge_nodes
+  WHERE question_id = v_id
+    AND relation_type = 'primary'
+    AND knowledge_node_id IS DISTINCT FROM v_node;
+  IF v_node IS NOT NULL THEN
+    INSERT INTO public.question_knowledge_nodes (question_id, knowledge_node_id, relation_type)
+      VALUES (v_id, v_node, 'primary')
+    ON CONFLICT (question_id, knowledge_node_id)
+      DO UPDATE SET
+        relation_type = 'primary';
+  END IF;
+END IF;
+INSERT INTO public.audit_logs (actor_user_id, action, entity_type, entity_id, old_data, new_data)
+  VALUES (v_actor, CASE v_op
+    WHEN 'publish' THEN
+      'PUBLISH_QUESTION'
+    WHEN 'archive' THEN
+      'ARCHIVE_QUESTION'
+    WHEN 'revise' THEN
+      'REVISE_QUESTION'
+    ELSE
+      CASE WHEN v_q.id IS NULL THEN
+        'CREATE_QUESTION'
+      ELSE
+        'UPDATE_QUESTION'
+      END
+    END, 'question', v_id, CASE WHEN v_q.id IS NULL THEN
+      NULL
+    ELSE
+      jsonb_build_object('version', v_q.version, 'status', v_q.status)
+    END, jsonb_build_object('reason', v_reason, 'label', (
+        SELECT
+          question_code
+        FROM public.questions
+        WHERE
+          id = v_id), 'version', (
+          SELECT
+            version
+          FROM public.questions
+          WHERE
+            id = v_id)));
+  PERFORM
+    set_config('app.workflow_action', coalesce(v_old_action, ''), TRUE);
+  RETURN (
+    SELECT
+      jsonb_build_object('id', id, 'version', version, 'status', status, 'updated_at', updated_at)
+    FROM
+      public.questions
+    WHERE
+      id = v_id);
+END
+$$;
+CREATE OR REPLACE FUNCTION public.get_question_bank_editor (p_program text, p_track text, p_id uuid DEFAULT NULL)
+  RETURNS jsonb
+  LANGUAGE sql
+  SECURITY INVOKER
+  SET search_path = ''
+  AS $$
+  SELECT
+    app_private.question_bank_editor (p_program, p_track, p_id);
+$$;
+CREATE OR REPLACE FUNCTION public.mutate_question_bank (p_payload jsonb)
+  RETURNS jsonb
+  LANGUAGE sql
+  SECURITY INVOKER
+  SET search_path = ''
+  AS $$
+  SELECT
+    app_private.mutate_question_bank (p_payload);
+$$;
+REVOKE ALL ON FUNCTION app_private.question_bank_editor (text, text, uuid), app_private.mutate_question_bank (jsonb), public.get_question_bank_editor (text, text, uuid), public.mutate_question_bank (jsonb) FROM public, anon;
+GRANT EXECUTE ON FUNCTION app_private.question_bank_editor (text, text, uuid), app_private.mutate_question_bank (jsonb), public.get_question_bank_editor (text, text, uuid), public.mutate_question_bank (jsonb) TO authenticated;
+NOTIFY pgrst,
+'reload schema';
+COMMIT;

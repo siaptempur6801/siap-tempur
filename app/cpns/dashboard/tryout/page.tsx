@@ -7,12 +7,14 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 export default async function PracticeListingPage() {
-    const supabase = await createV2Client()
-    const { data: { user } } = await supabase.auth.getUser()
+  const supabase = await createV2Client()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-    if (!user) redirect('/login')
+  if (!user) redirect('/login')
 
-    const data = await practiceOverviewService.getFullTryoutPageData(user.id)
+  const data = await practiceOverviewService.getFullTryoutPageData(user.id)
 
-    return <PracticeClient {...data} />
+  return <PracticeClient {...data} />
 }

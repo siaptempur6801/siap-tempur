@@ -1,8 +1,8 @@
 'use client'
 
 import AdminConfirmDialog from '@/components/admin/AdminConfirmDialog'
-import { adminDangerButtonClass,adminSecondaryButtonClass } from '@/components/admin/AdminUi'
-import { cloneElement,isValidElement,useEffect,useRef,useState,type ReactElement } from 'react'
+import { adminDangerButtonClass, adminSecondaryButtonClass } from '@/components/admin/AdminUi'
+import { cloneElement, isValidElement, useState, type ReactElement } from 'react'
 
 /**
  * Konfirmasi proporsional untuk aksi destruktif.
@@ -42,88 +42,90 @@ import { cloneElement,isValidElement,useEffect,useRef,useState,type ReactElement
  *
  * Submit button itulah yang membawa seluruh nilai field form server action.
  * Komponen ini merender trigger di tempat aslinya (di dalam form) dan hanya
- * dialognya yang dipindahkan lewat portal visual (`fixed`), sehingga struktur
+ * dialognya ditampilkan di native top layer, sehingga struktur dan pemilik
  * form tidak berubah.
  *
- * Kerangka dialog (overlay, focus trap, Escape) ada di `AdminConfirmDialog`
+ * Kerangka dialog (top layer, fokus, Escape) ada di `AdminConfirmDialog`
  * agar alur non-form memakai bentuk yang sama.
  */
 export default function ConfirmSubmit({
-    message,
-    detail,
-    trigger,
-    confirmLabel = 'Ya, lanjutkan',
-    title = 'Konfirmasi tindakan',
+  message,
+  detail,
+  trigger,
+  confirmLabel = 'Ya, lanjutkan',
+  title = 'Konfirmasi tindakan',
+  confirmClassName = adminDangerButtonClass,
 }: {
-    /** Kalimat konsekuensi: apa yang akan terjadi, bukan sekadar "yakin?". */
-    message: string
-    /** Rincian tambahan, mis. sifat ireversibel atau jumlah yang terdampak. */
-    detail?: string
-    /** Tombol pemicu. `onClick`-nya akan ditimpa oleh komponen ini. */
-    trigger: ReactElement<{ onClick?: (event: unknown) => void }>
-    confirmLabel?: string
-    title?: string
+  /** Kalimat konsekuensi: apa yang akan terjadi, bukan sekadar "yakin?". */
+  message: string
+  /** Rincian tambahan, mis. sifat ireversibel atau jumlah yang terdampak. */
+  detail?: string
+  /** Tombol pemicu. `onClick`-nya akan ditimpa oleh komponen ini. */
+  trigger: ReactElement<{ onClick?: (event: unknown) => void }>
+  confirmLabel?: string
+  title?: string
+  /** Gaya konfirmasi untuk aksi aman/positif; aksi destruktif tetap merah secara default. */
+  confirmClassName?: string
 }) {
-    const [open, setOpen] = useState(false)
-    const triggerRef = useRef<HTMLElement | null>(null)
+  const [open, setOpen] = useState(false)
+  // DialogSurface owns initial focus, containment and trigger restoration.
 
-    // Fokus dikembalikan ke trigger saat dialog tertutup — tanpa ini keyboard
-    // users "jatuh" ke <body>. Fokus awal tombol konfirmasi ditangani
-    // `AdminConfirmDialog` lewat `data-autofocus`.
-    useEffect(() => {
-        if (open) {
-            triggerRef.current = document.activeElement as HTMLElement | null
-        } else if (triggerRef.current?.isConnected) {
-            triggerRef.current.focus()
-            triggerRef.current = null
-        }
-    }, [open])
+  const triggerNode = isValidElement(trigger)
+    ? cloneElement(trigger, {
+        onClick: (event: unknown) => {
+          trigger.props.onClick?.(event)
+          setOpen(true)
+        },
+      })
+    : trigger
 
-    const triggerNode = isValidElement(trigger)
-        ? cloneElement(trigger, {
-            onClick: (event: unknown) => {
-                trigger.props.onClick?.(event)
-                setOpen(true)
-            },
-        })
-        : trigger
+  return (
+    <>
+      {triggerNode}
 
-    return (
-        <>
-            {triggerNode}
-
-            <AdminConfirmDialog open={open} title={title} message={message} detail={detail} onCancel={() => setOpen(false)}>
-                <button type="button" onClick={() => setOpen(false)} className={adminSecondaryButtonClass}>
-                    Batal
-                </button>
-                <button
-                    data-autofocus
-                    // Tipe `submit` DIPERLUKAN, dan `requestSubmit()` dipanggil TANPA
-                    // argumen. Dua kegagalan nyata yang membentuk baris ini:
-                    //
-                    // 1. Submit native ditolak React — atribut `action` form server
-                    //    action diganti menjadi `javascript:throw new Error('A React
-                    //    form was unexpectedly submitted…')`. Jadi klik biasa tidak
-                    //    pernah menjalankan aksi.
-                    // 2. `requestSubmit(tombol)` menolak tombol bertipe `button`
-                    //    dengan *"The specified element is not a submit button"*.
-                    //
-                    // Karena itu: tombolnya `type="submit"` supaya sah sebagai
-                    // submitter, dan `requestSubmit()` tanpa argumen supaya React
-                    // yang memilih jalurnya. `event.currentTarget.form` dipakai,
-                    // bukan `closest('form')` — pemilik form tetap benar sekalipun
-                    // dialog dipindahkan ke luar form secara visual.
-                    type="submit"
-                    formNoValidate
-                    className={adminDangerButtonClass}
-                    onClick={(event) => {
-                        setOpen(false)
-                        event.currentTarget.form?.requestSubmit()
-                    }}
-                >
-                    {confirmLabel}
-                </button>
-            </AdminConfirmDialog>
-        </>
-    )
+      <AdminConfirmDialog
+        open={open}
+        title={title}
+        message={message}
+        detail={detail}
+        onCancel={() => setOpen(false)}
+      >
+        <button
+          type="button"
+          data-autofocus
+          onClick={() => setOpen(false)}
+          className={adminSecondaryButtonClass}
+        >
+          Batal
+        </button>
+        <button
+          // Tipe `submit` DIPERLUKAN, dan `requestSubmit()` dipanggil TANPA
+          // argumen. Dua kegagalan nyata yang membentuk baris ini:
+          //
+          // 1. Submit native ditolak React — atribut `action` form server
+          //    action diganti menjadi `javascript:throw new Error('A React
+          //    form was unexpectedly submitted…')`. Jadi klik biasa tidak
+          //    pernah menjalankan aksi.
+          // 2. `requestSubmit(tombol)` menolak tombol bertipe `button`
+          //    dengan *"The specified element is not a submit button"*.
+          //
+          // Karena itu: tombolnya `type="submit"` supaya sah sebagai
+          // submitter, dan `requestSubmit()` tanpa argumen supaya React
+          // yang memilih jalurnya. `event.currentTarget.form` dipakai,
+          // bukan `closest('form')` — pemilik form tetap benar sekalipun
+          // dialog dipindahkan ke luar form secara visual.
+          type="submit"
+          formNoValidate
+          className={confirmClassName}
+          onClick={(event) => {
+            event.preventDefault()
+            setOpen(false)
+            event.currentTarget.form?.requestSubmit()
+          }}
+        >
+          {confirmLabel}
+        </button>
+      </AdminConfirmDialog>
+    </>
+  )
 }

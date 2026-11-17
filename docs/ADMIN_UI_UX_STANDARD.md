@@ -1,5 +1,7 @@
 # Siap Tempur — Admin UI/UX Standard
 
+> Current component and interaction contracts: [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) and [UI_INTERACTION_STANDARDS.md](UI_INTERACTION_STANDARDS.md). See their authority section for precedence; this document retains its domain and historical context.
+
 > Berlaku untuk seluruh fitur baru dan perubahan admin setelah Milestone 1.5.
 > Canonical namespace: `/admin`.
 > Prinsip utama: fitur admin belum COMPLETE hanya karena backend, security, dan E2E sudah bekerja; operasional harian juga harus mudah dipahami dan efisien.

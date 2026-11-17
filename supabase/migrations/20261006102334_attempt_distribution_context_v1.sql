@@ -1,33 +1,44 @@
 -- Access contexts reuse the TKA SMP engine while isolating each active attempt.
 -- No new columns: organization references already exist on exam_attempts.
-
-create unique index if not exists exam_attempts_one_active_organization_assignment
-  on public.exam_attempts(user_id,assignment_id)
-  where source='organization' and assignment_id is not null
-    and lower(status) in ('created','in_progress');
+CREATE UNIQUE INDEX IF NOT EXISTS exam_attempts_one_active_organization_assignment ON public.exam_attempts (user_id, assignment_id)
+WHERE
+  source = 'organization' AND assignment_id IS NOT NULL AND lower(status) IN ('created', 'in_progress');
 
 -- Keep the published product catalog safe while TKA SMA has no live assessment.
 -- Existing entitlements are separate records and remain untouched.
-update public.products p
-   set status='ARCHIVED', updated_at=now()
-  from public.programs pr, public.tracks tr
- where p.program_id=pr.id and p.track_id=tr.id
-   and upper(pr.code)='TKA' and upper(tr.code)='SMA'
-   and upper(p.product_type)='PASS' and upper(p.status)='ACTIVE'
-   and not exists (
-     select 1 from public.exams e
-      where e.program_id=pr.id and e.track_id=tr.id
-        and lower(e.status) in ('active','scheduled','published','ready')
-   );
+UPDATE
+  public.products p
+SET
+  status = 'ARCHIVED',
+  updated_at = now()
+FROM
+  public.programs pr,
+  public.tracks tr
+WHERE
+  p.program_id = pr.id
+  AND p.track_id = tr.id
+  AND upper(pr.code) = 'TKA'
+  AND upper(tr.code) = 'SMA'
+  AND upper(p.product_type) = 'PASS'
+  AND upper(p.status) = 'ACTIVE'
+  AND NOT EXISTS (
+    SELECT
+      1
+    FROM
+      public.exams e
+    WHERE
+      e.program_id = pr.id
+      AND e.track_id = tr.id
+      AND lower(e.status) IN ('active', 'scheduled', 'published', 'ready'));
 
-create or replace function app_private.start_exam_attempt_for_context(p_exam_id uuid, p_user_id uuid, p_context jsonb)
-returns jsonb
-language plpgsql
-security definer
-set search_path to ''
-as $function$
-declare
-  v_attempt_id uuid := gen_random_uuid();
+CREATE OR REPLACE FUNCTION app_private.start_exam_attempt_for_context (p_exam_id uuid, p_user_id uuid, p_context jsonb)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+DECLARE
+  v_attempt_id uuid := gen_random_uuid ();
   v_attempt_number integer;
   v_attempt_limit integer;
   v_exam_status text;
@@ -40,9 +51,9 @@ declare
   v_program_code text;
   v_track_code text;
   v_exam_type_code text;
-  v_monetization_enforced boolean := false;
-  v_has_entitlement boolean := false;
-  v_bypass_attempt_limit boolean := false;
+  v_monetization_enforced boolean := FALSE;
+  v_has_entitlement boolean := FALSE;
+  v_bypass_attempt_limit boolean := FALSE;
   v_used_attempts integer := 0;
   v_item_count integer;
   v_expected_count integer;
@@ -51,9 +62,9 @@ declare
   v_seed text;
   v_existing_attempt_id uuid;
   v_existing_attempt_number integer;
-  v_context_type text := upper(coalesce(p_context->>'type','DIRECT'));
-  v_event_id uuid := nullif(p_context->>'event_id','')::uuid;
-  v_assignment_id uuid := nullif(p_context->>'assignment_id','')::uuid;
+  v_context_type text := upper(coalesce(p_context ->> 'type', 'DIRECT'));
+  v_event_id uuid := nullif (p_context ->> 'event_id', '')::uuid;
+  v_assignment_id uuid := nullif (p_context ->> 'assignment_id', '')::uuid;
   v_event_registration_id uuid;
   v_event_session_id uuid;
   v_context_starts_at timestamptz;
@@ -61,387 +72,562 @@ declare
   v_organization_id uuid;
   v_batch_id uuid;
   v_participant_id uuid;
-begin
-  if not exists(select 1 from public.profiles where id=p_user_id and lower(coalesce(status,''))='active') then
-    raise exception 'Active user profile not found';
-  end if;
+BEGIN
+  IF NOT EXISTS (
+    SELECT
+      1
+    FROM
+      public.profiles
+    WHERE
+      id = p_user_id
+      AND lower(coalesce(status, '')) = 'active') THEN
+  RAISE EXCEPTION 'Active user profile not found';
+END IF;
 
-  perform pg_advisory_xact_lock(hashtextextended(p_exam_id::text || ':' || p_user_id::text || ':' || v_context_type || ':' || coalesce(v_event_id::text,v_assignment_id::text,''),0));
+  PERFORM
+    pg_advisory_xact_lock(hashtextextended(p_exam_id::text || ':' || p_user_id::text || ':' || v_context_type || ':' || coalesce(v_event_id::text, v_assignment_id::text, ''), 0));
 
-  select e.status,e.attempt_limit,e.track_id,e.access_type,e.required_feature_id,
-         e.starts_at,e.ends_at,e.token_cost,pr.code,tr.code,et.code
-    into v_exam_status,v_attempt_limit,v_track_id,v_access_type,v_required_feature_id,
-         v_starts_at,v_ends_at,v_token_cost,v_program_code,v_track_code,v_exam_type_code
-  from public.exams e
-  join public.tracks tr on tr.id=e.track_id
-  join public.programs pr on pr.id=tr.program_id
-  join public.exam_types et on et.id=e.exam_type_id
-  where e.id=p_exam_id;
-  if not found then raise exception 'Exam not found'; end if;
+  SELECT
+    e.status,
+    e.attempt_limit,
+    e.track_id,
+    e.access_type,
+    e.required_feature_id,
+    e.starts_at,
+    e.ends_at,
+    e.token_cost,
+    pr.code,
+    tr.code,
+    et.code
+  INTO
+    v_exam_status,
+    v_attempt_limit,
+    v_track_id,
+    v_access_type,
+    v_required_feature_id,
+    v_starts_at,
+    v_ends_at,
+    v_token_cost,
+    v_program_code,
+    v_track_code,
+    v_exam_type_code
+  FROM
+    public.exams e
+    JOIN public.tracks tr ON tr.id = e.track_id
+    JOIN public.programs pr ON pr.id = tr.program_id
+    JOIN public.exam_types et ON et.id = e.exam_type_id
+  WHERE
+    e.id = p_exam_id;
+  IF NOT found THEN
+    RAISE EXCEPTION 'Exam not found';
+  END IF;
 
-  if upper(coalesce(v_program_code,'')) <> 'TKA'
-     or upper(coalesce(v_track_code,'')) <> 'SMP' then
-    raise exception 'TKA SMP exam required';
-  end if;
+  IF upper(coalesce(v_program_code, '')) <> 'TKA' OR upper(coalesce(v_track_code, '')) <> 'SMP' THEN
+    RAISE EXCEPTION 'TKA SMP exam required';
+  END IF;
 
-  if lower(coalesce(v_exam_status,'')) not in ('active','scheduled') then
-    raise exception 'Exam is not active';
-  end if;
-  if v_starts_at is not null and v_starts_at > now() then
-    raise exception 'Exam has not started';
-  end if;
-  if v_ends_at is not null and v_ends_at < now() then
-    raise exception 'Exam has ended';
-  end if;
+  IF lower(coalesce(v_exam_status, ''))
+    NOT IN ('active', 'scheduled') THEN
+    RAISE EXCEPTION 'Exam is not active';
+  END IF;
+  IF v_starts_at IS NOT NULL AND v_starts_at > now() THEN
+    RAISE EXCEPTION 'Exam has not started';
+  END IF;
+  IF v_ends_at IS NOT NULL AND v_ends_at < now() THEN
+    RAISE EXCEPTION 'Exam has ended';
+  END IF;
 
-  if coalesce(v_token_cost,0) <> 0 then
-    raise exception 'TKA SMP exams must use Tempur Pass access';
-  end if;
+  IF coalesce(v_token_cost, 0) <> 0 THEN
+    RAISE EXCEPTION 'TKA SMP exams must use Tempur Pass access';
+  END IF;
 
-  if v_context_type not in ('DIRECT','EVENT','ORGANIZATION') then
-    raise exception 'Invalid access context';
-  end if;
+  IF v_context_type NOT IN ('DIRECT', 'EVENT', 'ORGANIZATION') THEN
+    RAISE EXCEPTION 'Invalid access context';
+  END IF;
 
-  if v_context_type = 'EVENT' then
-    if v_event_id is null then raise exception 'Event context requires event_id'; end if;
-    select er.id, er.session_id, es.starts_at, es.ends_at
-      into v_event_registration_id, v_event_session_id, v_context_starts_at, v_context_ends_at
-      from public.event_registrations er
-      join public.event_sessions es on es.id=er.session_id
-      join public.events ev on ev.id=er.event_id
-     where er.user_id=p_user_id and er.event_id=v_event_id
-       and lower(er.status) in ('registered','started','completed','paid')
-       and lower(ev.status) in ('scheduled','live','active')
-       and ev.ends_at>now()
-       and es.exam_id=p_exam_id
-     order by er.created_at desc limit 1;
-    if v_event_registration_id is null then raise exception 'Event registration required'; end if;
-    if v_context_starts_at > now() or v_context_ends_at <= now() then
-      raise exception 'Event session is outside its access window';
-    end if;
-  elsif v_context_type = 'ORGANIZATION' then
-    if v_assignment_id is null then raise exception 'Organization context requires assignment_id'; end if;
-    select a.organization_id,a.batch_id,p.id
-      into v_organization_id,v_batch_id,v_participant_id
-      from public.organization_exam_assignments a
-      join public.organization_batches b on b.id=a.batch_id and b.organization_id=a.organization_id
-      join public.organizations o on o.id=a.organization_id
-      join public.organization_participants p on p.batch_id=b.id and p.organization_id=o.id
-     where a.id=v_assignment_id and a.exam_id=p_exam_id and a.is_active
-       and lower(b.status)='active' and lower(o.status)='active'
-       and ((b.starts_at is null or b.starts_at<=now())
-         or exists(select 1 from public.exam_attempts ea where ea.user_id=p_user_id
-            and ea.assignment_id=a.id and ea.source='organization'
-            and lower(ea.status) in ('created','in_progress')))
-       and ((b.ends_at is null or b.ends_at>=now())
-         or exists(select 1 from public.exam_attempts ea where ea.user_id=p_user_id
-            and ea.assignment_id=a.id and ea.source='organization'
-            and lower(ea.status) in ('created','in_progress')))
-       and ((a.starts_at is null or a.starts_at<=now())
-         or exists(select 1 from public.exam_attempts ea where ea.user_id=p_user_id
-            and ea.assignment_id=a.id and ea.source='organization'
-            and lower(ea.status) in ('created','in_progress')))
-       and ((a.due_at is null or a.due_at>=now())
-         or exists(select 1 from public.exam_attempts ea where ea.user_id=p_user_id
-            and ea.assignment_id=a.id and ea.source='organization'
-            and lower(ea.status) in ('created','in_progress')))
-       and p.user_id=p_user_id and lower(p.status) in ('active','registered')
-     limit 1;
-    if v_participant_id is null then raise exception 'Active organization assignment required'; end if;
-  elsif not exists(
-    select 1 from public.user_tracks
-    where user_id=p_user_id and track_id=v_track_id and lower(status)='active'
-  ) then
-    raise exception 'Active user track required';
-  end if;
-
+  IF v_context_type = 'EVENT' THEN
+    IF v_event_id IS NULL THEN
+      RAISE EXCEPTION 'Event context requires event_id';
+    END IF;
+    SELECT
+      er.id,
+      er.session_id,
+      es.starts_at,
+      es.ends_at
+    INTO
+      v_event_registration_id,
+      v_event_session_id,
+      v_context_starts_at,
+      v_context_ends_at
+    FROM
+      public.event_registrations er
+      JOIN public.event_sessions es ON es.id = er.session_id
+      JOIN public.events ev ON ev.id = er.event_id
+    WHERE
+      er.user_id = p_user_id
+      AND er.event_id = v_event_id
+      AND lower(er.status) IN ('registered', 'started', 'completed', 'paid')
+      AND lower(ev.status) IN ('scheduled', 'live', 'active')
+      AND ev.ends_at > now()
+      AND es.exam_id = p_exam_id
+    ORDER BY
+      er.created_at DESC
+    LIMIT 1;
+    IF v_event_registration_id IS NULL THEN
+      RAISE EXCEPTION 'Event registration required';
+    END IF;
+    IF v_context_starts_at > now() OR v_context_ends_at <= now() THEN
+      RAISE EXCEPTION 'Event session is outside its access window';
+    END IF;
+  ELSIF v_context_type = 'ORGANIZATION' THEN
+    IF v_assignment_id IS NULL THEN
+      RAISE EXCEPTION 'Organization context requires assignment_id';
+    END IF;
+    SELECT
+      a.organization_id,
+      a.batch_id,
+      p.id
+    INTO
+      v_organization_id,
+      v_batch_id,
+      v_participant_id
+    FROM
+      public.organization_exam_assignments a
+      JOIN public.organization_batches b ON b.id = a.batch_id
+        AND b.organization_id = a.organization_id
+      JOIN public.organizations o ON o.id = a.organization_id
+      JOIN public.organization_participants p ON p.batch_id = b.id
+        AND p.organization_id = o.id
+    WHERE
+      a.id = v_assignment_id
+      AND a.exam_id = p_exam_id
+      AND a.is_active
+      AND lower(b.status) = 'active'
+      AND lower(o.status) = 'active'
+      AND ((b.starts_at IS NULL
+          OR b.starts_at <= now())
+        OR EXISTS (
+          SELECT
+            1
+          FROM
+            public.exam_attempts ea
+          WHERE
+            ea.user_id = p_user_id
+            AND ea.assignment_id = a.id
+            AND ea.source = 'organization'
+            AND lower(ea.status) IN ('created', 'in_progress')))
+      AND ((b.ends_at IS NULL
+          OR b.ends_at >= now())
+        OR EXISTS (
+          SELECT
+            1
+          FROM
+            public.exam_attempts ea
+          WHERE
+            ea.user_id = p_user_id
+            AND ea.assignment_id = a.id
+            AND ea.source = 'organization'
+            AND lower(ea.status) IN ('created', 'in_progress')))
+      AND ((a.starts_at IS NULL
+          OR a.starts_at <= now())
+        OR EXISTS (
+          SELECT
+            1
+          FROM
+            public.exam_attempts ea
+          WHERE
+            ea.user_id = p_user_id
+            AND ea.assignment_id = a.id
+            AND ea.source = 'organization'
+            AND lower(ea.status) IN ('created', 'in_progress')))
+      AND ((a.due_at IS NULL
+          OR a.due_at >= now())
+        OR EXISTS (
+          SELECT
+            1
+          FROM
+            public.exam_attempts ea
+          WHERE
+            ea.user_id = p_user_id
+            AND ea.assignment_id = a.id
+            AND ea.source = 'organization'
+            AND lower(ea.status) IN ('created', 'in_progress')))
+      AND p.user_id = p_user_id
+      AND lower(p.status) IN ('active', 'registered')
+    LIMIT 1;
+    IF v_participant_id IS NULL THEN
+      RAISE EXCEPTION 'Active organization assignment required';
+    END IF;
+  ELSIF NOT EXISTS (
+      SELECT
+        1
+      FROM
+        public.user_tracks
+      WHERE
+        user_id = p_user_id
+        AND track_id = v_track_id
+        AND lower(status) = 'active') THEN
+    RAISE EXCEPTION 'Active user track required';
+  END IF;
   -- Distribution contexts grant access themselves; pass/attempt limits belong to Direct.
-  if v_context_type='DIRECT' then
-    null;
-  else
-    v_monetization_enforced := false;
-    v_bypass_attempt_limit := true;
-  end if;
-
+  IF v_context_type = 'DIRECT' THEN
+    NULL;
+  ELSE
+    v_monetization_enforced := FALSE;
+    v_bypass_attempt_limit := TRUE;
+  END IF;
   -- Idempotency is scoped to the exact distribution context.
-  select ea.id,ea.attempt_number
-    into v_existing_attempt_id,v_existing_attempt_number
-  from public.exam_attempts ea
-  where ea.exam_id=p_exam_id and ea.user_id=p_user_id and lower(ea.status)='in_progress'
-    and case v_context_type
-      when 'DIRECT' then ea.source='b2c' and ea.assignment_id is null
-        and coalesce(ea.metadata->>'eventId','')=''
-        and upper(coalesce(ea.metadata->>'accessContext','DIRECT'))='DIRECT'
-      when 'EVENT' then ea.source='b2c' and ea.assignment_id is null
-        and ea.metadata->>'eventId'=v_event_id::text
-      when 'ORGANIZATION' then ea.source='organization' and ea.assignment_id=v_assignment_id
-        and ea.participant_id=v_participant_id
-      else false
-    end
-  order by ea.attempt_number desc
-  limit 1;
+  SELECT
+    ea.id,
+    ea.attempt_number
+  INTO
+    v_existing_attempt_id,
+    v_existing_attempt_number
+  FROM
+    public.exam_attempts ea
+  WHERE
+    ea.exam_id = p_exam_id
+    AND ea.user_id = p_user_id
+    AND lower(ea.status) = 'in_progress'
+    AND CASE v_context_type
+    WHEN 'DIRECT' THEN
+      ea.source = 'b2c'
+      AND ea.assignment_id IS NULL
+      AND coalesce(ea.metadata ->> 'eventId', '')=''
+        AND upper(coalesce(ea.metadata ->> 'accessContext', 'DIRECT')) = 'DIRECT'
+    WHEN 'EVENT' THEN
+      ea.source = 'b2c'
+      AND ea.assignment_id IS NULL
+      AND ea.metadata ->> 'eventId' = v_event_id::text
+    WHEN 'ORGANIZATION' THEN
+      ea.source = 'organization'
+      AND ea.assignment_id = v_assignment_id
+      AND ea.participant_id = v_participant_id
+    ELSE
+      FALSE
+    END ORDER BY ea.attempt_number DESC LIMIT 1;
 
-  if v_existing_attempt_id is not null then
-    select ass.section_id into v_first_section
-    from public.attempt_section_states ass
-    join public.exam_sections es on es.id=ass.section_id
-    where ass.attempt_id=v_existing_attempt_id and lower(ass.status)='active'
-    order by es.sort_order limit 1;
+  IF v_existing_attempt_id IS NOT NULL THEN
+    SELECT
+      ass.section_id
+    INTO
+      v_first_section
+    FROM
+      public.attempt_section_states ass
+      JOIN public.exam_sections es ON es.id = ass.section_id
+    WHERE
+      ass.attempt_id = v_existing_attempt_id
+      AND lower(ass.status) = 'active'
+    ORDER BY
+      es.sort_order
+    LIMIT 1;
 
-    return jsonb_build_object(
-      'attempt_id',v_existing_attempt_id,
-      'attempt_number',v_existing_attempt_number,
-      'status','in_progress',
-      'active_section_id',v_first_section,
-      'resumed',true
-    );
-  end if;
+    RETURN jsonb_build_object('attempt_id', v_existing_attempt_id, 'attempt_number', v_existing_attempt_number, 'status', 'in_progress', 'active_section_id', v_first_section, 'resumed', TRUE);
+  END IF;
 
-  if v_context_type='DIRECT' then
-    select coalesce(ff.enabled,false)
-      into v_monetization_enforced
-    from public.feature_flags ff
-    where ff.key='tka.smp.monetization_enforcement';
-    v_monetization_enforced := coalesce(v_monetization_enforced,false);
-  end if;
+  IF v_context_type = 'DIRECT' THEN
+    SELECT
+      coalesce(ff.enabled, FALSE)
+    INTO
+      v_monetization_enforced
+    FROM
+      public.feature_flags ff
+    WHERE
+      ff.key = 'tka.smp.monetization_enforcement';
+    v_monetization_enforced := coalesce(v_monetization_enforced, FALSE);
+  END IF;
 
-  if v_monetization_enforced and v_context_type='DIRECT' then
-    v_access_type := upper(coalesce(v_access_type,'FREE'));
+  IF v_monetization_enforced AND v_context_type = 'DIRECT' THEN
+    v_access_type := upper(coalesce(v_access_type, 'FREE'));
 
-    if v_access_type in ('PREMIUM','FREEMIUM') then
-      if v_required_feature_id is null then
-        raise exception 'Exam monetization configuration requires required_feature_id';
-      end if;
+    IF v_access_type IN ('PREMIUM', 'FREEMIUM') THEN
+      IF v_required_feature_id IS NULL THEN
+        RAISE EXCEPTION 'Exam monetization configuration requires required_feature_id';
+      END IF;
 
-      select exists(
-        select 1
-        from public.entitlements en
-        where en.user_id=p_user_id
-          and en.feature_id=v_required_feature_id
-          and lower(en.status)='active'
-          and en.starts_at <= now()
-          and (en.expires_at is null or en.expires_at > now())
-          and (en.usage_limit is null or en.usage_count < en.usage_limit)
-      ) into v_has_entitlement;
-    end if;
+      SELECT
+        EXISTS (
+          SELECT
+            1
+          FROM
+            public.entitlements en
+          WHERE
+            en.user_id = p_user_id
+            AND en.feature_id = v_required_feature_id
+            AND lower(en.status) = 'active'
+            AND en.starts_at <= now()
+            AND (en.expires_at IS NULL
+              OR en.expires_at > now())
+            AND (en.usage_limit IS NULL
+              OR en.usage_count < en.usage_limit))
+      INTO
+        v_has_entitlement;
+    END IF;
 
-    if v_access_type='PREMIUM' then
-      if not v_has_entitlement then
-        raise exception 'ENTITLEMENT_REQUIRED';
-      end if;
-      v_bypass_attempt_limit := true;
-    elsif v_access_type='FREEMIUM' then
-      if v_has_entitlement then
-        v_bypass_attempt_limit := true;
-      else
-        select count(*)::integer into v_used_attempts
-        from public.exam_attempts ea
-        where ea.exam_id=p_exam_id and ea.user_id=p_user_id;
+    IF v_access_type = 'PREMIUM' THEN
+      IF NOT v_has_entitlement THEN
+        RAISE EXCEPTION 'ENTITLEMENT_REQUIRED';
+      END IF;
+      v_bypass_attempt_limit := TRUE;
+    ELSIF v_access_type = 'FREEMIUM' THEN
+      IF v_has_entitlement THEN
+        v_bypass_attempt_limit := TRUE;
+      ELSE
+        SELECT
+          count(*)::integer
+        INTO
+          v_used_attempts
+        FROM
+          public.exam_attempts ea
+        WHERE
+          ea.exam_id = p_exam_id
+          AND ea.user_id = p_user_id;
 
-        if v_used_attempts >= coalesce(v_attempt_limit,1) then
-          raise exception 'ENTITLEMENT_REQUIRED';
-        end if;
-      end if;
-    end if;
-  end if;
+        IF v_used_attempts >= coalesce(v_attempt_limit, 1) THEN
+          RAISE EXCEPTION 'ENTITLEMENT_REQUIRED';
+        END IF;
+      END IF;
+    END IF;
+  END IF;
 
-  select count(*),coalesce(sum(es.question_count),0)
-    into v_section_count,v_expected_count
-  from public.exam_sections es
-  where es.exam_id=p_exam_id;
+  SELECT
+    count(*),
+    coalesce(sum(es.question_count), 0)
+  INTO
+    v_section_count,
+    v_expected_count
+  FROM
+    public.exam_sections es
+  WHERE
+    es.exam_id = p_exam_id;
 
-  if v_section_count = 0 or v_expected_count <= 0 then
-    raise exception 'Exam must declare at least one section with a positive question count';
-  end if;
+  IF v_section_count = 0 OR v_expected_count <= 0 THEN
+    RAISE EXCEPTION 'Exam must declare at least one section with a positive question count';
+  END IF;
 
-  if exists(
-    select 1 from public.exam_sections es
-    where es.exam_id=p_exam_id and coalesce(es.question_count,0) <= 0
-  ) then
-    raise exception 'Every exam section must declare a positive question count';
-  end if;
+  IF EXISTS (
+    SELECT
+      1
+    FROM
+      public.exam_sections es
+    WHERE
+      es.exam_id = p_exam_id
+      AND coalesce(es.question_count, 0) <= 0) THEN
+  RAISE EXCEPTION 'Every exam section must declare a positive question count';
+END IF;
 
-  select count(*) into v_item_count
-  from public.exam_question_items where exam_id=p_exam_id;
+  SELECT
+    count(*)
+  INTO
+    v_item_count
+  FROM
+    public.exam_question_items
+  WHERE
+    exam_id = p_exam_id;
 
-  if v_item_count <> v_expected_count then
-    raise exception 'Exam item count mismatch: expected %, got %',v_expected_count,v_item_count;
-  end if;
+  IF v_item_count <> v_expected_count THEN
+    RAISE EXCEPTION 'Exam item count mismatch: expected %, got %', v_expected_count, v_item_count;
+  END IF;
 
-  if exists(
-    select 1
-    from public.exam_sections es
-    left join public.exam_question_items eqi
-      on eqi.section_id=es.id and eqi.exam_id=p_exam_id
-    where es.exam_id=p_exam_id
-    group by es.id,es.question_count
-    having count(eqi.id) <> es.question_count
-  ) then
-    raise exception 'Exam section item count does not match section question_count';
-  end if;
+  IF EXISTS (
+    SELECT
+      1
+    FROM
+      public.exam_sections es
+    LEFT JOIN public.exam_question_items eqi ON eqi.section_id = es.id
+      AND eqi.exam_id = p_exam_id
+  WHERE
+    es.exam_id = p_exam_id
+  GROUP BY
+    es.id,
+    es.question_count
+  HAVING
+    count(eqi.id) <> es.question_count) THEN
+RAISE EXCEPTION 'Exam section item count does not match section question_count';
+END IF;
 
-  if exists(
-    select 1
-    from public.exam_question_items eqi
-    left join public.exam_sections es on es.id=eqi.section_id
-    where eqi.exam_id=p_exam_id
-      and (eqi.section_id is null or es.exam_id is distinct from p_exam_id)
-  ) then
-    raise exception 'Every exam item must belong to a section of the same exam';
-  end if;
+  IF EXISTS (
+    SELECT
+      1
+    FROM
+      public.exam_question_items eqi
+    LEFT JOIN public.exam_sections es ON es.id = eqi.section_id
+  WHERE
+    eqi.exam_id = p_exam_id
+    AND (eqi.section_id IS NULL
+      OR es.exam_id IS DISTINCT FROM p_exam_id)) THEN
+RAISE EXCEPTION 'Every exam item must belong to a section of the same exam';
+END IF;
 
-  if exists(
-    select 1
-    from public.exam_question_items eqi
-    left join public.question_versions qv
-      on qv.question_id=eqi.question_id and qv.version=eqi.question_version
-    where eqi.exam_id=p_exam_id and qv.question_id is null
-  ) then
-    raise exception 'Every exam item must reference an existing frozen question version';
-  end if;
+  IF EXISTS (
+    SELECT
+      1
+    FROM
+      public.exam_question_items eqi
+    LEFT JOIN public.question_versions qv ON qv.question_id = eqi.question_id
+      AND qv.version = eqi.question_version
+  WHERE
+    eqi.exam_id = p_exam_id
+    AND qv.question_id IS NULL) THEN
+RAISE EXCEPTION 'Every exam item must reference an existing frozen question version';
+END IF;
 
-  select coalesce(max(attempt_number),0)+1 into v_attempt_number
-  from public.exam_attempts where exam_id=p_exam_id and user_id=p_user_id;
+  SELECT
+    coalesce(max(attempt_number), 0) + 1
+  INTO
+    v_attempt_number
+  FROM
+    public.exam_attempts
+  WHERE
+    exam_id = p_exam_id
+    AND user_id = p_user_id;
 
-  if v_context_type='DIRECT' and v_attempt_limit is not null
-     and v_attempt_number > v_attempt_limit
-     and not v_bypass_attempt_limit then
-    raise exception 'Attempt limit reached';
-  end if;
+  IF v_context_type = 'DIRECT' AND v_attempt_limit IS NOT NULL AND v_attempt_number > v_attempt_limit AND NOT v_bypass_attempt_limit THEN
+    RAISE EXCEPTION 'Attempt limit reached';
+  END IF;
 
   v_seed := v_attempt_id::text;
 
-  insert into public.exam_attempts(
-    id,exam_id,user_id,attempt_number,status,started_at,source,organization_id,batch_id,assignment_id,participant_id,metadata,created_at,updated_at
-  ) values (
-    v_attempt_id,p_exam_id,p_user_id,v_attempt_number,'in_progress',now(),
-    case when v_context_type='ORGANIZATION' then 'organization' else 'b2c' end,
-    v_organization_id,v_batch_id,v_assignment_id,v_participant_id,
-    jsonb_build_object(
-      'orderSeed',v_seed,
-      'engineVersion','tka-section-rpc-v2',
-      'questionCount',v_expected_count,
-      'programCode',v_program_code,
-      'trackCode',v_track_code,
-      'examTypeCode',v_exam_type_code,
-      'practiceKind',case
-        when v_context_type='EVENT' then 'event'
-        when upper(v_exam_type_code)='MINI_TRYOUT' then 'mini_tryout'
-        when upper(v_exam_type_code)='DRILL' then 'drill'
-        else 'full_tryout'
-      end,
-      'monetizationEnforced',v_monetization_enforced,
-      'entitlementBypass',v_bypass_attempt_limit,
-      'tokenCost',0
-    ) || jsonb_strip_nulls(jsonb_build_object(
-      'accessContext',lower(v_context_type),
-      'eventId',v_event_id,
-      'eventSessionId',v_event_session_id,
-      'eventRegistrationId',v_event_registration_id,
-      'assignmentId',v_assignment_id,
-      'organizationId',v_organization_id,
-      'batchId',v_batch_id,
-      'participantId',v_participant_id
-    )),now(),now()
-  );
+INSERT INTO public.exam_attempts (id, exam_id, user_id, attempt_number, status, started_at, source, organization_id, batch_id, assignment_id, participant_id, metadata, created_at, updated_at)
+  VALUES (v_attempt_id, p_exam_id, p_user_id, v_attempt_number, 'in_progress', now(), CASE WHEN v_context_type = 'ORGANIZATION' THEN
+      'organization'
+    ELSE
+      'b2c'
+    END, v_organization_id, v_batch_id, v_assignment_id, v_participant_id, jsonb_build_object('orderSeed', v_seed, 'engineVersion', 'tka-section-rpc-v2', 'questionCount', v_expected_count, 'programCode', v_program_code, 'trackCode', v_track_code, 'examTypeCode', v_exam_type_code, 'practiceKind', CASE WHEN v_context_type = 'EVENT' THEN
+        'event'
+      WHEN upper(v_exam_type_code) = 'MINI_TRYOUT' THEN
+        'mini_tryout'
+      WHEN upper(v_exam_type_code) = 'DRILL' THEN
+        'drill'
+      ELSE
+        'full_tryout'
+      END, 'monetizationEnforced', v_monetization_enforced, 'entitlementBypass', v_bypass_attempt_limit, 'tokenCost', 0) || jsonb_strip_nulls (jsonb_build_object('accessContext', lower(v_context_type), 'eventId', v_event_id, 'eventSessionId', v_event_session_id, 'eventRegistrationId', v_event_registration_id, 'assignmentId', v_assignment_id, 'organizationId', v_organization_id, 'batchId', v_batch_id, 'participantId', v_participant_id)), now(), now());
 
-  with s as (
-    select es.*, row_number() over(order by es.sort_order,es.id) rn
-    from public.exam_sections es where es.exam_id=p_exam_id
-  )
-  insert into public.attempt_section_states(
-    attempt_id,section_id,status,started_at,deadline_at,created_at,updated_at
-  )
-  select v_attempt_id,id,
-         case when rn=1 then 'active' else 'locked' end,
-         case when rn=1 then now() else null end,
-         case when rn=1 then now() + make_interval(secs=>coalesce(duration_seconds,0)) else null end,
-         now(),now()
-  from s;
+  WITH s AS (
+    SELECT
+      es.*,
+      row_number() OVER (ORDER BY es.sort_order,
+        es.id) rn
+    FROM public.exam_sections es
+  WHERE es.exam_id = p_exam_id)
+INSERT INTO public.attempt_section_states (attempt_id, section_id, status, started_at, deadline_at, created_at, updated_at)
+SELECT
+  v_attempt_id,
+  id,
+  CASE WHEN rn = 1 THEN
+    'active'
+  ELSE
+    'locked'
+  END,
+  CASE WHEN rn = 1 THEN
+    now()
+  ELSE
+    NULL
+  END,
+  CASE WHEN rn = 1 THEN
+    now() + make_interval(secs => coalesce(duration_seconds, 0))
+  ELSE
+    NULL
+  END,
+  now(),
+  now()
+FROM
+  s;
 
-  select ass.section_id into v_first_section
-  from public.attempt_section_states ass
-  join public.exam_sections es on es.id=ass.section_id
-  where ass.attempt_id=v_attempt_id and lower(ass.status)='active'
-  order by es.sort_order limit 1;
+  SELECT
+    ass.section_id
+  INTO
+    v_first_section
+  FROM
+    public.attempt_section_states ass
+    JOIN public.exam_sections es ON es.id = ass.section_id
+  WHERE
+    ass.attempt_id = v_attempt_id
+    AND lower(ass.status) = 'active'
+  ORDER BY
+    es.sort_order
+  LIMIT 1;
 
-  with base as (
-    select eqi.question_id,eqi.question_version,eqi.section_id,es.sort_order,
-           qv.snapshot,
-           row_number() over(order by es.sort_order,md5(v_seed || ':' || eqi.question_id::text)) as pos
-    from public.exam_question_items eqi
-    join public.exam_sections es on es.id=eqi.section_id and es.exam_id=eqi.exam_id
-    join public.question_versions qv
-      on qv.question_id=eqi.question_id and qv.version=eqi.question_version
-    where eqi.exam_id=p_exam_id
-  ), enhanced as (
-    select b.*,
-      jsonb_set(
-        b.snapshot,
-        '{options}',
-        coalesce((
-          select jsonb_agg(
-            jsonb_build_object(
-              'id',qo.id,'option_key',qo.option_key,'content',qo.content,
-              'is_correct',qo.is_correct,'score',qo.score,'sort_order',qo.sort_order,
-              'image_url',qo.image_url,'response_group',qo.response_group,
-              'response_group_order',qo.response_group_order,'metadata',qo.metadata
-            ) order by qo.sort_order
-          )
-          from public.question_options qo where qo.question_id=b.question_id
-        ),'[]'::jsonb),
-        true
-      ) as frozen_snapshot
-    from base b
-  )
-  insert into public.attempt_questions(
-    attempt_id,question_id,question_version,position,section_id,question_snapshot,max_score
-  )
-  select v_attempt_id,question_id,question_version,pos,section_id,frozen_snapshot,1
-  from enhanced;
+  WITH base AS (
+    SELECT
+      eqi.question_id,
+      eqi.question_version,
+      eqi.section_id,
+      es.sort_order,
+      qv.snapshot,
+      row_number() OVER (ORDER BY es.sort_order,
+        md5(v_seed || ':' || eqi.question_id::text)) AS pos
+    FROM
+      public.exam_question_items eqi
+      JOIN public.exam_sections es ON es.id = eqi.section_id
+        AND es.exam_id = eqi.exam_id
+      JOIN public.question_versions qv ON qv.question_id = eqi.question_id
+        AND qv.version = eqi.question_version
+    WHERE
+      eqi.exam_id = p_exam_id
+),
+enhanced AS (
+  SELECT
+    b.*,
+    jsonb_set(b.snapshot, '{options}', coalesce((
+        SELECT
+          jsonb_agg(jsonb_build_object('id', qo.id, 'option_key', qo.option_key, 'content', qo.content, 'is_correct', qo.is_correct, 'score', qo.score, 'sort_order', qo.sort_order, 'image_url', qo.image_url, 'response_group', qo.response_group, 'response_group_order', qo.response_group_order, 'metadata', qo.metadata)
+          ORDER BY qo.sort_order)
+        FROM public.question_options qo
+        WHERE
+          qo.question_id = b.question_id), '[]'::jsonb), TRUE) AS frozen_snapshot
+  FROM
+    base b)
+INSERT INTO public.attempt_questions (attempt_id, question_id, question_version, position, section_id, question_snapshot, max_score)
+SELECT
+  v_attempt_id,
+  question_id,
+  question_version,
+  pos,
+  section_id,
+  frozen_snapshot,
+  1
+FROM
+  enhanced;
 
-  insert into public.attempt_events(attempt_id,event_type,metadata)
-  values(v_attempt_id,'attempt_started',jsonb_build_object(
-    'attemptNumber',v_attempt_number,
-    'activeSectionId',v_first_section,
-    'questionCount',v_expected_count,
-    'monetizationEnforced',v_monetization_enforced,
-    'entitlementBypass',v_bypass_attempt_limit,
-    'tokenCost',0
-  ));
+INSERT INTO public.attempt_events (attempt_id, event_type, metadata)
+  VALUES (v_attempt_id, 'attempt_started', jsonb_build_object('attemptNumber', v_attempt_number, 'activeSectionId', v_first_section, 'questionCount', v_expected_count, 'monetizationEnforced', v_monetization_enforced, 'entitlementBypass', v_bypass_attempt_limit, 'tokenCost', 0));
 
-  return jsonb_build_object(
-    'attempt_id',v_attempt_id,
-    'attempt_number',v_attempt_number,
-    'status','in_progress',
-    'active_section_id',v_first_section,
-    'resumed',false
-  );
-end;
+  RETURN jsonb_build_object('attempt_id', v_attempt_id, 'attempt_number', v_attempt_number, 'status', 'in_progress', 'active_section_id', v_first_section, 'resumed', FALSE);
+END;
 $function$;
 
-create or replace function app_private.start_exam_attempt_for_user(p_exam_id uuid, p_user_id uuid)
-returns jsonb
-language sql
-security definer
-set search_path to ''
-as $function$
-  select app_private.start_exam_attempt_for_context(p_exam_id,p_user_id,jsonb_build_object('type','DIRECT'));
+CREATE OR REPLACE FUNCTION app_private.start_exam_attempt_for_user (p_exam_id uuid, p_user_id uuid)
+  RETURNS jsonb
+  LANGUAGE sql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+  SELECT
+    app_private.start_exam_attempt_for_context (p_exam_id, p_user_id, jsonb_build_object('type', 'DIRECT'));
 $function$;
 
-create or replace function public.start_exam_attempt_in_context(p_exam_id uuid, p_context jsonb)
-returns jsonb
-language plpgsql
-security definer
-set search_path to ''
-as $function$
-declare v_user uuid:=auth.uid(); begin
-  if v_user is null then raise exception 'Authentication required'; end if;
-  if jsonb_typeof(coalesce(p_context,'{}'::jsonb)) <> 'object' then raise exception 'Invalid access context'; end if;
-  return app_private.start_exam_attempt_for_context(p_exam_id,v_user,p_context);
-end;
+CREATE OR REPLACE FUNCTION public.start_exam_attempt_in_context (p_exam_id uuid, p_context jsonb)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+DECLARE
+  v_user uuid := auth.uid ();
+BEGIN
+  IF v_user IS NULL THEN
+    RAISE EXCEPTION 'Authentication required';
+  END IF;
+  IF jsonb_typeof(coalesce(p_context, '{}'::jsonb)) <> 'object' THEN
+    RAISE EXCEPTION 'Invalid access context';
+  END IF;
+  RETURN app_private.start_exam_attempt_for_context (p_exam_id, v_user, p_context);
+END;
 $function$;
 
-revoke all on function app_private.start_exam_attempt_for_context(uuid,uuid,jsonb) from public,anon,authenticated;
-revoke all on function public.start_exam_attempt_in_context(uuid,jsonb) from public,anon;
-grant execute on function public.start_exam_attempt_in_context(uuid,jsonb) to authenticated;
+REVOKE ALL ON FUNCTION app_private.start_exam_attempt_for_context (uuid, uuid, jsonb) FROM public, anon, authenticated;
+
+REVOKE ALL ON FUNCTION public.start_exam_attempt_in_context (uuid, jsonb) FROM public, anon;
+
+GRANT EXECUTE ON FUNCTION public.start_exam_attempt_in_context (uuid, jsonb) TO authenticated;

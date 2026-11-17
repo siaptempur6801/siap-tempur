@@ -1,20 +1,20 @@
 const domains: Record<string, string> = {
-  admin: 'Workspace',
-  content: 'Content',
-  question: 'Question Bank',
+  admin: 'Workspace admin',
+  content: 'Konten',
+  question: 'Bank soal',
   exam: 'Assessment',
   event: 'Event',
   organization: 'Instansi',
   report: 'Monitoring',
-  order: 'Orders',
-  payment: 'Payments',
-  product: 'Products',
-  entitlement: 'Entitlements',
-  user: 'Users',
-  role: 'Roles',
-  settings: 'Settings',
-  audit: 'Audit Log',
-  notification: 'Notifications'
+  order: 'Pesanan',
+  payment: 'Pembayaran',
+  product: 'Produk',
+  entitlement: 'Akses',
+  user: 'Pengguna',
+  role: 'Peran',
+  settings: 'Pengaturan',
+  audit: 'Log audit',
+  notification: 'Notifikasi',
 }
 const actions: Record<string, string> = {
   access: 'Akses',
@@ -22,9 +22,9 @@ const actions: Record<string, string> = {
   create: 'Buat',
   update: 'Edit',
   manage: 'Kelola',
-  review: 'Review',
+  review: 'Tinjau',
   assign: 'Tugaskan',
-  publish: 'Terbitkan'
+  publish: 'Terbitkan',
 }
 export function RolePermissions({ permissions }: { permissions: string[] }) {
   const grouped = new Map<string, string[]>()

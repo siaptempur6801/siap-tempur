@@ -1,5 +1,7 @@
 # Admin Workspace UI System
 
+> Current component and interaction contracts: [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) and [UI_INTERACTION_STANDARDS.md](UI_INTERACTION_STANDARDS.md). See their authority section for precedence; this document retains its domain and historical context.
+
 ## Purpose
 
 Admin Workspace is one operational application. Canonical admin routes must use the same shell, spacing, hierarchy, feedback, form, list/table, status, empty-state, and responsive patterns.

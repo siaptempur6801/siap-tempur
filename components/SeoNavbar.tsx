@@ -1,16 +1,16 @@
-import { createClient } from "@/lib/utils/supabase/server";
-import SeoNavbarClient from "@/components/SeoNavbarClient";
+import { createClient } from '@/lib/utils/supabase/server'
+import SeoNavbarClient from '@/components/SeoNavbarClient'
 
 export default async function SeoNavbar({
-    navItems,
+  navItems,
 }: {
-    /** Item navigasi khusus halaman ini (mis. anchor section halaman blog). */
-    navItems?: readonly { href: string; label: string }[];
+  /** Item navigasi khusus halaman ini (mis. anchor section halaman blog). */
+  navItems?: readonly { href: string; label: string }[]
 } = {}) {
-    const supabase = await createClient();
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-    return <SeoNavbarClient isAuthenticated={Boolean(user)} navItems={navItems} />;
+  return <SeoNavbarClient isAuthenticated={Boolean(user)} navItems={navItems} />
 }

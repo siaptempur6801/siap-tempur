@@ -14,63 +14,63 @@ import { resolveMidtransFulfilment, normalizeFraudStatus } from '@/lib/midtrans-
  */
 
 describe('normalizeFraudStatus', () => {
-    it('mengenali tiga keputusan fraud Midtrans tanpa peduli huruf besar/kecil', () => {
-        expect(normalizeFraudStatus('accept')).toBe('accept')
-        expect(normalizeFraudStatus('ACCEPT')).toBe('accept')
-        expect(normalizeFraudStatus(' Challenge ')).toBe('challenge')
-        expect(normalizeFraudStatus('deny')).toBe('deny')
-    })
+  it('mengenali tiga keputusan fraud Midtrans tanpa peduli huruf besar/kecil', () => {
+    expect(normalizeFraudStatus('accept')).toBe('accept')
+    expect(normalizeFraudStatus('ACCEPT')).toBe('accept')
+    expect(normalizeFraudStatus(' Challenge ')).toBe('challenge')
+    expect(normalizeFraudStatus('deny')).toBe('deny')
+  })
 
-    it('mengembalikan null untuk nilai yang tidak dikenal atau kosong', () => {
-        expect(normalizeFraudStatus(undefined)).toBeNull()
-        expect(normalizeFraudStatus(null)).toBeNull()
-        expect(normalizeFraudStatus('')).toBeNull()
-        expect(normalizeFraudStatus('sesuatu')).toBeNull()
-    })
+  it('mengembalikan null untuk nilai yang tidak dikenal atau kosong', () => {
+    expect(normalizeFraudStatus(undefined)).toBeNull()
+    expect(normalizeFraudStatus(null)).toBeNull()
+    expect(normalizeFraudStatus('')).toBeNull()
+    expect(normalizeFraudStatus('sesuatu')).toBeNull()
+  })
 })
 
 describe('resolveMidtransFulfilment', () => {
-    it('MENOLAK pemenuhan saat capture disertai fraud deny', () => {
-        const decision = resolveMidtransFulfilment('capture', 'deny')
-        expect(decision.status).toBe('deny')
-        expect(decision.blockedReason).toBe('FRAUD_DENIED')
-    })
+  it('MENOLAK pemenuhan saat capture disertai fraud deny', () => {
+    const decision = resolveMidtransFulfilment('capture', 'deny')
+    expect(decision.status).toBe('deny')
+    expect(decision.blockedReason).toBe('FRAUD_DENIED')
+  })
 
-    it('menahan pemenuhan saat capture disertai fraud challenge', () => {
-        const decision = resolveMidtransFulfilment('capture', 'challenge')
-        expect(decision.status).toBe('pending')
-        expect(decision.blockedReason).toBe('FRAUD_CHALLENGED')
-    })
+  it('menahan pemenuhan saat capture disertai fraud challenge', () => {
+    const decision = resolveMidtransFulfilment('capture', 'challenge')
+    expect(decision.status).toBe('pending')
+    expect(decision.blockedReason).toBe('FRAUD_CHALLENGED')
+  })
 
-    it('meneruskan capture saat fraud accept', () => {
-        const decision = resolveMidtransFulfilment('capture', 'accept')
-        expect(decision.status).toBe('capture')
-        expect(decision.blockedReason).toBeNull()
-    })
+  it('meneruskan capture saat fraud accept', () => {
+    const decision = resolveMidtransFulfilment('capture', 'accept')
+    expect(decision.status).toBe('capture')
+    expect(decision.blockedReason).toBeNull()
+  })
 
-    it('meneruskan capture tanpa fraud_status (channel tanpa review fraud)', () => {
-        const decision = resolveMidtransFulfilment('capture', undefined)
-        expect(decision.status).toBe('capture')
-        expect(decision.blockedReason).toBeNull()
-    })
+  it('meneruskan capture tanpa fraud_status (channel tanpa review fraud)', () => {
+    const decision = resolveMidtransFulfilment('capture', undefined)
+    expect(decision.status).toBe('capture')
+    expect(decision.blockedReason).toBeNull()
+  })
 
-    it('settlement selalu diteruskan karena sudah final', () => {
-        const decision = resolveMidtransFulfilment('settlement', 'deny')
-        expect(decision.status).toBe('settlement')
-        expect(decision.blockedReason).toBeNull()
-    })
+  it('settlement selalu diteruskan karena sudah final', () => {
+    const decision = resolveMidtransFulfilment('settlement', 'deny')
+    expect(decision.status).toBe('settlement')
+    expect(decision.blockedReason).toBeNull()
+  })
 
-    it('tidak mengubah status non-capture', () => {
-        for (const status of ['pending', 'expire', 'cancel', 'deny', 'refund']) {
-            const decision = resolveMidtransFulfilment(status, 'accept')
-            expect(decision.status).toBe(status)
-            expect(decision.blockedReason).toBeNull()
-        }
-    })
+  it('tidak mengubah status non-capture', () => {
+    for (const status of ['pending', 'expire', 'cancel', 'deny', 'refund']) {
+      const decision = resolveMidtransFulfilment(status, 'accept')
+      expect(decision.status).toBe(status)
+      expect(decision.blockedReason).toBeNull()
+    }
+  })
 
-    it('normalisasi huruf besar/kecil tetap menolak fraud deny', () => {
-        const decision = resolveMidtransFulfilment('CAPTURE', 'DENY')
-        expect(decision.status).toBe('deny')
-        expect(decision.blockedReason).toBe('FRAUD_DENIED')
-    })
+  it('normalisasi huruf besar/kecil tetap menolak fraud deny', () => {
+    const decision = resolveMidtransFulfilment('CAPTURE', 'DENY')
+    expect(decision.status).toBe('deny')
+    expect(decision.blockedReason).toBe('FRAUD_DENIED')
+  })
 })

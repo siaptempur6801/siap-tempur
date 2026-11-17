@@ -1,0 +1,100 @@
+{
+  "checkedAt": "2026-10-09",
+  "readOnly": true,
+  "counts": {
+    "staging": 197,
+    "production": 195
+  },
+  "stagingOnly": [
+    {
+      "version": "20261006073456",
+      "name": "assessment_distribution_contracts"
+    },
+    {
+      "version": "20261006104154",
+      "name": "attempt_distribution_context_v1"
+    },
+    {
+      "version": "20261006104613",
+      "name": "context_attempt_quota_boundary"
+    },
+    {
+      "version": "20261006135534",
+      "name": "harden_nullable_content_question_access_guard"
+    },
+    {
+      "version": "20261006135853",
+      "name": "enforce_active_b2c_attempt_context_uniqueness"
+    },
+    {
+      "version": "20261006153254",
+      "name": "fix_org_export_latest_attempt_order"
+    },
+    {
+      "version": "20261006153852",
+      "name": "fix_org_monitoring_latest_attempt_order"
+    },
+    {
+      "version": "20261006172558",
+      "name": "scope_active_b2c_attempt_uniqueness_to_operational_rows"
+    },
+    {
+      "version": "20261008044605",
+      "name": "admin_read_models"
+    },
+    {
+      "version": "20261008150758",
+      "name": "align_tka_smp_runtime_contracts"
+    },
+    {
+      "version": "20261009060323",
+      "name": "learner_overview_read_models"
+    },
+    {
+      "version": "20261009063825",
+      "name": "learner_reward_totals"
+    }
+  ],
+  "productionOnly": [
+    {
+      "version": "20261006165617",
+      "name": "harden_nullable_content_question_access_guard"
+    },
+    {
+      "version": "20261006173714",
+      "name": "assessment_distribution_contracts"
+    },
+    {
+      "version": "20261006173747",
+      "name": "attempt_distribution_context_v1"
+    },
+    {
+      "version": "20261006173825",
+      "name": "context_attempt_quota_boundary"
+    },
+    {
+      "version": "20261006173852",
+      "name": "scope_active_b2c_attempt_uniqueness_to_operational_rows"
+    },
+    {
+      "version": "20261006173913",
+      "name": "enforce_active_b2c_attempt_context_uniqueness"
+    },
+    {
+      "version": "20261006173941",
+      "name": "fix_org_export_latest_attempt_order"
+    },
+    {
+      "version": "20261006174008",
+      "name": "fix_org_monitoring_latest_attempt_order"
+    },
+    {
+      "version": "20261008150815",
+      "name": "admin_read_models"
+    },
+    {
+      "version": "20261008150816",
+      "name": "align_tka_smp_runtime_contracts"
+    }
+  ]
+}

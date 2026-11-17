@@ -23,7 +23,11 @@ describe('Admin status labels', () => {
 describe('Admin form field accessibility', () => {
   it('keeps helper text out of the accessible name and associates it as a description', () => {
     const markup = renderToStaticMarkup(
-      <AdminField label="Status event" fieldId="event-status" hint="Status mengatur tampilan event; jadwal menentukan waktunya.">
+      <AdminField
+        label="Status event"
+        fieldId="event-status"
+        hint="Status mengatur tampilan event; jadwal menentukan waktunya."
+      >
         <select className={adminInputClass}>
           <option value="draft">Draft</option>
         </select>

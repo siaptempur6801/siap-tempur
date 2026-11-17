@@ -22,21 +22,23 @@ const STAGING_REF = 'lpgrivowdcepcxradavu'
 const SLUG = 'cara-membaca-hasil-tryout-skd'
 
 const fileEnv = Object.fromEntries(
-    readFileSync(resolve(process.cwd(), '.env.local'), 'utf8')
-        .split('\n')
-        .filter((line) => line.includes('=') && !line.trim().startsWith('#'))
-        .map((line) => {
-            const index = line.indexOf('=')
-            return [line.slice(0, index).trim(), line.slice(index + 1).trim()]
-        }),
+  readFileSync(resolve(process.cwd(), '.env.local'), 'utf8')
+    .split('\n')
+    .filter((line) => line.includes('=') && !line.trim().startsWith('#'))
+    .map((line) => {
+      const index = line.indexOf('=')
+      return [line.slice(0, index).trim(), line.slice(index + 1).trim()]
+    }),
 )
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || fileEnv.NEXT_PUBLIC_SUPABASE_URL
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || fileEnv.SUPABASE_SERVICE_ROLE_KEY
-if (!supabaseUrl || !serviceRoleKey) throw new Error('NEXT_PUBLIC_SUPABASE_URL & SUPABASE_SERVICE_ROLE_KEY wajib ada')
+if (!supabaseUrl || !serviceRoleKey)
+  throw new Error('NEXT_PUBLIC_SUPABASE_URL & SUPABASE_SERVICE_ROLE_KEY wajib ada')
 
 const projectRef = new URL(supabaseUrl).hostname.split('.')[0]
-if (projectRef !== STAGING_REF) throw new Error(`Script ini hanya untuk staging (${STAGING_REF}); dapat ${projectRef}`)
+if (projectRef !== STAGING_REF)
+  throw new Error(`Script ini hanya untuk staging (${STAGING_REF}); dapat ${projectRef}`)
 
 const asDraft = process.argv.includes('--draft')
 
@@ -156,33 +158,36 @@ const content = `
 `.trim()
 
 const article = {
-    title: 'Cara Membaca Hasil Tryout SKD dan Menentukan Fokus Belajar Berikutnya',
-    slug: SLUG,
-    excerpt: 'Nilai tryout hanya berguna kalau kamu tahu cara membacanya. Panduan praktis menerjemahkan hasil SKD menjadi rencana belajar yang bisa dikerjakan minggu ini.',
-    category: 'Strategi Belajar',
-    content,
-    status: asDraft ? 'draft' : 'published',
-    published_at: asDraft ? null : new Date().toISOString(),
+  title: 'Cara Membaca Hasil Tryout SKD dan Menentukan Fokus Belajar Berikutnya',
+  slug: SLUG,
+  excerpt:
+    'Nilai tryout hanya berguna kalau kamu tahu cara membacanya. Panduan praktis menerjemahkan hasil SKD menjadi rencana belajar yang bisa dikerjakan minggu ini.',
+  category: 'Strategi Belajar',
+  content,
+  status: asDraft ? 'draft' : 'published',
+  published_at: asDraft ? null : new Date().toISOString(),
 }
 
 const admin = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } })
 
 const { data: existing, error: findError } = await admin
-    .from('articles')
-    .select('id')
-    .eq('slug', SLUG)
-    .maybeSingle()
+  .from('articles')
+  .select('id')
+  .eq('slug', SLUG)
+  .maybeSingle()
 if (findError) throw findError
 
 if (existing?.id) {
-    const { error } = await admin.from('articles').update(article).eq('id', existing.id)
-    if (error) throw error
-    console.log(`diperbarui: /blog/${SLUG} (${article.status})`)
+  const { error } = await admin.from('articles').update(article).eq('id', existing.id)
+  if (error) throw error
+  console.log(`diperbarui: /blog/${SLUG} (${article.status})`)
 } else {
-    const { error } = await admin.from('articles').insert(article)
-    if (error) throw error
-    console.log(`dibuat: /blog/${SLUG} (${article.status})`)
+  const { error } = await admin.from('articles').insert(article)
+  if (error) throw error
+  console.log(`dibuat: /blog/${SLUG} (${article.status})`)
 }
 
 const h2Count = (content.match(/<h2>/g) ?? []).length
-console.log(`panjang konten: ${content.length} karakter · ${h2Count} bagian (h2) → daftar isi akan memuat ${h2Count} item`)
+console.log(
+  `panjang konten: ${content.length} karakter · ${h2Count} bagian (h2) → daftar isi akan memuat ${h2Count} item`,
+)

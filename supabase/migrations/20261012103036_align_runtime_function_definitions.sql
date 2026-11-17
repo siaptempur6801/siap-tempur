@@ -1,0 +1,844 @@
+-- Canonicalize equivalent existing function definitions from staging.
+-- Reviewed differences are whitespace, explicit AS aliases, and reuse of an
+-- identical DIAGNOSTIC_BASELINE_SEPARATE jsonb value. No function is invoked.
+-- CREATE OR REPLACE retains the existing owner and execution privileges.
+BEGIN;
+SET LOCAL lock_timeout = '5s';
+SET LOCAL statement_timeout = '30s';
+CREATE OR REPLACE FUNCTION app_private.refresh_tka_smp_diagnostic_profile_for_user (p_user_id uuid, p_attempt_id uuid)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+DECLARE
+  v_exam_id uuid;
+  v_track_id uuid;
+  v_user_track_id uuid;
+  v_percentage numeric;
+  v_submitted_at timestamptz;
+  v_profile_id uuid;
+  v_evidence_count integer := 0;
+  v_competency_count integer := 0;
+  v_recommended_subject_id uuid;
+  v_recommended_node_id uuid;
+  v_recommended_name text;
+  v_recommendations jsonb;
+BEGIN
+  SELECT
+    ea.exam_id,
+    e.track_id,
+    coalesce(ea.percentage, 0),
+    coalesce(ea.submitted_at, ea.updated_at, ea.created_at)
+  INTO
+    v_exam_id,
+    v_track_id,
+    v_percentage,
+    v_submitted_at
+  FROM
+    public.exam_attempts ea
+    JOIN public.exams e ON e.id = ea.exam_id
+    JOIN public.exam_types et ON et.id = e.exam_type_id
+    JOIN public.tracks t ON t.id = e.track_id
+    JOIN public.programs p ON p.id = t.program_id
+  WHERE
+    ea.id = p_attempt_id
+    AND ea.user_id = p_user_id
+    AND lower(ea.status) = 'completed'
+    AND upper(et.code) = 'DIAGNOSTIC'
+    AND upper(p.code) = 'TKA'
+    AND upper(t.code) = 'SMP';
+
+  IF v_exam_id IS NULL THEN
+    RETURN jsonb_build_object('applied', FALSE, 'reason', 'COMPLETED_TKA_SMP_DIAGNOSTIC_ATTEMPT_NOT_FOUND');
+  END IF;
+
+  SELECT
+    ut.id
+  INTO
+    v_user_track_id
+  FROM
+    public.user_tracks ut
+  WHERE
+    ut.user_id = p_user_id
+    AND ut.track_id = v_track_id
+    AND lower(ut.status) = 'active'
+  ORDER BY
+    ut.updated_at DESC nulls LAST,
+    ut.started_at DESC nulls LAST
+  LIMIT 1;
+
+  IF v_user_track_id IS NULL THEN
+    RETURN jsonb_build_object('applied', FALSE, 'reason', 'ACTIVE_USER_TRACK_NOT_FOUND');
+  END IF;
+
+  SELECT
+    count(*)::integer
+  INTO
+    v_evidence_count
+  FROM
+    public.attempt_questions aq
+  WHERE
+    aq.attempt_id = p_attempt_id;
+
+  INSERT INTO public.diagnostic_profiles (user_id, user_track_id, track_id, exam_id, exam_attempt_id, version, overall_score, evidence_count, completed_at, updated_at)
+    VALUES (p_user_id, v_user_track_id, v_track_id, v_exam_id, p_attempt_id, 'tka-smp-diagnostic-v1', greatest (0, least (100, coalesce(v_percentage, 0))), v_evidence_count, v_submitted_at, now())
+  ON CONFLICT (exam_attempt_id)
+    DO UPDATE SET
+      user_track_id = excluded.user_track_id,
+      track_id = excluded.track_id,
+      exam_id = excluded.exam_id,
+      version = excluded.version,
+      overall_score = excluded.overall_score,
+      evidence_count = excluded.evidence_count,
+      completed_at = excluded.completed_at,
+      updated_at = now()
+    RETURNING
+      id
+    INTO
+      v_profile_id;
+
+  DELETE FROM public.diagnostic_competency_results
+  WHERE diagnostic_profile_id = v_profile_id;
+
+  WITH evidence AS (
+    SELECT
+      aq.question_id,
+      q.subject_id,
+      s.code AS subject_code,
+      qkn.knowledge_node_id AS primary_node_id,
+      coalesce(aa.is_correct, FALSE) AS is_correct
+    FROM
+      public.attempt_questions aq
+      JOIN public.questions q ON q.id = aq.question_id
+      JOIN public.subjects s ON s.id = q.subject_id
+      JOIN public.question_knowledge_nodes qkn ON qkn.question_id = q.id
+        AND lower(qkn.relation_type) = 'primary'
+    LEFT JOIN public.attempt_answers aa ON aa.attempt_question_id = aq.id
+  WHERE
+    aq.attempt_id = p_attempt_id
+),
+mapped AS (
+  SELECT
+    e.question_id,
+    e.subject_id,
+    e.subject_code,
+    e.is_correct,
+    competency.id AS knowledge_node_id,
+    competency.name AS knowledge_name,
+    competency.sort_order
+  FROM
+    evidence e
+    JOIN LATERAL (
+      SELECT
+        anc.id,
+        anc.name,
+        anc.sort_order
+      FROM
+        public.knowledge_node_paths knp
+        JOIN public.knowledge_nodes anc ON anc.id = knp.ancestor_id
+      WHERE
+        knp.descendant_id = e.primary_node_id
+        AND ((upper(e.subject_code) = 'BIN'
+            AND lower(anc.node_type) = 'competency')
+          OR (upper(e.subject_code) = 'MAT'
+            AND lower(anc.node_type) = 'element'))
+      ORDER BY
+        knp.depth ASC,
+        anc.sort_order ASC,
+        anc.id
+      LIMIT 1) competency ON TRUE
+),
+aggregated AS (
+  SELECT
+    subject_id,
+    subject_code,
+    knowledge_node_id,
+    max(knowledge_name) AS knowledge_name,
+    max(sort_order) AS sort_order,
+    count(*)::integer AS attempted_questions,
+    count(*) FILTER (WHERE is_correct IS TRUE)::integer AS correct_questions
+  FROM
+    mapped
+  GROUP BY
+    subject_id,
+    subject_code,
+    knowledge_node_id
+),
+scored AS (
+  SELECT
+    a.*,
+    round(a.correct_questions::numeric / nullif (a.attempted_questions, 0), 6) AS accuracy,
+    round(a.correct_questions::numeric / nullif (a.attempted_questions, 0) * 100, 2) AS baseline_score,
+    round(least (1::numeric, a.attempted_questions::numeric / 4::numeric), 6) AS confidence
+  FROM
+    aggregated a
+),
+ranked AS (
+  SELECT
+    s.*,
+    row_number() OVER (ORDER BY s.baseline_score ASC,
+      s.confidence DESC,
+      s.subject_code,
+      s.sort_order,
+      s.knowledge_node_id)::integer AS priority_rank
+  FROM
+    scored s)
+INSERT INTO public.diagnostic_competency_results (diagnostic_profile_id, subject_id, knowledge_node_id, attempted_questions, correct_questions, accuracy, baseline_score, confidence, strength_label, priority_rank)
+SELECT
+  v_profile_id,
+  r.subject_id,
+  r.knowledge_node_id,
+  r.attempted_questions,
+  r.correct_questions,
+  coalesce(r.accuracy, 0),
+  coalesce(r.baseline_score, 0),
+  coalesce(r.confidence, 0),
+  CASE WHEN coalesce(r.baseline_score, 0) >= 75 THEN
+    'KUAT'
+  WHEN coalesce(r.baseline_score, 0) >= 50 THEN
+    'CUKUP'
+  ELSE
+    'PERLU_DIKUATKAN'
+  END,
+  r.priority_rank
+FROM
+  ranked r;
+
+  get diagnostics v_competency_count = row_count;
+
+  SELECT
+    dcr.subject_id,
+    dcr.knowledge_node_id,
+    kn.name
+  INTO
+    v_recommended_subject_id,
+    v_recommended_node_id,
+    v_recommended_name
+  FROM
+    public.diagnostic_competency_results dcr
+    JOIN public.knowledge_nodes kn ON kn.id = dcr.knowledge_node_id
+  WHERE
+    dcr.diagnostic_profile_id = v_profile_id
+  ORDER BY
+    dcr.priority_rank
+  LIMIT 1;
+
+  UPDATE
+    public.diagnostic_profiles
+  SET
+    recommended_subject_id = v_recommended_subject_id,
+    recommended_knowledge_node_id = v_recommended_node_id,
+    recommendation_reason = CASE WHEN v_recommended_node_id IS NULL THEN
+      'Belum ada kompetensi yang dapat dipetakan.'
+    ELSE
+      'Mulai dari kompetensi dengan baseline diagnostik terendah: ' || v_recommended_name || '.'
+    END,
+    updated_at = now()
+  WHERE
+    id = v_profile_id;
+
+  v_recommendations := app_private.refresh_tka_smp_diagnostic_recommendations_for_user (p_user_id, v_profile_id);
+
+  RETURN jsonb_build_object('applied', TRUE, 'profile_id', v_profile_id, 'attempt_id', p_attempt_id, 'track', 'TKA/SMP', 'version', 'tka-smp-diagnostic-v1', 'overall_score', greatest (0, least (100, coalesce(v_percentage, 0))), 'evidence_count', v_evidence_count, 'competency_count', v_competency_count, 'recommended_knowledge_node_id', v_recommended_node_id, 'learning_recommendations', v_recommendations);
+END;
+$function$;
+CREATE OR REPLACE FUNCTION app_private.refresh_tka_smp_diagnostic_recommendations_for_user (p_user_id uuid, p_diagnostic_profile_id uuid)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+DECLARE
+  v_track_id uuid;
+  v_inserted integer := 0;
+BEGIN
+  SELECT
+    dp.track_id
+  INTO
+    v_track_id
+  FROM
+    public.diagnostic_profiles dp
+  WHERE
+    dp.id = p_diagnostic_profile_id
+    AND dp.user_id = p_user_id;
+
+  IF v_track_id IS NULL THEN
+    RETURN jsonb_build_object('applied', FALSE, 'reason', 'DIAGNOSTIC_PROFILE_NOT_FOUND');
+  END IF;
+
+  UPDATE
+    public.learning_recommendations lr
+  SET
+    status = 'inactive',
+    expires_at = coalesce(lr.expires_at, now())
+  WHERE
+    lr.user_id = p_user_id
+    AND lr.track_id = v_track_id
+    AND lr.recommendation_type = 'diagnostic_baseline_v1'
+    AND lr.status = 'active';
+
+  WITH ranked AS (
+    SELECT
+      dcr.knowledge_node_id,
+      dcr.subject_id,
+      dcr.priority_rank,
+      dcr.baseline_score,
+      CASE WHEN upper(s.code) = 'BIN' THEN
+        'tka-smp-mini-bahasa-indonesia'
+      WHEN upper(s.code) = 'MAT' THEN
+        'tka-smp-mini-matematika'
+      ELSE
+        NULL
+      END AS resource_slug
+    FROM
+      public.diagnostic_competency_results dcr
+      JOIN public.subjects s ON s.id = dcr.subject_id
+    WHERE
+      dcr.diagnostic_profile_id = p_diagnostic_profile_id
+    ORDER BY
+      dcr.priority_rank
+    LIMIT 3
+),
+resources AS (
+  SELECT
+    r.*,
+    e.id AS resource_id
+  FROM
+    ranked r
+    LEFT JOIN public.exams e ON e.slug = r.resource_slug)
+INSERT INTO public.learning_recommendations (user_id, track_id, recommendation_type, knowledge_node_id, resource_id, reason_code, priority, score, status, expires_at)
+SELECT
+  p_user_id,
+  v_track_id,
+  'diagnostic_baseline_v1',
+  r.knowledge_node_id,
+  r.resource_id,
+  'diagnostic_weakness_v1',
+  r.priority_rank,
+  round(greatest (0::numeric, 1::numeric - (r.baseline_score / 100::numeric)), 6),
+  'active',
+  NULL
+FROM
+  resources r
+ON CONFLICT (user_id,
+  track_id,
+  recommendation_type,
+  knowledge_node_id)
+  DO UPDATE SET
+    resource_id = excluded.resource_id,
+    reason_code = excluded.reason_code,
+    priority = excluded.priority,
+    score = excluded.score,
+    status = 'active',
+    expires_at = NULL;
+
+  get diagnostics v_inserted = row_count;
+
+  RETURN jsonb_build_object('applied', TRUE, 'track', 'TKA/SMP', 'profile_id', p_diagnostic_profile_id, 'active_recommendations', v_inserted, 'max_recommendations', 3, 'rule', 'diagnostic_baseline_asc_v1');
+END;
+$function$;
+CREATE OR REPLACE FUNCTION app_private.refresh_tka_smp_drill_projection_after_attempt ()
+  RETURNS TRIGGER
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+DECLARE
+  v_program_code text;
+  v_track_code text;
+  v_exam_type_code text;
+BEGIN
+  IF lower(coalesce(NEW.status, '')) <> 'completed' OR lower(coalesce(OLD.status, '')) = 'completed' OR lower(coalesce(NEW.metadata ->> 'practiceKind', '')) <> 'drill' THEN
+    RETURN new;
+  END IF;
+
+  SELECT
+    p.code,
+    t.code,
+    et.code
+  INTO
+    v_program_code,
+    v_track_code,
+    v_exam_type_code
+  FROM
+    public.exams e
+    JOIN public.programs p ON p.id = e.program_id
+    JOIN public.tracks t ON t.id = e.track_id
+    JOIN public.exam_types et ON et.id = e.exam_type_id
+  WHERE
+    e.id = NEW.exam_id;
+
+  IF upper(coalesce(v_program_code, '')) = 'TKA' AND upper(coalesce(v_track_code, '')) = 'SMP' AND upper(coalesce(v_exam_type_code, '')) = 'DRILL' THEN
+    PERFORM
+      app_private.refresh_tka_smp_learning_projection_for_user (NEW.user_id, NEW.id);
+  END IF;
+  RETURN new;
+END;
+$function$;
+CREATE OR REPLACE FUNCTION app_private.refresh_tka_smp_learning_projection_for_user (p_user_id uuid, p_source_attempt_id uuid DEFAULT NULL::uuid)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+DECLARE
+  v_track_id uuid;
+  v_source_track_id uuid;
+  v_source_exam_type text;
+  v_user_track_id uuid;
+  v_knowledge_rows integer := 0;
+  v_subject_rows integer := 0;
+BEGIN
+  SELECT
+    t.id
+  INTO
+    v_track_id
+  FROM
+    public.programs p
+    JOIN public.tracks t ON t.program_id = p.id
+  WHERE
+    upper(p.code) = 'TKA'
+    AND upper(t.code) = 'SMP'
+  LIMIT 1;
+  IF v_track_id IS NULL THEN
+    RETURN jsonb_build_object('applied', FALSE, 'reason', 'TKA_SMP_TRACK_NOT_FOUND');
+  END IF;
+  IF p_source_attempt_id IS NOT NULL THEN
+    SELECT
+      e.track_id,
+      upper(et.code)
+    INTO
+      v_source_track_id,
+      v_source_exam_type
+    FROM
+      public.exam_attempts ea
+      JOIN public.exams e ON e.id = ea.exam_id
+      JOIN public.exam_types et ON et.id = e.exam_type_id
+    WHERE
+      ea.id = p_source_attempt_id
+      AND ea.user_id = p_user_id
+      AND lower(ea.status) = 'completed';
+    IF v_source_track_id IS NULL THEN
+      RETURN jsonb_build_object('applied', FALSE, 'reason', 'COMPLETED_SOURCE_ATTEMPT_NOT_FOUND');
+    END IF;
+    IF v_source_track_id <> v_track_id THEN
+      RETURN jsonb_build_object('applied', FALSE, 'reason', 'TRACK_NOT_SUPPORTED');
+    END IF;
+    IF v_source_exam_type = 'DIAGNOSTIC' THEN
+      RETURN jsonb_build_object('applied', FALSE, 'reason', 'DIAGNOSTIC_BASELINE_SEPARATE');
+    END IF;
+  END IF;
+  SELECT
+    ut.id
+  INTO
+    v_user_track_id
+  FROM
+    public.user_tracks ut
+  WHERE
+    ut.user_id = p_user_id
+    AND ut.track_id = v_track_id
+    AND lower(ut.status) = 'active'
+  ORDER BY
+    ut.updated_at DESC nulls LAST,
+    ut.started_at DESC nulls LAST
+  LIMIT 1;
+  IF v_user_track_id IS NULL THEN
+    RETURN jsonb_build_object('applied', FALSE, 'reason', 'ACTIVE_USER_TRACK_NOT_FOUND');
+  END IF;
+  DELETE FROM public.user_knowledge_progress ukp
+  WHERE ukp.user_id = p_user_id
+    AND ukp.user_track_id = v_user_track_id;
+  WITH exam_evidence AS (
+    SELECT
+      qkn.knowledge_node_id,
+      aa.is_correct,
+      coalesce(aa.score_awarded, 0)::numeric AS score_awarded,
+      coalesce(aa.time_spent_seconds, 0)::numeric AS time_spent_seconds,
+      coalesce(ea.submitted_at, ea.updated_at, ea.created_at) AS occurred_at
+    FROM
+      public.exam_attempts ea
+      JOIN public.exams e ON e.id = ea.exam_id
+      JOIN public.exam_types et ON et.id = e.exam_type_id
+      JOIN public.attempt_questions aq ON aq.attempt_id = ea.id
+      JOIN public.question_knowledge_nodes qkn ON qkn.question_id = aq.question_id
+        AND qkn.relation_type = 'primary'
+    LEFT JOIN public.attempt_answers aa ON aa.attempt_question_id = aq.id
+  WHERE
+    ea.user_id = p_user_id
+    AND e.track_id = v_track_id
+    AND lower(ea.status) = 'completed'
+    AND upper(et.code) <> 'DIAGNOSTIC'
+),
+correction_evidence AS (
+  SELECT
+    uwq.knowledge_node_id,
+    TRUE AS is_correct,
+    wqr.score_awarded::numeric AS score_awarded,
+    NULL::numeric AS time_spent_seconds,
+    wqr.created_at AS occurred_at
+  FROM
+    public.wrong_question_reviews wqr
+    JOIN public.user_wrong_questions uwq ON uwq.id = wqr.user_wrong_question_id
+  WHERE
+    wqr.user_id = p_user_id
+    AND uwq.track_id = v_track_id
+    AND uwq.knowledge_node_id IS NOT NULL
+    AND wqr.is_correct IS TRUE
+),
+all_evidence AS (
+  SELECT
+    *
+  FROM
+    exam_evidence
+  UNION ALL
+  SELECT
+    *
+  FROM
+    correction_evidence
+),
+knowledge_agg AS (
+  SELECT
+    knowledge_node_id,
+    count(*)::integer AS attempted_questions,
+    count(*) FILTER (WHERE is_correct IS TRUE)::integer AS correct_questions,
+    count(*) FILTER (WHERE is_correct IS TRUE)::numeric / nullif (count(*), 0) AS accuracy,
+    avg(score_awarded)::numeric AS average_score,
+    (avg(time_spent_seconds) FILTER (WHERE time_spent_seconds IS NOT NULL))::numeric AS average_time_seconds,
+    max(occurred_at) AS last_practiced_at
+  FROM
+    all_evidence
+  GROUP BY
+    knowledge_node_id
+),
+scored AS (
+  SELECT
+    knowledge_node_id,
+    attempted_questions,
+    correct_questions,
+    round(coalesce(accuracy, 0), 6) AS accuracy,
+    round(coalesce(average_score, 0), 6) AS average_score,
+    round(coalesce(average_time_seconds, 0), 2) AS average_time_seconds,
+    round(((0.70 * coalesce(average_score, 0)) + (0.30 * coalesce(accuracy, 0))) * least (1::numeric, attempted_questions::numeric / 5::numeric), 6) AS mastery_score,
+    last_practiced_at
+  FROM
+    knowledge_agg)
+INSERT INTO public.user_knowledge_progress (user_id, user_track_id, knowledge_node_id, attempted_questions, correct_questions, accuracy, average_score, average_time_seconds, mastery_score, mastery_level, last_practiced_at, updated_at)
+SELECT
+  p_user_id,
+  v_user_track_id,
+  s.knowledge_node_id,
+  s.attempted_questions,
+  s.correct_questions,
+  s.accuracy,
+  s.average_score,
+  s.average_time_seconds,
+  s.mastery_score,
+  CASE WHEN s.mastery_score >= 0.85 THEN
+    'mastered'
+  WHEN s.mastery_score >= 0.70 THEN
+    'proficient'
+  WHEN s.mastery_score >= 0.40 THEN
+    'developing'
+  ELSE
+    'needs_work'
+  END,
+  s.last_practiced_at,
+  now()
+FROM
+  scored s;
+  get diagnostics v_knowledge_rows = row_count;
+  DELETE FROM public.user_subject_progress usp
+  WHERE usp.user_id = p_user_id
+    AND usp.subject_id IN (
+      SELECT
+        s.id
+      FROM
+        public.subjects s
+      WHERE
+        s.track_id = v_track_id);
+  WITH subject_agg AS (
+    SELECT
+      ats.subject_id,
+      count(DISTINCT ats.attempt_id)::integer AS attempts,
+      sum(ats.correct_count + ats.wrong_count)::integer AS questions_answered,
+      sum(ats.correct_count)::numeric AS correct_answers,
+      sum(ats.correct_count + ats.wrong_count + ats.unanswered_count)::numeric AS total_questions,
+      sum(coalesce(ats.raw_score, 0))::numeric AS raw_score
+    FROM
+      public.attempt_scores ats
+      JOIN public.exam_attempts ea ON ea.id = ats.attempt_id
+      JOIN public.exams e ON e.id = ea.exam_id
+      JOIN public.exam_types et ON et.id = e.exam_type_id
+    WHERE
+      ea.user_id = p_user_id
+      AND e.track_id = v_track_id
+      AND lower(ea.status) = 'completed'
+      AND ats.subject_id IS NOT NULL
+      AND upper(et.code) <> 'DIAGNOSTIC'
+    GROUP BY
+      ats.subject_id)
+  INSERT INTO public.user_subject_progress (user_id, subject_id, attempts, questions_answered, accuracy, mastery_score, updated_at)
+  SELECT
+    p_user_id,
+    sa.subject_id,
+    sa.attempts,
+    sa.questions_answered,
+    CASE WHEN sa.questions_answered > 0 THEN
+      round(sa.correct_answers / sa.questions_answered * 100, 2)
+    ELSE
+      0
+    END,
+    CASE WHEN sa.total_questions > 0 THEN
+      round(sa.raw_score / sa.total_questions * 100, 2)
+    ELSE
+      0
+    END,
+    now()
+  FROM
+    subject_agg sa;
+  get diagnostics v_subject_rows = row_count;
+  RETURN jsonb_build_object('applied', TRUE, 'track', 'TKA/SMP', 'knowledge_rows', v_knowledge_rows, 'subject_rows', v_subject_rows, 'source_attempt_id', p_source_attempt_id);
+END;
+$function$;
+CREATE OR REPLACE FUNCTION app_private.refresh_tka_smp_learning_recommendations_for_user (p_user_id uuid)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+DECLARE
+  v_track_id uuid;
+  v_user_track_id uuid;
+  v_active_count integer := 0;
+BEGIN
+  SELECT
+    t.id
+  INTO
+    v_track_id
+  FROM
+    public.programs p
+    JOIN public.tracks t ON t.program_id = p.id
+  WHERE
+    upper(p.code) = 'TKA'
+    AND upper(t.code) = 'SMP'
+  LIMIT 1;
+
+  IF v_track_id IS NULL THEN
+    RETURN jsonb_build_object('applied', FALSE, 'reason', 'TKA_SMP_TRACK_NOT_FOUND');
+  END IF;
+
+  SELECT
+    ut.id
+  INTO
+    v_user_track_id
+  FROM
+    public.user_tracks ut
+  WHERE
+    ut.user_id = p_user_id
+    AND ut.track_id = v_track_id
+    AND lower(ut.status) = 'active'
+  ORDER BY
+    ut.updated_at DESC nulls LAST,
+    ut.started_at DESC nulls LAST
+  LIMIT 1;
+
+  IF v_user_track_id IS NULL THEN
+    UPDATE
+      public.learning_recommendations lr
+    SET
+      status = 'inactive',
+      expires_at = coalesce(lr.expires_at, now())
+    WHERE
+      lr.user_id = p_user_id
+      AND lr.track_id = v_track_id
+      AND lr.recommendation_type IN ('weakest_topic_v1', 'diagnostic_baseline_v1')
+      AND lr.status = 'active';
+
+    RETURN jsonb_build_object('applied', FALSE, 'reason', 'ACTIVE_USER_TRACK_NOT_FOUND');
+  END IF;
+
+  UPDATE
+    public.learning_recommendations lr
+  SET
+    status = 'inactive',
+    expires_at = coalesce(lr.expires_at, now())
+  WHERE
+    lr.user_id = p_user_id
+    AND lr.track_id = v_track_id
+    AND lr.recommendation_type = 'weakest_topic_v1'
+    AND lr.status = 'active';
+
+  WITH ranked AS (
+    SELECT
+      ukp.knowledge_node_id,
+      row_number() OVER (ORDER BY ukp.mastery_score ASC,
+        ukp.attempted_questions DESC,
+        ukp.accuracy ASC,
+        ukp.knowledge_node_id)::integer AS priority,
+      round(greatest (0::numeric, 1::numeric - ukp.mastery_score), 6) AS weakness_score
+    FROM
+      public.user_knowledge_progress ukp
+      JOIN public.knowledge_nodes kn ON kn.id = ukp.knowledge_node_id
+      JOIN public.subjects s ON s.id = kn.subject_id
+    WHERE
+      ukp.user_id = p_user_id
+      AND ukp.user_track_id = v_user_track_id
+      AND s.track_id = v_track_id
+      AND ukp.attempted_questions > 0
+      AND ukp.mastery_score < 0.85
+      AND lower(kn.status) = 'active'
+      AND lower(s.status) = 'active'
+    ORDER BY
+      ukp.mastery_score ASC,
+      ukp.attempted_questions DESC,
+      ukp.accuracy ASC,
+      ukp.knowledge_node_id
+    LIMIT 3)
+INSERT INTO public.learning_recommendations (user_id, track_id, recommendation_type, knowledge_node_id, resource_id, reason_code, priority, score, status, expires_at)
+SELECT
+  p_user_id,
+  v_track_id,
+  'weakest_topic_v1',
+  r.knowledge_node_id,
+  NULL,
+  'weakest_mastery_v1',
+  r.priority,
+  r.weakness_score,
+  'active',
+  NULL
+FROM
+  ranked r
+ON CONFLICT (user_id,
+  track_id,
+  recommendation_type,
+  knowledge_node_id)
+  DO UPDATE SET
+    reason_code = excluded.reason_code,
+    priority = excluded.priority,
+    score = excluded.score,
+    status = 'active',
+    expires_at = NULL;
+
+  SELECT
+    count(*)::integer
+  INTO
+    v_active_count
+  FROM
+    public.learning_recommendations lr
+  WHERE
+    lr.user_id = p_user_id
+    AND lr.track_id = v_track_id
+    AND lr.recommendation_type = 'weakest_topic_v1'
+    AND lr.status = 'active';
+
+  IF v_active_count > 0 THEN
+    UPDATE
+      public.learning_recommendations lr
+    SET
+      status = 'inactive',
+      expires_at = coalesce(lr.expires_at, now())
+    WHERE
+      lr.user_id = p_user_id
+      AND lr.track_id = v_track_id
+      AND lr.recommendation_type = 'diagnostic_baseline_v1'
+      AND lr.status = 'active';
+  END IF;
+
+  RETURN jsonb_build_object('applied', TRUE, 'track', 'TKA/SMP', 'active_recommendations', v_active_count, 'max_recommendations', 3, 'rule', 'mastery_asc_evidence_desc_accuracy_asc_v1', 'diagnostic_recommendations_retired', v_active_count > 0);
+END;
+$function$;
+CREATE OR REPLACE FUNCTION app_private.submit_exam_attempt_for_user (p_user_id uuid, p_attempt_id uuid)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+DECLARE
+  v_started timestamptz;
+  v_score jsonb;
+  v_duration integer;
+  v_exam_type_code text;
+  v_projection jsonb;
+  v_wrong_state jsonb;
+  v_remedial jsonb;
+  v_diagnostic jsonb;
+BEGIN
+  SELECT
+    ea.started_at,
+    upper(et.code)
+  INTO
+    v_started,
+    v_exam_type_code
+  FROM
+    public.exam_attempts ea
+    JOIN public.exams e ON e.id = ea.exam_id
+    JOIN public.exam_types et ON et.id = e.exam_type_id
+  WHERE
+    ea.id = p_attempt_id
+    AND ea.user_id = p_user_id
+    AND ea.status = 'in_progress'
+  FOR UPDATE
+    OF ea;
+  IF v_started IS NULL THEN
+    RAISE EXCEPTION 'In-progress attempt not found';
+  END IF;
+  IF EXISTS (
+    SELECT
+      1
+    FROM
+      public.attempt_section_states
+    WHERE
+      attempt_id = p_attempt_id
+      AND status <> 'completed') THEN
+  RAISE EXCEPTION 'ALL_SECTIONS_MUST_BE_COMPLETED';
+END IF;
+  v_score := app_private.score_exam_attempt (p_attempt_id);
+  SELECT
+    coalesce(sum(duration_used_seconds), 0)
+  INTO
+    v_duration
+  FROM
+    public.attempt_section_states
+  WHERE
+    attempt_id = p_attempt_id
+    AND status = 'completed';
+  UPDATE
+    public.exam_attempts
+  SET
+    status = 'completed',
+    submitted_at = now(),
+    duration_used_seconds = v_duration,
+    total_score = (v_score ->> 'raw_score')::numeric,
+    percentage = (v_score ->> 'percentage')::numeric,
+    passed = NULL,
+    last_saved_at = now(),
+    updated_at = now()
+  WHERE
+    id = p_attempt_id;
+  INSERT INTO public.attempt_events (attempt_id, event_type, metadata)
+    VALUES (p_attempt_id, 'attempt_submitted', v_score);
+  IF v_exam_type_code = 'DIAGNOSTIC' THEN
+    v_diagnostic := app_private.refresh_tka_smp_diagnostic_profile_for_user (p_user_id, p_attempt_id);
+    v_projection := jsonb_build_object('applied', FALSE, 'reason', 'DIAGNOSTIC_BASELINE_SEPARATE');
+    v_wrong_state := v_projection;
+    v_remedial := v_projection;
+    INSERT INTO public.attempt_events (attempt_id, event_type, metadata)
+      VALUES (p_attempt_id, 'diagnostic_profile_refreshed', v_diagnostic);
+  ELSE
+    v_projection := app_private.refresh_tka_smp_learning_projection_for_user (p_user_id, p_attempt_id);
+    v_wrong_state := app_private.refresh_tka_smp_wrong_question_state_for_user (p_user_id, p_attempt_id);
+    v_remedial := app_private.refresh_tka_smp_remedial_session_for_attempt (p_user_id, p_attempt_id, 10);
+  END IF;
+INSERT INTO public.attempt_events (attempt_id, event_type, metadata)
+  VALUES (p_attempt_id, 'learning_projection_refreshed', v_projection);
+INSERT INTO public.attempt_events (attempt_id, event_type, metadata)
+  VALUES (p_attempt_id, 'wrong_question_state_refreshed', v_wrong_state);
+INSERT INTO public.attempt_events (attempt_id, event_type, metadata)
+  VALUES (p_attempt_id, 'automatic_remedial_refreshed', v_remedial);
+  RETURN jsonb_build_object('attempt_id', p_attempt_id, 'status', 'completed', 'raw_score', (v_score ->> 'raw_score')::numeric, 'percentage', (v_score ->> 'percentage')::numeric, 'duration_used_seconds', v_duration, 'exam_type', v_exam_type_code, 'learning_projection', v_projection, 'wrong_question_state', v_wrong_state, 'automatic_remedial', v_remedial, 'diagnostic_profile', v_diagnostic);
+END;
+$function$;
+NOTIFY pgrst,
+'reload schema';
+COMMIT;

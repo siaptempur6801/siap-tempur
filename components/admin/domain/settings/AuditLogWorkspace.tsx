@@ -1,19 +1,19 @@
 import AdminPagination from '@/components/admin/AdminPagination'
 import AdminTableToolbar from '@/components/admin/AdminTableToolbar'
 import {
-AdminCard,
-AdminEmptyState,
-AdminPage,
-AdminPageHeader,
-AdminTh,
-adminSecondaryButtonClass,
-adminTableHeadClass
+  AdminCard,
+  AdminEmptyState,
+  AdminPage,
+  AdminPageHeader,
+  AdminTh,
+  adminSecondaryButtonClass,
+  adminTableHeadClass,
 } from '@/components/admin/AdminUi'
 import AdminWorkspaceTabs from '@/components/admin/AdminWorkspaceTabs'
 import { AdminDataTable } from '@/components/admin/data-display/AdminDataTable'
 import { AdminErrorState } from '@/components/admin/feedback/AdminErrorState'
 import { AdminBreadcrumbs } from '@/components/admin/navigation/AdminBreadcrumbs'
-import { adminAuditLabel,adminEntityTypeLabel,formatDateTime } from '@/lib/admin-format'
+import { adminAuditLabel, adminEntityTypeLabel, formatDateTime } from '@/lib/admin-format'
 import { adminPageSummary } from '@/lib/admin-pagination'
 import { PERMISSIONS } from '@/src/auth/permissions'
 import { getAdminAudit } from '@/src/services/admin-audit-workspace.service'
@@ -28,6 +28,17 @@ type Params = {
   to?: string
   page?: string
 }
+
+function auditActionFilterLabel(action: string) {
+  // Tiga nama event lama dan baru sama-sama diterjemahkan menjadi "Review
+  // disetujui". Pertahankan value filter aslinya, tetapi bedakan label agar
+  // admin tidak melihat tiga pilihan yang tampak identik.
+  if (action === 'content.review.approved') return 'Review disetujui · Content'
+  if (action === 'question workflow approved') return 'Review disetujui · Workflow lama'
+  if (action === 'QUESTION_WORKFLOW_APPROVED') return 'Review disetujui · Kode workflow lama'
+  return adminAuditLabel(action)
+}
+
 export default async function AdminAuditPage({ searchParams }: { searchParams: Promise<Params> }) {
   const params = await searchParams,
     actor = await authorizationService.requireAuthenticated()
@@ -42,7 +53,7 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: P
   try {
     ;[data, facets] = await Promise.all([
       getAdminAudit(params),
-      adminDirectoryService.getAuditFacets()
+      adminDirectoryService.getAuditFacets(),
     ])
   } catch {
     return <AdminErrorState noun="Audit Log" retryHref="/admin/settings/audit" />
@@ -53,9 +64,9 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: P
         .filter((l) => l.actor_user_id)
         .map((l) => [
           String(l.actor_user_id),
-          { value: String(l.actor_user_id), label: l.actor_name }
-        ])
-    ).values()
+          { value: String(l.actor_user_id), label: l.actor_name },
+        ]),
+    ).values(),
   ]
   return (
     <AdminPage>
@@ -77,25 +88,28 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: P
             ariaLabel: 'Filter aksi',
             placeholder: 'Semua aksi',
             defaultValue: params.action || '',
-            options: facets.actions.map((value) => ({ value, label: adminAuditLabel(value) }))
+            options: facets.actions.map((value) => ({
+              value,
+              label: auditActionFilterLabel(value),
+            })),
           },
           {
             name: 'entity',
-            ariaLabel: 'Filter resource',
-            placeholder: 'Semua resource',
+            ariaLabel: 'Filter objek',
+            placeholder: 'Semua objek',
             defaultValue: params.entity || '',
             options: facets.entityTypes.map((value) => ({
               value,
-              label: adminEntityTypeLabel(value)
-            }))
+              label: adminEntityTypeLabel(value),
+            })),
           },
           {
             name: 'actor',
-            ariaLabel: 'Filter actor',
-            placeholder: 'Semua actor',
+            ariaLabel: 'Filter pelaku',
+            placeholder: 'Semua pelaku',
             defaultValue: params.actor || '',
-            options: actors
-          }
+            options: actors,
+          },
         ]}
         dateRange={{ from: params.from || '', to: params.to || '' }}
       />
@@ -113,7 +127,7 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: P
                     <Link className={adminSecondaryButtonClass} href="/admin/settings/audit">
                       Reset Filter
                     </Link>
-                  )
+                  ),
                 }
               : undefined
           }
@@ -128,7 +142,7 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: P
         >
           <thead className={adminTableHeadClass}>
             <tr>
-              {['Actor', 'Action', 'Resource', 'Timestamp', 'Details'].map((h) => (
+              {['Pelaku', 'Tindakan', 'Objek', 'Waktu', 'Detail'].map((h) => (
                 <AdminTh key={h}>{h}</AdminTh>
               ))}
             </tr>
@@ -149,17 +163,19 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: P
                       <div className="mt-3 flex max-w-md flex-col gap-3">
                         {[
                           ['Sebelum', l.old_data],
-                          ['Sesudah', l.new_data]
+                          ['Sesudah', l.new_data],
                         ].map(
                           ([label, payload]) =>
                             payload != null && (
                               <div key={String(label)}>
-                                <p className="mb-1 text-xs text-muted-foreground">{String(label)}</p>
+                                <p className="mb-1 text-xs text-muted-foreground">
+                                  {String(label)}
+                                </p>
                                 <pre className="max-h-52 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-muted p-3 text-xs">
                                   {JSON.stringify(payload, null, 2)}
                                 </pre>
                               </div>
-                            )
+                            ),
                         )}
                       </div>
                     </details>

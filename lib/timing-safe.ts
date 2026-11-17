@@ -19,12 +19,12 @@
  * bagi penyerang.
  */
 export function constantTimeEqual(a: string, b: string): boolean {
-    if (a.length !== b.length) return false
-    let result = 0
-    for (let index = 0; index < a.length; index += 1) {
-        result |= a.charCodeAt(index) ^ b.charCodeAt(index)
-    }
-    return result === 0
+  if (a.length !== b.length) return false
+  let result = 0
+  for (let index = 0; index < a.length; index += 1) {
+    result |= a.charCodeAt(index) ^ b.charCodeAt(index)
+  }
+  return result === 0
 }
 
 /**
@@ -34,13 +34,16 @@ export function constantTimeEqual(a: string, b: string): boolean {
  * Fail-closed: bila rahasia belum dikonfigurasi, hasilnya selalu `false`
  * (jangan pernah menganggap "secret kosong" sebagai cocok).
  */
-export function isBearerTokenValid(authorizationHeader: string | null, expectedSecret: string | undefined | null): boolean {
-    if (!expectedSecret) return false
-    if (!authorizationHeader) return false
+export function isBearerTokenValid(
+  authorizationHeader: string | null,
+  expectedSecret: string | undefined | null,
+): boolean {
+  if (!expectedSecret) return false
+  if (!authorizationHeader) return false
 
-    const prefix = 'Bearer '
-    if (!authorizationHeader.startsWith(prefix)) return false
+  const prefix = 'Bearer '
+  if (!authorizationHeader.startsWith(prefix)) return false
 
-    const provided = authorizationHeader.slice(prefix.length)
-    return constantTimeEqual(provided, expectedSecret)
+  const provided = authorizationHeader.slice(prefix.length)
+  return constantTimeEqual(provided, expectedSecret)
 }

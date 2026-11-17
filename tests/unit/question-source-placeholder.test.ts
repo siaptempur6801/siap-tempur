@@ -11,25 +11,33 @@ import { isLegacyHistoryPlaceholder } from '@/lib/question-source'
  */
 const repoRoot = resolve(__dirname, '../..')
 function source(relativePath: string) {
-    return readFileSync(resolve(repoRoot, relativePath), 'utf8')
+  return readFileSync(resolve(repoRoot, relativePath), 'utf8')
 }
 
 describe('placeholder riwayat', () => {
-    it('mengenali source_type placeholder saja', () => {
-        expect(isLegacyHistoryPlaceholder('legacy_history_placeholder')).toBe(true)
-        expect(isLegacyHistoryPlaceholder('internal')).toBe(false)
-        expect(isLegacyHistoryPlaceholder(null)).toBe(false)
-        expect(isLegacyHistoryPlaceholder(undefined)).toBe(false)
-    })
+  it('mengenali source_type placeholder saja', () => {
+    expect(isLegacyHistoryPlaceholder('legacy_history_placeholder')).toBe(true)
+    expect(isLegacyHistoryPlaceholder('internal')).toBe(false)
+    expect(isLegacyHistoryPlaceholder(null)).toBe(false)
+    expect(isLegacyHistoryPlaceholder(undefined)).toBe(false)
+  })
 
-    it('dipakai di kedua daftar dan editor Question Bank', () => {
-        for (const file of ['components/admin/AdminQuestionsPanel.tsx', 'components/admin/domain/content/ReviewWorkspace.tsx', 'components/admin/QuestionBankEditor.tsx']) {
-            expect(source(file), file).toContain('isLegacyHistoryPlaceholder')
-        }
-    })
+  it('dipakai di kedua daftar dan editor Question Bank', () => {
+    for (const file of [
+      'components/admin/AdminQuestionsPanel.tsx',
+      'components/admin/domain/content/ReviewWorkspace.tsx',
+      'components/admin/QuestionBankEditor.tsx',
+    ]) {
+      expect(source(file), file).toContain('isLegacyHistoryPlaceholder')
+    }
+  })
 
-    it('query kedua daftar mengambil source_type', () => {
-        expect(source('src/services/admin-workspace.service.ts')).toMatch(/select: '[^']*source_type[^']*'/)
-        expect(source('src/services/content-review.service.ts')).toMatch(/QUEUE_COLUMNS = '[^']*source_type[^']*'/)
-    })
+  it('query kedua daftar mengambil source_type', () => {
+    expect(source('src/services/admin-workspace.service.ts')).toMatch(
+      /select:\s*'[^']*source_type[^']*'/,
+    )
+    expect(source('src/services/content-review.service.ts')).toMatch(
+      /QUEUE_COLUMNS\s*=\s*'[^']*source_type[^']*'/,
+    )
+  })
 })

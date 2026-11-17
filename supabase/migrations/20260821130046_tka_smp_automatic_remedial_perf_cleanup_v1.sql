@@ -1,1 +1,1 @@
-drop index if exists public.idx_remedial_sessions_track_id;
+DROP INDEX IF EXISTS public.idx_remedial_sessions_track_id;

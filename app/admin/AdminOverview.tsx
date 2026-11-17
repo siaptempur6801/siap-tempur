@@ -1,35 +1,60 @@
-import {Suspense} from 'react'
+import { Suspense } from 'react'
 import DashboardReviewQueue from '@/components/admin/domain/dashboard/DashboardReviewQueue'
 import {
-AdminCard,
-AdminEmptyState,
-AdminMetric,
-AdminPage,
-AdminPageHeader,
-AdminSectionHeading,
-AdminStatusBadge,
-AdminTh,
-adminPrimaryButtonClass,
-adminSecondaryButtonClass,
-adminTableHeadClass
+  AdminCard,
+  AdminEmptyState,
+  AdminMetric,
+  AdminPage,
+  AdminPageHeader,
+  AdminSectionHeading,
+  AdminStatusBadge,
+  AdminTh,
+  adminPrimaryButtonClass,
+  adminSecondaryButtonClass,
+  adminTableHeadClass,
 } from '@/components/admin/AdminUi'
 import { AdminDataTable } from '@/components/admin/data-display/AdminDataTable'
 import { AdminErrorState } from '@/components/admin/feedback/AdminErrorState'
 import { AdminBreadcrumbs } from '@/components/admin/navigation/AdminBreadcrumbs'
 import { formatDateTime } from '@/lib/admin-format'
+import { adminLandingPath } from '@/lib/admin-nav'
 import { PERMISSIONS } from '@/src/auth/permissions'
 import { getAdminDashboard } from '@/src/services/admin-dashboard.service'
-import { ArrowRight,CalendarDays } from 'lucide-react'
+import { authorizationService } from '@/src/services/authorization.service'
+import { ArrowRight, CalendarDays } from 'lucide-react'
 import Link from '@/components/admin/navigation/AdminLink'
 
 export default async function AdminOverview({
-  params
+  params,
 }: {
   params: { program?: string; track?: string }
 }) {
+  const authorization = await authorizationService.getCurrentAuthorization()
+  const permissionSet = new Set(authorization?.permissions ?? [])
+  if (!permissionSet.has(PERMISSIONS.ADMIN_ACCESS)) {
+    const landingPath = adminLandingPath(permissionSet)
+    return (
+      <AdminPage>
+        <AdminBreadcrumbs items={[{ label: 'Dashboard' }]} />
+        <AdminPageHeader title="Dashboard" />
+        <AdminEmptyState
+          title="Dashboard tidak tersedia untuk peran Anda"
+          description="Buka workspace yang sesuai dengan izin akses Anda melalui tombol berikut atau menu samping."
+          action={
+            landingPath ? (
+              <Link className={adminPrimaryButtonClass} href={landingPath}>
+                Buka workspace saya
+              </Link>
+            ) : undefined
+          }
+        />
+      </AdminPage>
+    )
+  }
+
   const context = {
     programCode: (params.program || 'CPNS').toUpperCase(),
-    trackCode: (params.track || (params.program === 'TKA' ? 'SMP' : 'SKD')).toUpperCase()
+    trackCode: (params.track || (params.program === 'TKA' ? 'SMP' : 'SKD')).toUpperCase(),
   }
   let data
   try {
@@ -52,14 +77,14 @@ export default async function AdminOverview({
       ? {
           label: 'Assessment aktif',
           value: data.activeAssessments,
-          href: href('/admin/assessments', { status: 'active' })
+          href: href('/admin/assessments', { status: 'active' }),
         }
       : null,
     data.canEvents
       ? {
           label: 'Event aktif',
           value: data.activeEvents,
-          href: href('/admin/events', { status: 'active' })
+          href: href('/admin/events', { status: 'active' }),
         }
       : null,
     data.canExams
@@ -67,7 +92,7 @@ export default async function AdminOverview({
       : null,
     data.canContent
       ? { label: 'Konten perlu tindakan', value: needsReview, href: href('/admin/content/review') }
-      : null
+      : null,
   ].filter(Boolean)
   const noSession = data.events.filter((e) => !(e.event_sessions as unknown[])?.length)
   const attention = [
@@ -75,21 +100,21 @@ export default async function AdminOverview({
       ? {
           text: `${data.draftAssessments} assessment masih draft`,
           action: 'Siapkan Assessment',
-          href: href('/admin/assessments', { status: 'draft' })
+          href: href('/admin/assessments', { status: 'draft' }),
         }
       : null,
     needsReview
       ? {
           text: `${needsReview} konten memerlukan persiapan, review, atau revisi`,
           action: 'Kerjakan Review',
-          href: href('/admin/content/review')
+          href: href('/admin/content/review'),
         }
       : null,
     ...noSession.map((e) => ({
       text: `${e.title} belum memiliki sesi`,
       action: 'Konfigurasi Event',
-      href: href('/admin/events', { event: String(e.id), tab: 'settings' })
-    }))
+      href: href('/admin/events', { event: String(e.id), tab: 'settings' }),
+    })),
   ].filter(Boolean)
   const canManageQuestions = permissions.has(PERMISSIONS.QUESTION_MANAGE)
   const canCreateContent = permissions.has(PERMISSIONS.CONTENT_CREATE)
@@ -125,7 +150,7 @@ export default async function AdminOverview({
                 <Link key={m.label} href={m.href} className="rounded-lg focus-visible:outline-2">
                   <AdminMetric label={m.label} value={m.value} />
                 </Link>
-              )
+              ),
           )}
         </section>
       )}
@@ -152,7 +177,7 @@ export default async function AdminOverview({
                         </span>
                       </Link>
                     </li>
-                  )
+                  ),
               )}
             </ul>
           ) : (
@@ -165,8 +190,8 @@ export default async function AdminOverview({
       {data.canEvents && (
         <section className="flex flex-col gap-4">
           <AdminSectionHeading
-            title="Operasi aktif"
-            description="Lima event berjalan atau mendatang terdekat."
+            title="Event aktif & terjadwal"
+            description={`Event yang sedang berjalan atau jadwal terdekat untuk ${program} / ${track}.`}
             action={
               <Link className={adminSecondaryButtonClass} href={href('/admin/events')}>
                 Semua Event
@@ -175,13 +200,14 @@ export default async function AdminOverview({
           />
           <AdminCard>
             <AdminDataTable
-              caption="Operasi aktif"
+              caption="Event aktif dan terjadwal"
               className="min-w-[650px]"
               empty={
                 !data.events.length
                   ? {
-                      title: 'Belum ada operasi aktif',
-                      description: 'Buat Event untuk mendistribusikan assessment ke peserta.',
+                      title: 'Belum ada event aktif atau terjadwal',
+                      description:
+                        'Event akan muncul di sini setelah dijadwalkan. Buat event untuk mulai mendistribusikan assessment ke peserta.',
                       action: (
                         <Link
                           className={adminSecondaryButtonClass}
@@ -189,14 +215,14 @@ export default async function AdminOverview({
                         >
                           Buat Event
                         </Link>
-                      )
+                      ),
                     }
                   : undefined
               }
             >
               <thead className={adminTableHeadClass}>
                 <tr>
-                  {['Event', 'Jadwal', 'Status', 'Actions'].map((h) => (
+                  {['Event', 'Jadwal', 'Status', 'Tindakan'].map((h) => (
                     <AdminTh key={h}>{h}</AdminTh>
                   ))}
                 </tr>
@@ -218,7 +244,7 @@ export default async function AdminOverview({
                         className={adminSecondaryButtonClass}
                         href={href('/admin/events', {
                           event: String(e.id),
-                          tab: 'overview'
+                          tab: 'overview',
                         })}
                       >
                         <CalendarDays size={14} />
@@ -243,8 +269,14 @@ export default async function AdminOverview({
               </Link>
             }
           />
-          <Suspense fallback={<AdminCard><AdminDataTable caption="Memuat antrean review" loading/></AdminCard>}>
-            <DashboardReviewQueue program={program} track={track} queue={data.reviewQueue}/>
+          <Suspense
+            fallback={
+              <AdminCard>
+                <AdminDataTable caption="Memuat antrean review" loading />
+              </AdminCard>
+            }
+          >
+            <DashboardReviewQueue program={program} track={track} queue={data.reviewQueue} />
           </Suspense>
         </section>
       )}

@@ -1,0 +1,226 @@
+{
+  "checkedAt": "2026-10-09",
+  "readOnly": true,
+  "projects": {
+    "lpgrivowdcepcxradavu": {
+      "columns": [
+        {
+          "schema": "public",
+          "relname": "attempt_answers",
+          "relrowsecurity": true,
+          "learner_table_write": false,
+          "learner_column_write": false,
+          "learner_table_select": false,
+          "learner_column_select": false
+        },
+        {
+          "schema": "public",
+          "relname": "attempt_questions",
+          "relrowsecurity": true,
+          "learner_table_write": false,
+          "learner_column_write": false,
+          "learner_table_select": false,
+          "learner_column_select": false
+        },
+        {
+          "schema": "public",
+          "relname": "exam_attempts",
+          "relrowsecurity": true,
+          "learner_table_write": false,
+          "learner_column_write": false,
+          "learner_table_select": true,
+          "learner_column_select": true
+        },
+        {
+          "schema": "public",
+          "relname": "question_explanations",
+          "relrowsecurity": true,
+          "learner_table_write": false,
+          "learner_column_write": false,
+          "learner_table_select": false,
+          "learner_column_select": false
+        },
+        {
+          "schema": "public",
+          "relname": "question_options",
+          "relrowsecurity": true,
+          "learner_table_write": false,
+          "learner_column_write": false,
+          "learner_table_select": false,
+          "learner_column_select": false
+        },
+        {
+          "schema": "public",
+          "relname": "question_versions",
+          "relrowsecurity": true,
+          "learner_table_write": false,
+          "learner_column_write": false,
+          "learner_table_select": false,
+          "learner_column_select": false
+        }
+      ],
+      "functions": [
+        {
+          "schema": "app_private",
+          "proname": "submit_exam_attempt_for_user",
+          "prosecdef": true,
+          "proconfig": [
+            "search_path=\"\""
+          ],
+          "anon_execute": false,
+          "learner_execute": false
+        },
+        {
+          "schema": "public",
+          "proname": "fulfill_paid_order",
+          "prosecdef": true,
+          "proconfig": [
+            "search_path=\"\""
+          ],
+          "anon_execute": false,
+          "learner_execute": false
+        },
+        {
+          "schema": "public",
+          "proname": "recalculate_event_rankings",
+          "prosecdef": false,
+          "proconfig": [
+            "search_path=public"
+          ],
+          "anon_execute": false,
+          "learner_execute": false
+        },
+        {
+          "schema": "public",
+          "proname": "recalculate_leaderboard",
+          "prosecdef": true,
+          "proconfig": [
+            "search_path=\"\""
+          ],
+          "anon_execute": false,
+          "learner_execute": false
+        },
+        {
+          "schema": "public",
+          "proname": "save_attempt_answer_for_user",
+          "prosecdef": true,
+          "proconfig": [
+            "search_path=\"\""
+          ],
+          "anon_execute": false,
+          "learner_execute": false
+        }
+      ]
+    },
+    "llnttutwhtvxtdktiizo": {
+      "columns": [
+        {
+          "schema": "public",
+          "relname": "attempt_answers",
+          "relrowsecurity": true,
+          "learner_table_write": false,
+          "learner_column_write": false,
+          "learner_table_select": false,
+          "learner_column_select": false
+        },
+        {
+          "schema": "public",
+          "relname": "attempt_questions",
+          "relrowsecurity": true,
+          "learner_table_write": false,
+          "learner_column_write": false,
+          "learner_table_select": false,
+          "learner_column_select": false
+        },
+        {
+          "schema": "public",
+          "relname": "exam_attempts",
+          "relrowsecurity": true,
+          "learner_table_write": false,
+          "learner_column_write": false,
+          "learner_table_select": true,
+          "learner_column_select": true
+        },
+        {
+          "schema": "public",
+          "relname": "question_explanations",
+          "relrowsecurity": true,
+          "learner_table_write": false,
+          "learner_column_write": false,
+          "learner_table_select": false,
+          "learner_column_select": false
+        },
+        {
+          "schema": "public",
+          "relname": "question_options",
+          "relrowsecurity": true,
+          "learner_table_write": false,
+          "learner_column_write": false,
+          "learner_table_select": false,
+          "learner_column_select": false
+        },
+        {
+          "schema": "public",
+          "relname": "question_versions",
+          "relrowsecurity": true,
+          "learner_table_write": false,
+          "learner_column_write": false,
+          "learner_table_select": false,
+          "learner_column_select": false
+        }
+      ],
+      "functions": [
+        {
+          "schema": "app_private",
+          "proname": "submit_exam_attempt_for_user",
+          "prosecdef": true,
+          "proconfig": [
+            "search_path=\"\""
+          ],
+          "anon_execute": false,
+          "learner_execute": false
+        },
+        {
+          "schema": "public",
+          "proname": "fulfill_paid_order",
+          "prosecdef": true,
+          "proconfig": [
+            "search_path=\"\""
+          ],
+          "anon_execute": false,
+          "learner_execute": false
+        },
+        {
+          "schema": "public",
+          "proname": "recalculate_event_rankings",
+          "prosecdef": false,
+          "proconfig": [
+            "search_path=public"
+          ],
+          "anon_execute": false,
+          "learner_execute": false
+        },
+        {
+          "schema": "public",
+          "proname": "recalculate_leaderboard",
+          "prosecdef": true,
+          "proconfig": [
+            "search_path=\"\""
+          ],
+          "anon_execute": false,
+          "learner_execute": false
+        },
+        {
+          "schema": "public",
+          "proname": "save_attempt_answer_for_user",
+          "prosecdef": true,
+          "proconfig": [
+            "search_path=\"\""
+          ],
+          "anon_execute": false,
+          "learner_execute": false
+        }
+      ]
+    }
+  }
+}

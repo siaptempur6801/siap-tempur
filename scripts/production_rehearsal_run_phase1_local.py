@@ -89,7 +89,9 @@ def main() -> None:
         typed_script, replacements = normalized_typed_copy(script_path)
     except Exception as exc:
         die(f"could not normalize Phase 1 SQL for exact typed legacy clone: {exc}")
-    print(f"Exact-clone compatibility: normalized {replacements} NULLIF empty-string expression(s).")
+    print(
+        f"Exact-clone compatibility: normalized {replacements} NULLIF empty-string expression(s)."
+    )
     try:
         proc = subprocess.run(
             ["psql", args.db_url, "-X", "-v", "ON_ERROR_STOP=1", "-f", str(typed_script)]

@@ -1,41 +1,46 @@
 import AdminPagination from '@/components/admin/AdminPagination'
 import {
-AdminCard,
-AdminEmptyState,
-AdminFeedbackBanner,
-AdminPage,
-AdminPageHeader,
-AdminStatusBadge,
-AdminTh,
-adminSecondaryButtonClass,
-adminTableHeadClass
+  AdminCard,
+  AdminEmptyState,
+  AdminFeedbackBanner,
+  AdminPage,
+  AdminPageHeader,
+  AdminStatusBadge,
+  AdminTh,
+  adminSecondaryButtonClass,
+  adminTableHeadClass,
 } from '@/components/admin/AdminUi'
 import { AdminDataTable } from '@/components/admin/data-display/AdminDataTable'
 import { RolePermissions } from '@/components/admin/domain/users/RolePermissions'
 import { UserAccessForms } from '@/components/admin/domain/users/UserAccessForms'
 import { AdminBreadcrumbs } from '@/components/admin/navigation/AdminBreadcrumbs'
 import { AdminTabs } from '@/components/admin/navigation/AdminTabs'
-import { formatDateTime,formatNumber,formatRupiah } from '@/lib/admin-format'
+import { formatDateTime, formatNumber, formatRupiah } from '@/lib/admin-format'
 import { adminPageSummary } from '@/lib/admin-pagination'
 import { adminReturnUrl } from '@/lib/admin-return-url'
 import { PERMISSIONS } from '@/src/auth/permissions'
+import {
+  entitlementStatusLabel,
+  transactionSourceLabel,
+  walletTypeLabel,
+} from '@/src/services/admin-platform.service'
 import { listAdminOrders } from '@/src/services/admin-commerce-workspace.service'
 import {
-getAdminUserAccess,
-getAdminUserDetail
+  getAdminUserAccess,
+  getAdminUserDetail,
 } from '@/src/services/admin-context-details.service'
-import { roleLabel } from '@/src/services/admin-directory.service'
+import { roleLabel, userStatusLabel } from '@/src/services/admin-directory.service'
 import {
-getAdminUserActivity,
-getAdminUserIdentity,
-getAdminUserRoles
+  getAdminUserActivity,
+  getAdminUserIdentity,
+  getAdminUserRoles,
 } from '@/src/services/admin-user-workspace.service'
 import { authorizationService } from '@/src/services/authorization.service'
 import Link from '@/components/admin/navigation/AdminLink'
 import { notFound } from 'next/navigation'
 export default async function UserDetailPage({
   params,
-  searchParams
+  searchParams,
 }: {
   params: Promise<{ userId: string }>
   searchParams: Promise<{
@@ -51,10 +56,10 @@ export default async function UserDetailPage({
   const actor = await authorizationService.requireAuthenticated(),
     canAccess = actor.permissions.includes(PERMISSIONS.ENTITLEMENT_MANAGE),
     canRead = actor.permissions.some(
-      (p) => p === PERMISSIONS.USER_READ || p === PERMISSIONS.USER_MANAGE
+      (p) => p === PERMISSIONS.USER_READ || p === PERMISSIONS.USER_MANAGE,
     ),
     canOrders = actor.permissions.some(
-      (p) => p === PERMISSIONS.ORDER_READ || p === PERMISSIONS.PAYMENT_MANAGE
+      (p) => p === PERMISSIONS.ORDER_READ || p === PERMISSIONS.PAYMENT_MANAGE,
     )
   if (!canAccess && !canRead)
     return (
@@ -69,11 +74,11 @@ export default async function UserDetailPage({
     href = `/admin/users/${userId}`,
     name = user.full_name || user.display_name || 'Pengguna'
   const tabs = [
-    { id: 'profile', label: 'Profile', allowed: true },
-    { id: 'roles', label: 'Roles & Permissions', allowed: canRead },
-    { id: 'entitlements', label: 'Entitlements', allowed: canAccess },
-    { id: 'orders', label: 'Orders', allowed: canOrders },
-    { id: 'activity', label: 'Activity', allowed: canRead }
+    { id: 'profile', label: 'Profil', allowed: true },
+    { id: 'roles', label: 'Peran & izin', allowed: canRead },
+    { id: 'entitlements', label: 'Akses', allowed: canAccess },
+    { id: 'orders', label: 'Pesanan', allowed: canOrders },
+    { id: 'activity', label: 'Aktivitas', allowed: canRead },
   ].filter((t) => t.allowed)
   const tab = tabs.some((t) => t.id === query.tab) ? query.tab! : 'profile'
   const [identity, access, roles, orders, activity] = await Promise.all([
@@ -81,27 +86,22 @@ export default async function UserDetailPage({
     tab === 'entitlements' && canAccess ? getAdminUserAccess(userId) : null,
     tab === 'roles' && canRead ? getAdminUserRoles(userId) : null,
     tab === 'orders' && canOrders ? listAdminOrders({ user: userId, page: query.page }) : null,
-    tab === 'activity' && canRead ? getAdminUserActivity(userId) : null
+    tab === 'activity' && canRead ? getAdminUserActivity(userId) : null,
   ])
   const self = `${href}?${new URLSearchParams({ tab, returnTo: back, ...(query.page ? { page: query.page } : {}) })}`
   return (
     <AdminPage>
-      <AdminBreadcrumbs items={[{ label: 'Users', href: back }, { label: name }]} />
+      <AdminBreadcrumbs items={[{ label: 'Pengguna', href: back }, { label: name }]} />
       <AdminPageHeader
         title={name}
         description="Profil, akses, dan aktivitas pengguna dalam satu workspace."
-        action={
-          <Link className={adminSecondaryButtonClass} href={back}>
-            Kembali ke Users
-          </Link>
-        }
       />
       <AdminTabs
-        label="User detail views"
+        label="Tampilan detail pengguna"
         active={tab}
         tabs={tabs.map((t) => ({
           ...t,
-          href: `${href}?${new URLSearchParams({ tab: t.id, returnTo: back })}`
+          href: `${href}?${new URLSearchParams({ tab: t.id, returnTo: back })}`,
         }))}
       />
       <AdminFeedbackBanner ok={query.ok} error={query.error} />
@@ -109,10 +109,10 @@ export default async function UserDetailPage({
         <AdminCard className="p-5">
           <dl className="grid gap-5 text-sm sm:grid-cols-2">
             {[
-              ['Name', name],
+              ['Nama', name],
               ['Email', identity?.email || 'Akses terbatas'],
-              ['Registered', formatDateTime(user.created_at)],
-              ['Last Activity', formatDateTime(identity?.lastActivity)]
+              ['Terdaftar', formatDateTime(user.created_at)],
+              ['Aktivitas terakhir', formatDateTime(identity?.lastActivity)],
             ].map(([label, value]) => (
               <div key={label}>
                 <dt className="text-xs text-muted-foreground">{label}</dt>
@@ -122,7 +122,7 @@ export default async function UserDetailPage({
             <div>
               <dt className="text-xs text-muted-foreground">Status</dt>
               <dd className="mt-1">
-                <AdminStatusBadge status={user.status} />
+                <AdminStatusBadge status={user.status} label={userStatusLabel(user.status)} />
               </dd>
             </div>
           </dl>
@@ -167,22 +167,22 @@ export default async function UserDetailPage({
                   !access.wallets.length
                     ? {
                         title: 'Belum ada token',
-                        description: 'Pengguna ini belum memiliki dompet token.'
+                        description: 'Pengguna ini belum memiliki dompet token.',
                       }
                     : undefined
                 }
               >
                 <thead className={adminTableHeadClass}>
                   <tr>
-                    <AdminTh>Wallet</AdminTh>
-                    <AdminTh>Balance</AdminTh>
-                    <AdminTh>Updated</AdminTh>
+                    <AdminTh>Dompet</AdminTh>
+                    <AdminTh>Saldo</AdminTh>
+                    <AdminTh>Diperbarui</AdminTh>
                   </tr>
                 </thead>
                 <tbody>
                   {access.wallets.map((w) => (
                     <tr key={String(w.id)}>
-                      <td>{String(w.wallet_type).replaceAll('_', ' ')}</td>
+                      <td>{walletTypeLabel(String(w.wallet_type))}</td>
                       <td>{formatNumber(w.balance)}</td>
                       <td>{formatDateTime(w.updated_at)}</td>
                     </tr>
@@ -192,23 +192,23 @@ export default async function UserDetailPage({
             </AdminCard>
           </section>
           <section>
-            <h2 className="mb-3 font-semibold">Entitlements</h2>
+            <h2 className="mb-3 font-semibold">Akses fitur</h2>
             <AdminCard>
               <AdminDataTable
-                caption="Entitlements pengguna"
+                caption="Akses pengguna"
                 className="min-w-[650px]"
                 empty={
                   !access.entitlements.length
                     ? {
-                        title: 'Belum ada entitlement',
-                        description: 'Pengguna ini belum memiliki akses fitur.'
+                        title: 'Belum ada akses fitur',
+                        description: 'Pengguna ini belum memiliki akses fitur.',
                       }
                     : undefined
                 }
               >
                 <thead className={adminTableHeadClass}>
                   <tr>
-                    {['Access', 'Source', 'Usage', 'Status', 'Expires'].map((h) => (
+                    {['Akses', 'Sumber', 'Penggunaan', 'Status', 'Berakhir pada'].map((h) => (
                       <AdminTh key={h}>{h}</AdminTh>
                     ))}
                   </tr>
@@ -217,13 +217,16 @@ export default async function UserDetailPage({
                   {access.entitlements.map((e) => (
                     <tr key={e.id}>
                       <td>{e.feature_name}</td>
-                      <td>{String(e.source_type).replaceAll('_', ' ')}</td>
+                      <td>{transactionSourceLabel(String(e.source_type))}</td>
                       <td>
                         {formatNumber(e.usage_count)} /{' '}
                         {e.usage_limit == null ? 'Tidak dibatasi' : formatNumber(e.usage_limit)}
                       </td>
                       <td>
-                        <AdminStatusBadge status={e.status} />
+                        <AdminStatusBadge
+                          status={e.status}
+                          label={entitlementStatusLabel(e.status)}
+                        />
                       </td>
                       <td>{formatDateTime(e.expires_at)}</td>
                     </tr>
@@ -243,20 +246,20 @@ export default async function UserDetailPage({
       {orders && (
         <AdminCard>
           <AdminDataTable
-            caption="Orders pengguna"
+            caption="Pesanan pengguna"
             className="min-w-[650px]"
             empty={
               !orders.rows.length
                 ? {
-                    title: 'Belum ada order',
-                    description: 'Pesanan pengguna akan muncul setelah checkout.'
+                    title: 'Belum ada pesanan',
+                    description: 'Pesanan pengguna akan muncul setelah checkout.',
                   }
                 : undefined
             }
           >
             <thead className={adminTableHeadClass}>
               <tr>
-                {['Order', 'Product', 'Amount', 'Status', 'Created'].map((h) => (
+                {['Pesanan', 'Produk', 'Jumlah', 'Status', 'Dibuat'].map((h) => (
                   <AdminTh key={h}>{h}</AdminTh>
                 ))}
               </tr>
@@ -300,14 +303,14 @@ export default async function UserDetailPage({
                 ? {
                     title: 'Belum ada aktivitas assessment',
                     description:
-                      'Aktivitas akan tercatat saat pengguna mulai mengerjakan assessment.'
+                      'Aktivitas akan tercatat saat pengguna mulai mengerjakan assessment.',
                   }
                 : undefined
             }
           >
             <thead className={adminTableHeadClass}>
               <tr>
-                {['Assessment', 'Status', 'Started', 'Completed', 'Score'].map((h) => (
+                {['Assessment', 'Status', 'Dimulai', 'Selesai', 'Skor'].map((h) => (
                   <AdminTh key={h}>{h}</AdminTh>
                 ))}
               </tr>

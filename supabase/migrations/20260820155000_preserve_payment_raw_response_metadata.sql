@@ -1,18 +1,10 @@
-create or replace function public.fulfill_paid_order(
-  p_order_id uuid,
-  p_provider text,
-  p_status text,
-  p_provider_transaction_id text,
-  p_payment_method text,
-  p_amount numeric,
-  p_raw_response jsonb
-)
-returns void
-language plpgsql
-security definer
-set search_path to 'public', 'pg_temp'
-as $function$
-declare
+CREATE OR REPLACE FUNCTION public.fulfill_paid_order (p_order_id uuid, p_provider text, p_status text, p_provider_transaction_id text, p_payment_method text, p_amount numeric, p_raw_response jsonb)
+  RETURNS void
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO 'public', 'pg_temp'
+  AS $function$
+DECLARE
   v_order public.orders%rowtype;
   v_item record;
   v_grant record;
@@ -23,179 +15,205 @@ declare
   v_credit integer;
   v_paid_at timestamptz;
   v_registration_number text;
-  v_success boolean := lower(p_status) in ('capture', 'settlement');
-begin
-  select * into v_order
-  from public.orders
-  where id = p_order_id
-  for update;
+  v_success boolean := lower(p_status) IN ('capture', 'settlement');
+BEGIN
+  SELECT
+    *
+  INTO
+    v_order
+  FROM
+    public.orders
+  WHERE
+    id = p_order_id
+  FOR UPDATE;
 
-  if not found then
-    raise exception 'ORDER_NOT_FOUND';
-  end if;
+  IF NOT found THEN
+    RAISE EXCEPTION 'ORDER_NOT_FOUND';
+  END IF;
 
-  if p_amount is null or p_amount <> v_order.total_amount then
-    raise exception 'PAYMENT_AMOUNT_MISMATCH';
-  end if;
+  IF p_amount IS NULL OR p_amount <> v_order.total_amount THEN
+    RAISE EXCEPTION 'PAYMENT_AMOUNT_MISMATCH';
+  END IF;
 
-  insert into public.payments (
-    order_id, provider, provider_transaction_id, payment_method,
-    amount, status, paid_at, raw_response, created_at, updated_at
-  ) values (
-    v_order.id,
-    lower(p_provider),
-    nullif(p_provider_transaction_id, ''),
-    nullif(p_payment_method, ''),
-    p_amount,
-    lower(p_status),
-    case when v_success then coalesce(v_order.paid_at, now()) else null end,
-    coalesce(p_raw_response, '{}'::jsonb),
-    now(),
-    now()
-  )
-  on conflict (order_id, provider) do update set
-    provider_transaction_id = coalesce(excluded.provider_transaction_id, public.payments.provider_transaction_id),
-    payment_method = coalesce(excluded.payment_method, public.payments.payment_method),
-    amount = excluded.amount,
-    status = case
-      when lower(public.payments.status) in ('capture', 'settlement') then public.payments.status
-      else excluded.status
-    end,
-    paid_at = case
-      when lower(public.payments.status) in ('capture', 'settlement') then public.payments.paid_at
-      when excluded.status in ('capture', 'settlement') then coalesce(public.payments.paid_at, excluded.paid_at, now())
-      else public.payments.paid_at
-    end,
-    raw_response = coalesce(public.payments.raw_response, '{}'::jsonb) || coalesce(excluded.raw_response, '{}'::jsonb),
-    updated_at = now();
+  INSERT INTO public.payments (order_id, provider, provider_transaction_id, payment_method, amount, status, paid_at, raw_response, created_at, updated_at)
+    VALUES (v_order.id, lower(p_provider), nullif (p_provider_transaction_id, ''), nullif (p_payment_method, ''), p_amount, lower(p_status), CASE WHEN v_success THEN
+        coalesce(v_order.paid_at, now())
+      ELSE
+        NULL
+      END, coalesce(p_raw_response, '{}'::jsonb), now(), now())
+  ON CONFLICT (order_id, provider)
+    DO UPDATE SET
+      provider_transaction_id = coalesce(excluded.provider_transaction_id, public.payments.provider_transaction_id),
+      payment_method = coalesce(excluded.payment_method, public.payments.payment_method),
+      amount = excluded.amount,
+      status = CASE WHEN lower(public.payments.status) IN ('capture', 'settlement') THEN
+        public.payments.status
+      ELSE
+        excluded.status
+      END,
+      paid_at = CASE WHEN lower(public.payments.status) IN ('capture', 'settlement') THEN
+        public.payments.paid_at
+      WHEN excluded.status IN ('capture', 'settlement') THEN
+        coalesce(public.payments.paid_at, excluded.paid_at, now())
+      ELSE
+        public.payments.paid_at
+      END,
+      raw_response = coalesce(public.payments.raw_response, '{}'::jsonb) || coalesce(excluded.raw_response, '{}'::jsonb),
+      updated_at = now();
 
-  if not v_success then
-    if lower(v_order.status) <> 'paid' then
-      update public.orders
-      set status = case lower(p_status)
-        when 'pending' then 'pending'
-        when 'expire' then 'expired'
-        when 'cancel' then 'cancelled'
-        when 'deny' then 'failed'
-        else lower(p_status)
-      end
-      where id = v_order.id;
-    end if;
-    return;
-  end if;
+  IF NOT v_success THEN
+    IF lower(v_order.status) <> 'paid' THEN
+      UPDATE
+        public.orders
+      SET
+        status = CASE lower(p_status)
+        WHEN 'pending' THEN
+          'pending'
+        WHEN 'expire' THEN
+          'expired'
+        WHEN 'cancel' THEN
+          'cancelled'
+        WHEN 'deny' THEN
+          'failed'
+        ELSE
+          lower(p_status)
+        END
+      WHERE
+        id = v_order.id;
+    END IF;
+    RETURN;
+  END IF;
 
   v_paid_at := coalesce(v_order.paid_at, now());
-  update public.orders
-  set status = 'paid', paid_at = v_paid_at
-  where id = v_order.id;
+  UPDATE
+    public.orders
+  SET
+    status = 'paid',
+    paid_at = v_paid_at
+  WHERE
+    id = v_order.id;
 
-  for v_item in
-    select oi.*, p.duration_days, p.product_type
-    from public.order_items oi
-    join public.products p on p.id = oi.product_id
-    where oi.order_id = v_order.id
-    order by oi.id
-  loop
-    for v_grant in
-      select wallet_type, amount
-      from public.product_wallet_grants
-      where product_id = v_item.product_id
-    loop
-      insert into public.wallets(user_id, wallet_type, balance, updated_at)
-      values (v_order.user_id, v_grant.wallet_type, 0, now())
-      on conflict (user_id, wallet_type) do nothing;
+  FOR v_item IN
+  SELECT
+    oi.*,
+    p.duration_days,
+    p.product_type
+  FROM
+    public.order_items oi
+    JOIN public.products p ON p.id = oi.product_id
+  WHERE
+    oi.order_id = v_order.id
+  ORDER BY
+    oi.id LOOP
+      FOR v_grant IN
+      SELECT
+        wallet_type,
+        amount
+      FROM
+        public.product_wallet_grants
+      WHERE
+        product_id = v_item.product_id LOOP
+          INSERT INTO public.wallets (user_id, wallet_type, balance, updated_at)
+            VALUES (v_order.user_id, v_grant.wallet_type, 0, now())
+          ON CONFLICT (user_id, wallet_type)
+            DO NOTHING;
 
-      select id, balance into v_wallet_id, v_balance
-      from public.wallets
-      where user_id = v_order.user_id
-        and wallet_type = v_grant.wallet_type
-      for update;
+          SELECT
+            id,
+            balance
+          INTO
+            v_wallet_id,
+            v_balance
+          FROM
+            public.wallets
+          WHERE
+            user_id = v_order.user_id
+            AND wallet_type = v_grant.wallet_type
+          FOR UPDATE;
 
-      if not exists (
-        select 1
-        from public.wallet_transactions wt
-        where wt.wallet_id = v_wallet_id
-          and wt.source_type = 'order_item'
-          and wt.source_id = v_item.id
-          and wt.type = 'credit'
-      ) then
-        v_credit := v_grant.amount * v_item.quantity;
-        update public.wallets
-        set balance = balance + v_credit, updated_at = now()
-        where id = v_wallet_id
-        returning balance into v_balance;
+          IF NOT EXISTS (
+            SELECT
+              1
+            FROM
+              public.wallet_transactions wt
+            WHERE
+              wt.wallet_id = v_wallet_id
+              AND wt.source_type = 'order_item'
+              AND wt.source_id = v_item.id
+              AND wt.type = 'credit') THEN
+          v_credit := v_grant.amount * v_item.quantity;
+          UPDATE
+            public.wallets
+          SET
+            balance = balance + v_credit,
+            updated_at = now()
+          WHERE
+            id = v_wallet_id
+          RETURNING
+            balance
+          INTO
+            v_balance;
 
-        insert into public.wallet_transactions(
-          wallet_id, type, amount, source_type, source_id, balance_after, created_at
-        ) values (
-          v_wallet_id, 'credit', v_credit, 'order_item', v_item.id, v_balance, now()
-        );
-      end if;
-    end loop;
+          INSERT INTO public.wallet_transactions (wallet_id, type, amount, source_type, source_id, balance_after, created_at)
+            VALUES (v_wallet_id, 'credit', v_credit, 'order_item', v_item.id, v_balance, now());
+        END IF;
+    END LOOP;
 
-    for v_feature in
-      select pf.feature_id, pf.limit_value
-      from public.product_features pf
-      where pf.product_id = v_item.product_id
-    loop
-      insert into public.entitlements(
-        user_id, feature_id, source_type, source_id,
-        starts_at, expires_at, usage_limit, usage_count, status, created_at
-      ) values (
-        v_order.user_id,
-        v_feature.feature_id,
-        'order_item',
-        v_item.id,
-        v_paid_at,
-        case
-          when v_item.duration_days is null then null
-          else v_paid_at + make_interval(days => v_item.duration_days)
-        end,
-        v_feature.limit_value,
-        0,
-        'active',
-        now()
-      )
-      on conflict (user_id, feature_id, source_type, source_id)
-      where source_id is not null and source_type = 'order_item'
-      do nothing;
-    end loop;
+  FOR v_feature IN
+  SELECT
+    pf.feature_id,
+    pf.limit_value
+  FROM
+    public.product_features pf
+  WHERE
+    pf.product_id = v_item.product_id LOOP
+      INSERT INTO public.entitlements (user_id, feature_id, source_type, source_id, starts_at, expires_at, usage_limit, usage_count, status, created_at)
+        VALUES (v_order.user_id, v_feature.feature_id, 'order_item', v_item.id, v_paid_at, CASE WHEN v_item.duration_days IS NULL THEN
+            NULL
+          ELSE
+            v_paid_at + make_interval(days => v_item.duration_days)
+          END, v_feature.limit_value, 0, 'active', now())
+      ON CONFLICT (user_id, feature_id, source_type, source_id)
+    WHERE
+      source_id IS NOT NULL
+      AND source_type = 'order_item'
+        DO NOTHING;
+    END LOOP;
 
-    select ep.product_id, ep.event_id, ep.session_id, e.code
-    into v_event_product
-    from public.event_products ep
-    join public.events e on e.id = ep.event_id
-    where ep.product_id = v_item.product_id
-      and lower(ep.status) = 'active'
-    limit 1;
+  SELECT
+    ep.product_id,
+    ep.event_id,
+    ep.session_id,
+    e.code
+  INTO
+    v_event_product
+  FROM
+    public.event_products ep
+    JOIN public.events e ON e.id = ep.event_id
+  WHERE
+    ep.product_id = v_item.product_id
+    AND lower(ep.status) = 'active'
+  LIMIT 1;
 
-    if found then
-      if v_event_product.session_id is null then
-        raise exception 'EVENT_PRODUCT_SESSION_REQUIRED';
-      end if;
+  IF found THEN
+    IF v_event_product.session_id IS NULL THEN
+      RAISE EXCEPTION 'EVENT_PRODUCT_SESSION_REQUIRED';
+    END IF;
 
-      v_registration_number := 'EVT-' || v_event_product.code || '-' || upper(substr(md5(v_item.id::text), 1, 8));
+    v_registration_number := 'EVT-' || v_event_product.code || '-' || upper(substr(md5(v_item.id::text), 1, 8));
 
-      insert into public.event_registrations(
-        event_id, session_id, user_id, order_id,
-        registration_number, status, created_at
-      ) values (
-        v_event_product.event_id,
-        v_event_product.session_id,
-        v_order.user_id,
-        v_order.id,
-        v_registration_number,
-        'registered',
-        now()
-      )
-      on conflict (event_id, user_id) do update set
+    INSERT INTO public.event_registrations (event_id, session_id, user_id, order_id, registration_number, status, created_at)
+      VALUES (v_event_product.event_id, v_event_product.session_id, v_order.user_id, v_order.id, v_registration_number, 'registered', now())
+    ON CONFLICT (event_id, user_id)
+      DO UPDATE SET
         session_id = coalesce(public.event_registrations.session_id, excluded.session_id),
         order_id = coalesce(public.event_registrations.order_id, excluded.order_id),
-        status = case
-          when lower(public.event_registrations.status) in ('started', 'completed') then public.event_registrations.status
-          else 'registered'
-        end;
-    end if;
-  end loop;
-end;
+        status = CASE WHEN lower(public.event_registrations.status) IN ('started', 'completed') THEN
+          public.event_registrations.status
+        ELSE
+          'registered'
+        END;
+  END IF;
+END LOOP;
+END;
 $function$;

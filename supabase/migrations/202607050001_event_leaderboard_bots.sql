@@ -1,63 +1,56 @@
 -- Virtual event leaderboard bots.
 -- Bots are display-only leaderboard entries, not real users or test sessions.
+ALTER TABLE public.tryout_events
+  ADD COLUMN IF NOT EXISTS bot_count int NOT NULL DEFAULT 0;
 
-alter table public.tryout_events
-  add column if not exists bot_count int not null default 0;
+ALTER TABLE public.tryout_events
+  DROP CONSTRAINT IF EXISTS tryout_events_bot_count_check;
 
-alter table public.tryout_events
-  drop constraint if exists tryout_events_bot_count_check;
+ALTER TABLE public.tryout_events
+  ADD CONSTRAINT tryout_events_bot_count_check CHECK (bot_count BETWEEN 0 AND 100);
 
-alter table public.tryout_events
-  add constraint tryout_events_bot_count_check
-  check (bot_count between 0 and 100);
-
-comment on column public.tryout_events.bot_count is
-  'Number of virtual display-only bots to show on event leaderboards. Bots are not participants or sessions.';
-
-create table if not exists public.event_bot_names (
-  id uuid default uuid_generate_v4() primary key,
-  full_name text not null unique,
-  is_active boolean not null default true,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  constraint event_bot_names_full_name_words_check
-    check (array_length(regexp_split_to_array(trim(full_name), '\s+'), 1) between 2 and 3)
+COMMENT ON COLUMN public.tryout_events.bot_count IS TEXTVALUE0E; CREATE TABLE IF NOT EXISTS public.event_bot_names (
+  id uuid DEFAULT uuid_generate_v4 () PRIMARY KEY,
+  full_name text NOT NULL UNIQUE,
+  is_active boolean NOT NULL DEFAULT TRUE,
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+  CONSTRAINT event_bot_names_full_name_words_check CHECK (array_length(regexp_split_to_array(trim(full_name), '\s+'), 1) BETWEEN 2 AND 3)
 );
 
-create table if not exists public.tryout_event_bot_entries (
-  id uuid default uuid_generate_v4() primary key,
-  event_id uuid references public.tryout_events(id) on delete cascade not null,
-  display_name text not null,
-  seed bigint not null,
-  target_progress_count int not null check (target_progress_count between 0 and 110),
-  target_score_twk int not null check (target_score_twk between 0 and 150),
-  target_score_tiu int not null check (target_score_tiu between 0 and 175),
-  target_score_tkp int not null check (target_score_tkp between 0 and 225),
-  target_total_score int not null check (target_total_score between 0 and 360),
-  started_at timestamp with time zone not null,
-  finished_at timestamp with time zone not null,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  unique(event_id, display_name),
-  constraint tryout_event_bot_entries_time_check check (finished_at >= started_at),
-  constraint tryout_event_bot_entries_total_check
-    check (target_total_score = target_score_twk + target_score_tiu + target_score_tkp)
+CREATE TABLE IF NOT EXISTS public.tryout_event_bot_entries (
+  id uuid DEFAULT uuid_generate_v4 () PRIMARY KEY,
+  event_id uuid REFERENCES public.tryout_events (id) ON DELETE CASCADE NOT NULL,
+  display_name text NOT NULL,
+  seed bigint NOT NULL,
+  target_progress_count int NOT NULL CHECK (target_progress_count BETWEEN 0 AND 110),
+  target_score_twk int NOT NULL CHECK (target_score_twk BETWEEN 0 AND 150),
+  target_score_tiu int NOT NULL CHECK (target_score_tiu BETWEEN 0 AND 175),
+  target_score_tkp int NOT NULL CHECK (target_score_tkp BETWEEN 0 AND 225),
+  target_total_score int NOT NULL CHECK (target_total_score BETWEEN 0 AND 360),
+  started_at timestamp with time zone NOT NULL,
+  finished_at timestamp with time zone NOT NULL,
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+  UNIQUE (event_id, display_name),
+  CONSTRAINT tryout_event_bot_entries_time_check CHECK (finished_at >= started_at),
+  CONSTRAINT tryout_event_bot_entries_total_check CHECK (target_total_score = target_score_twk + target_score_tiu + target_score_tkp)
 );
 
-create index if not exists event_bot_names_active_idx
-  on public.event_bot_names(is_active, full_name);
+CREATE INDEX IF NOT EXISTS event_bot_names_active_idx ON public.event_bot_names (is_active, full_name);
 
-create index if not exists tryout_event_bot_entries_event_idx
-  on public.tryout_event_bot_entries(event_id, started_at);
+CREATE INDEX IF NOT EXISTS tryout_event_bot_entries_event_idx ON public.tryout_event_bot_entries (event_id, started_at);
 
-alter table public.event_bot_names enable row level security;
-alter table public.tryout_event_bot_entries enable row level security;
+ALTER TABLE public.event_bot_names ENABLE ROW LEVEL SECURITY;
 
-revoke all on public.event_bot_names from anon, authenticated;
-revoke all on public.tryout_event_bot_entries from anon, authenticated;
+ALTER TABLE public.tryout_event_bot_entries ENABLE ROW LEVEL SECURITY;
 
-insert into public.event_bot_names (full_name)
-values
+REVOKE ALL ON public.event_bot_names FROM anon, authenticated;
+
+REVOKE ALL ON public.tryout_event_bot_entries FROM anon, authenticated;
+
+INSERT INTO public.event_bot_names (full_name)
+VALUES
   ('Andi Pratama'),
   ('Siti Nur Aisyah'),
   ('Rizky Maulana'),
@@ -108,4 +101,5 @@ values
   ('Rafi Alfarizi'),
   ('Indah Purnama'),
   ('Wahyu Saputra')
-on conflict (full_name) do nothing;
+ON CONFLICT (full_name)
+  DO NOTHING;

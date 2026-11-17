@@ -15,11 +15,14 @@ async function githubOidcToken() {
   const requestToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN
   if (!requestUrl || !requestToken) return null
   const separator = requestUrl.includes('?') ? '&' : '?'
-  const response = await fetch(`${requestUrl}${separator}audience=${encodeURIComponent(OIDC_AUDIENCE)}`, {
-    headers: { Authorization: `bearer ${requestToken}` },
-  })
+  const response = await fetch(
+    `${requestUrl}${separator}audience=${encodeURIComponent(OIDC_AUDIENCE)}`,
+    {
+      headers: { Authorization: `bearer ${requestToken}` },
+    },
+  )
   if (!response.ok) return null
-  const payload = await response.json() as { value?: string }
+  const payload = (await response.json()) as { value?: string }
   return payload.value || null
 }
 
@@ -28,7 +31,9 @@ teardown('remove disposable CPNS SKD staging user', async () => {
   if (!supabaseUrl) return
   const projectRef = new URL(supabaseUrl).hostname.split('.')[0]
   if (projectRef !== EXPECTED_STAGING_REF) {
-    throw new Error(`CPNS E2E cleanup diblokir untuk non-staging project ${projectRef || 'unknown'}.`)
+    throw new Error(
+      `CPNS E2E cleanup diblokir untuk non-staging project ${projectRef || 'unknown'}.`,
+    )
   }
 
   let userId: string | null = null
@@ -41,17 +46,16 @@ teardown('remove disposable CPNS SKD staging user', async () => {
 
   if (userId) {
     const oidcToken = await githubOidcToken()
-    if (!oidcToken) throw new Error('GitHub OIDC token tidak tersedia untuk cleanup CPNS staging user.')
+    if (!oidcToken)
+      throw new Error('GitHub OIDC token tidak tersedia untuk cleanup CPNS staging user.')
     const response = await fetch(ciHelperUrl(supabaseUrl, 'ci-e2e-cpns'), {
       method: 'POST',
       headers: { Authorization: `Bearer ${oidcToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'cleanup', userId }),
     })
-    if (!response.ok) throw new Error(`ci-e2e-cpns cleanup gagal (${response.status}): ${await response.text()}`)
+    if (!response.ok)
+      throw new Error(`ci-e2e-cpns cleanup gagal (${response.status}): ${await response.text()}`)
   }
 
-  await Promise.all([
-    rm(metadataFile, { force: true }),
-    rm(authFile, { force: true }),
-  ])
+  await Promise.all([rm(metadataFile, { force: true }), rm(authFile, { force: true })])
 })

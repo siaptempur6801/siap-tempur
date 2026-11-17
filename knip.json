@@ -1,0 +1,21 @@
+{
+  "$schema": "./node_modules/knip/schema.json",
+  "entry": [
+    "app/**/{page,layout,loading,error,global-error,not-found,default,template,route}.{js,jsx,ts,tsx}",
+    "app/**/actions.{js,ts,tsx}",
+    "app/actions/**/*.{js,ts,tsx}",
+    "scripts/**/*.{js,mjs,ts}",
+    "load-test/**/*.{js,mjs}",
+    "supabase/functions/**/index.ts",
+    "tests/**/*.spec.{ts,tsx}",
+    "tests/e2e/**/*.{ts,tsx,mjs}"
+  ],
+  "ignoreBinaries": ["pg_format", "ruff", "supabase"],
+  "ignoreDependencies": ["@types/katex"],
+  "ignoreIssues": {
+    "load-test/**": ["unlisted"],
+    "scripts/perf/tka-readiness.mjs": ["unlisted"],
+    "supabase/functions/**": ["unlisted"],
+    "types/database.types.ts": ["exports", "types"]
+  }
+}

@@ -1,7 +1,7 @@
 .learning {
-  --st-radius-sm: 0.625rem;
-  --st-radius-md: 0.875rem;
-  --st-radius-lg: 1rem;
+  --st-radius-sm: var(--px-radius-sm);
+  --st-radius-md: var(--px-radius-md);
+  --st-radius-lg: var(--px-radius-md);
 }
 
 .learning.learning :global(.st-heading-display) {
@@ -11,14 +11,15 @@
 }
 
 .learning.learning :global(.st-button) {
-  min-height: 42px;
+  min-height: 44px;
   border-width: 1px;
+  border-radius: var(--px-radius-sm);
   font-weight: 700;
   transition: all 0.15s ease-in-out;
 }
 
 .learning.learning :global(.st-pill) {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
   font-weight: 600;
 }
 
@@ -53,31 +54,46 @@
 
 .learning :is(article, section, header) {
   min-width: 0;
-  border-radius: 0.875rem;
+  border-radius: var(--px-radius-md);
   scroll-margin-top: 24px;
+}
+
+.learning :is(article, section):is([class~='border-2'], [class~='border-4']) {
+  border-width: 1px;
+}
+
+.learning :is([class~='font-black'], [class~='font-extrabold']) {
+  font-weight: 700;
 }
 
 .learning :global(.st-card),
 .learning :global(.st-card-md),
 .learning :global(.st-card-lg) {
-  border: 1px solid #e2e8f0;
-  background-color: #ffffff;
-  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.03), 0 1px 2px -1px rgba(15, 23, 42, 0.03);
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  border: 1px solid var(--px-border-strong);
+  border-radius: var(--px-radius-md);
+  background-color: var(--px-surface);
+  box-shadow: var(--px-shadow-xs);
+  transition:
+    border-color 0.15s ease-in-out,
+    box-shadow 0.15s ease-in-out;
 }
 
 .learning :global(.st-card):hover,
 .learning :global(.st-card-md):hover {
-  border-color: #cbd5e1;
-  box-shadow: 0 4px 12px 0 rgba(15, 23, 42, 0.05);
+  border-color: var(--px-border-strong);
+  box-shadow: var(--px-shadow-sm);
 }
 
 .learning :global(.st-focus):focus-visible {
-  outline: 2px solid #2563eb;
+  outline: 2px solid var(--ring);
   outline-offset: 3px;
 }
 
 @media (max-width: 767px) {
-  .learning main { padding: 16px 12px; }
-  .learning :is(section, header) { scroll-margin-top: 100px; }
+  .learning main {
+    padding: 16px;
+  }
+  .learning :is(section, header) {
+    scroll-margin-top: 100px;
+  }
 }

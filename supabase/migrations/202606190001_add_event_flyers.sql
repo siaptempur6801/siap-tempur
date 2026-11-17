@@ -1,43 +1,62 @@
 -- Add optional flyer images for Tryout Akbar events.
+ALTER TABLE public.tryout_events
+  ADD COLUMN IF NOT EXISTS flyer_image_url text;
 
-alter table public.tryout_events
-  add column if not exists flyer_image_url text;
+COMMENT ON COLUMN public.tryout_events.flyer_image_url IS TEXTVALUE0E; INSERT INTO storage.buckets (id, name, public)
+  VALUES ('event-flyers', 'event-flyers', TRUE)
+ON CONFLICT (id)
+  DO UPDATE SET
+    public = TRUE;
 
-comment on column public.tryout_events.flyer_image_url is 'Public URL for optional event flyer image shown on admin and user event pages.';
+DROP POLICY IF EXISTS "Event flyers are publicly readable" ON storage.objects;
 
-insert into storage.buckets (id, name, public)
-values ('event-flyers', 'event-flyers', true)
-on conflict (id) do update set public = true;
+CREATE POLICY "Event flyers are publicly readable" ON storage.objects
+  FOR SELECT
+  USING (bucket_id = 'event-flyers');
 
-drop policy if exists "Event flyers are publicly readable" on storage.objects;
-create policy "Event flyers are publicly readable"
-  on storage.objects for select
-  using (bucket_id = 'event-flyers');
+DROP POLICY IF EXISTS "Admins can upload event flyers" ON storage.objects;
 
-drop policy if exists "Admins can upload event flyers" on storage.objects;
-create policy "Admins can upload event flyers"
-  on storage.objects for insert to authenticated
-  with check (
-    bucket_id = 'event-flyers'
-    and (select role from public.profiles where id = auth.uid()) = 'admin'
-  );
+CREATE POLICY "Admins can upload event flyers" ON storage.objects
+  FOR INSERT TO authenticated
+  WITH CHECK (bucket_id = 'event-flyers'
+  AND (
+    SELECT
+      ROLE
+    FROM
+      public.profiles
+    WHERE
+      id = auth.uid ()) = 'admin');
 
-drop policy if exists "Admins can update event flyers" on storage.objects;
-create policy "Admins can update event flyers"
-  on storage.objects for update to authenticated
-  using (
-    bucket_id = 'event-flyers'
-    and (select role from public.profiles where id = auth.uid()) = 'admin'
-  )
-  with check (
-    bucket_id = 'event-flyers'
-    and (select role from public.profiles where id = auth.uid()) = 'admin'
-  );
+DROP POLICY IF EXISTS "Admins can update event flyers" ON storage.objects;
 
-drop policy if exists "Admins can delete event flyers" on storage.objects;
-create policy "Admins can delete event flyers"
-  on storage.objects for delete to authenticated
-  using (
-    bucket_id = 'event-flyers'
-    and (select role from public.profiles where id = auth.uid()) = 'admin'
-  );
+CREATE POLICY "Admins can update event flyers" ON storage.objects
+  FOR UPDATE TO authenticated
+  USING (bucket_id = 'event-flyers'
+    AND (
+      SELECT
+        ROLE
+      FROM
+        public.profiles
+      WHERE
+        id = auth.uid ()) = 'admin')
+  WITH CHECK (bucket_id = 'event-flyers'
+  AND (
+    SELECT
+      ROLE
+    FROM
+      public.profiles
+    WHERE
+      id = auth.uid ()) = 'admin');
+
+DROP POLICY IF EXISTS "Admins can delete event flyers" ON storage.objects;
+
+CREATE POLICY "Admins can delete event flyers" ON storage.objects
+  FOR DELETE TO authenticated
+  USING (bucket_id = 'event-flyers'
+    AND (
+      SELECT
+        ROLE
+      FROM
+        public.profiles
+      WHERE
+        id = auth.uid ()) = 'admin');

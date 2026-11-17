@@ -1,8 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import {
-  hasLegacyMarkdownFormatting,
-  normalizeQuestionRichText,
-} from '@/lib/question-rich-text'
+import { hasLegacyMarkdownFormatting, normalizeQuestionRichText } from '@/lib/question-rich-text'
 
 interface TwkQuestion {
   id: string
@@ -28,7 +25,7 @@ const supabase = createClient(
       autoRefreshToken: false,
       persistSession: false,
     },
-  }
+  },
 )
 
 const { data, error } = await supabase
@@ -62,7 +59,9 @@ if (!shouldApply) {
       const normalizedExplanation = question.normalizedExplanation
 
       if (!normalizedExplanation || hasLegacyMarkdownFormatting(normalizedExplanation)) {
-        throw new Error(`Hasil normalisasi tidak valid untuk ${question.question_code || question.id}.`)
+        throw new Error(
+          `Hasil normalisasi tidak valid untuk ${question.question_code || question.id}.`,
+        )
       }
 
       const { data: updatedRows, error: updateError } = await supabase
@@ -74,7 +73,7 @@ if (!shouldApply) {
 
       if (updateError || updatedRows?.length !== 1) {
         throw new Error(
-          `Gagal memperbarui ${question.question_code || question.id}: ${updateError?.message || 'baris tidak ditemukan'}`
+          `Gagal memperbarui ${question.question_code || question.id}: ${updateError?.message || 'baris tidak ditemukan'}`,
         )
       }
 
@@ -91,7 +90,9 @@ if (!shouldApply) {
         .eq('type', 'TWK')
 
       if (rollbackError) {
-        console.error(`Rollback gagal untuk ${question.question_code || question.id}: ${rollbackError.message}`)
+        console.error(
+          `Rollback gagal untuk ${question.question_code || question.id}: ${rollbackError.message}`,
+        )
       }
     }
 
@@ -107,12 +108,14 @@ if (!shouldApply) {
     throw new Error(`Gagal memverifikasi hasil: ${verificationError.message}`)
   }
 
-  const remainingLegacyCount = (verificationRows || []).filter((question) => (
-    normalizeQuestionRichText(question.explanation || '') !== question.explanation
-  )).length
+  const remainingLegacyCount = (verificationRows || []).filter(
+    (question) => normalizeQuestionRichText(question.explanation || '') !== question.explanation,
+  ).length
 
   if (remainingLegacyCount > 0) {
-    throw new Error(`Verifikasi gagal: masih ada ${remainingLegacyCount} pembahasan yang belum rapi.`)
+    throw new Error(
+      `Verifikasi gagal: masih ada ${remainingLegacyCount} pembahasan yang belum rapi.`,
+    )
   }
 
   console.log(`Normalisasi berhasil: ${updatedQuestions.length} pembahasan TWK diperbarui.`)

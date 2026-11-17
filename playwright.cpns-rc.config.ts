@@ -32,7 +32,8 @@ export default defineConfig({
     },
     {
       name: 'chromium-cpns-rc',
-      testMatch: /.*(?:11-cpns-rc|23-organization-participant-lifecycle|24-event-context-lifecycle|25-organization-dual-assignment-isolation|26-event-assessment-matrix)\.spec\.ts/,
+      testMatch:
+        /.*(?:11-cpns-rc|23-organization-participant-lifecycle|24-event-context-lifecycle|25-organization-dual-assignment-isolation|26-event-assessment-matrix)\.spec\.ts/,
       use: {
         ...devices['Desktop Chrome'],
         storageState: 'playwright/.auth/cpns-user.json',

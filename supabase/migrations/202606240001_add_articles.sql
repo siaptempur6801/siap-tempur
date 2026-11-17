@@ -1,119 +1,166 @@
 -- Add article publishing workflow with a restricted article_writer role.
-
-do $$
-begin
-  if exists (select 1 from pg_type where typname = 'user_role') then
-    alter type public.user_role add value if not exists 'article_writer';
-  end if;
-end;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT
+      1
+    FROM
+      pg_type
+    WHERE
+      typname = 'user_role') THEN
+  ALTER TYPE public.user_role
+    ADD value IF NOT EXISTS 'article_writer';
+END IF;
+END;
 $$;
 
-create table if not exists public.articles (
-  id uuid primary key default gen_random_uuid(),
-  title text not null,
-  slug text not null unique,
+CREATE TABLE IF NOT EXISTS public.articles (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid (),
+  title text NOT NULL,
+  slug text NOT NULL UNIQUE,
   excerpt text,
-  content text not null,
+  content text NOT NULL,
   category text,
   cover_image_url text,
-  status text not null default 'draft',
-  author_id uuid references public.profiles(id) on delete set null,
+  status text NOT NULL DEFAULT 'draft',
+  author_id uuid REFERENCES public.profiles (id) ON DELETE SET NULL,
   published_at timestamp with time zone,
-  created_at timestamp with time zone not null default timezone('utc'::text, now()),
-  updated_at timestamp with time zone not null default timezone('utc'::text, now()),
-  constraint articles_status_check check (status in ('draft', 'published', 'archived')),
-  constraint articles_published_at_check check (
-    (status = 'published' and published_at is not null)
-    or (status <> 'published')
-  )
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT articles_status_check CHECK (status IN ('draft', 'published', 'archived')),
+  CONSTRAINT articles_published_at_check CHECK ((status = 'published' AND published_at IS NOT NULL) OR (status <> 'published'))
 );
 
-create index if not exists articles_status_published_at_idx
-  on public.articles (status, published_at desc);
+CREATE INDEX IF NOT EXISTS articles_status_published_at_idx ON public.articles (status, published_at DESC);
 
-create index if not exists articles_author_status_idx
-  on public.articles (author_id, status, updated_at desc);
+CREATE INDEX IF NOT EXISTS articles_author_status_idx ON public.articles (author_id, status, updated_at DESC);
 
-create or replace function public.set_articles_updated_at()
-returns trigger
-language plpgsql
-as $$
-begin
-  new.updated_at = timezone('utc'::text, now());
-  return new;
-end;
+CREATE OR REPLACE FUNCTION public.set_articles_updated_at ()
+  RETURNS TRIGGER
+  LANGUAGE plpgsql
+  AS $$
+BEGIN
+  NEW.updated_at = timezone('utc'::text, now());
+  RETURN new;
+END;
 $$;
 
-drop trigger if exists set_articles_updated_at on public.articles;
-create trigger set_articles_updated_at
-before update on public.articles
-for each row execute function public.set_articles_updated_at();
+DROP TRIGGER IF EXISTS set_articles_updated_at ON public.articles;
 
-alter table public.articles enable row level security;
+CREATE TRIGGER set_articles_updated_at
+  BEFORE UPDATE ON public.articles
+  FOR EACH ROW
+  EXECUTE FUNCTION public.set_articles_updated_at ();
 
-drop policy if exists "Public can read published articles" on public.articles;
-create policy "Public can read published articles"
-  on public.articles for select
-  using (status = 'published');
+ALTER TABLE public.articles ENABLE ROW LEVEL SECURITY;
 
-drop policy if exists "Article writers can read own articles" on public.articles;
-create policy "Article writers can read own articles"
-  on public.articles for select to authenticated
-  using (
-    author_id = auth.uid()
-    and (select role from public.profiles where id = auth.uid()) = 'article_writer'
-  );
+DROP POLICY IF EXISTS "Public can read published articles" ON public.articles;
 
-drop policy if exists "Admins can read all articles" on public.articles;
-create policy "Admins can read all articles"
-  on public.articles for select to authenticated
-  using (
-    (select role from public.profiles where id = auth.uid()) in ('admin', 'superadmin')
-  );
+CREATE POLICY "Public can read published articles" ON public.articles
+  FOR SELECT
+  USING (status = 'published');
 
-drop policy if exists "Article writers can create own drafts" on public.articles;
-create policy "Article writers can create own drafts"
-  on public.articles for insert to authenticated
-  with check (
-    author_id = auth.uid()
-    and status = 'draft'
-    and (select role from public.profiles where id = auth.uid()) = 'article_writer'
-  );
+DROP POLICY IF EXISTS "Article writers can read own articles" ON public.articles;
 
-drop policy if exists "Admins can create articles" on public.articles;
-create policy "Admins can create articles"
-  on public.articles for insert to authenticated
-  with check (
-    (select role from public.profiles where id = auth.uid()) in ('admin', 'superadmin')
-  );
+CREATE POLICY "Article writers can read own articles" ON public.articles
+  FOR SELECT TO authenticated
+  USING (author_id = auth.uid ()
+    AND (
+      SELECT
+        ROLE
+      FROM
+        public.profiles
+      WHERE
+        id = auth.uid ()) = 'article_writer');
 
-drop policy if exists "Article writers can update own non-published articles" on public.articles;
-create policy "Article writers can update own non-published articles"
-  on public.articles for update to authenticated
-  using (
-    author_id = auth.uid()
-    and status <> 'published'
-    and (select role from public.profiles where id = auth.uid()) = 'article_writer'
-  )
-  with check (
-    author_id = auth.uid()
-    and status <> 'published'
-    and (select role from public.profiles where id = auth.uid()) = 'article_writer'
-  );
+DROP POLICY IF EXISTS "Admins can read all articles" ON public.articles;
 
-drop policy if exists "Admins can update all articles" on public.articles;
-create policy "Admins can update all articles"
-  on public.articles for update to authenticated
-  using (
-    (select role from public.profiles where id = auth.uid()) in ('admin', 'superadmin')
-  )
-  with check (
-    (select role from public.profiles where id = auth.uid()) in ('admin', 'superadmin')
-  );
+CREATE POLICY "Admins can read all articles" ON public.articles
+  FOR SELECT TO authenticated
+  USING ((
+    SELECT
+      ROLE
+    FROM
+      public.profiles
+    WHERE
+      id = auth.uid ()) IN ('admin', 'superadmin'));
 
-drop policy if exists "Admins can delete articles" on public.articles;
-create policy "Admins can delete articles"
-  on public.articles for delete to authenticated
-  using (
-    (select role from public.profiles where id = auth.uid()) in ('admin', 'superadmin')
-  );
+DROP POLICY IF EXISTS "Article writers can create own drafts" ON public.articles;
+
+CREATE POLICY "Article writers can create own drafts" ON public.articles
+  FOR INSERT TO authenticated
+  WITH CHECK (author_id = auth.uid ()
+  AND status = 'draft'
+  AND (
+    SELECT
+      ROLE
+    FROM
+      public.profiles
+    WHERE
+      id = auth.uid ()) = 'article_writer');
+
+DROP POLICY IF EXISTS "Admins can create articles" ON public.articles;
+
+CREATE POLICY "Admins can create articles" ON public.articles
+  FOR INSERT TO authenticated
+  WITH CHECK ((
+    SELECT
+      ROLE
+    FROM
+      public.profiles
+    WHERE
+      id = auth.uid ()) IN ('admin', 'superadmin'));
+
+DROP POLICY IF EXISTS "Article writers can update own non-published articles" ON public.articles;
+
+CREATE POLICY "Article writers can update own non-published articles" ON public.articles
+  FOR UPDATE TO authenticated
+  USING (author_id = auth.uid ()
+    AND status <> 'published'
+    AND (
+      SELECT
+        ROLE
+      FROM
+        public.profiles
+      WHERE
+        id = auth.uid ()) = 'article_writer')
+  WITH CHECK (author_id = auth.uid ()
+  AND status <> 'published'
+  AND (
+    SELECT
+      ROLE
+    FROM
+      public.profiles
+    WHERE
+      id = auth.uid ()) = 'article_writer');
+
+DROP POLICY IF EXISTS "Admins can update all articles" ON public.articles;
+
+CREATE POLICY "Admins can update all articles" ON public.articles
+  FOR UPDATE TO authenticated
+  USING ((
+    SELECT
+      ROLE
+    FROM
+      public.profiles
+    WHERE
+      id = auth.uid ()) IN ('admin', 'superadmin'))
+  WITH CHECK ((
+    SELECT
+      ROLE
+    FROM
+      public.profiles
+    WHERE
+      id = auth.uid ()) IN ('admin', 'superadmin'));
+
+DROP POLICY IF EXISTS "Admins can delete articles" ON public.articles;
+
+CREATE POLICY "Admins can delete articles" ON public.articles
+  FOR DELETE TO authenticated
+  USING ((
+    SELECT
+      ROLE
+    FROM
+      public.profiles
+    WHERE
+      id = auth.uid ()) IN ('admin', 'superadmin'));

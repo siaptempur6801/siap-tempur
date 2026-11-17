@@ -5,17 +5,20 @@ import MateriClient from '@/components/dashboard/MateriClient'
 export const dynamic = 'force-dynamic'
 
 export const metadata = {
-    title: 'Kisi-Kisi Materi SKD — SIAP TEMPUR',
-    description: 'Panduan lengkap materi TWK, TIU, dan TKP untuk persiapan Seleksi Kompetensi Dasar CPNS.',
+  title: 'Kisi-Kisi Materi SKD — SIAP TEMPUR',
+  description:
+    'Panduan lengkap materi TWK, TIU, dan TKP untuk persiapan Seleksi Kompetensi Dasar CPNS.',
 }
 
 export default async function MateriPage() {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-    if (!user) {
-        redirect('/login')
-    }
+  if (!user) {
+    redirect('/login')
+  }
 
-    return <MateriClient />
+  return <MateriClient />
 }

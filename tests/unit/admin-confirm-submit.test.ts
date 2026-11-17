@@ -33,29 +33,29 @@ const component = readFileSync(resolve(repoRoot, 'components/admin/ConfirmSubmit
  * pemeriksaan harus melihat kode, bukan dokumentasinya.
  */
 function stripComments(text: string) {
-    return text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '')
+  return text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '')
 }
 
 const componentCode = stripComments(component)
 
 /** Halaman/komponen yang memasang dialog ini. */
 const CONSUMERS = [
-    'components/admin/domain/catalog/CatalogWorkspace.tsx',
-    'components/admin/domain/assessment/AssessmentWorkspace.tsx',
-    'components/admin/domain/users/UserAccessForms.tsx',
-    'components/admin/domain/assessment/AssessmentDetail.tsx',
-    'components/admin/domain/organization/AssignmentList.tsx',
-    'components/admin/domain/settings/SettingsWorkspace.tsx',
-    'components/admin/domain/organization/OrganizationWorkspace.tsx',
-    'components/admin/ArticleStatusActions.tsx',
+  'components/admin/domain/catalog/CatalogWorkspace.tsx',
+  'components/admin/domain/assessment/AssessmentWorkspace.tsx',
+  'components/admin/domain/users/UserAccessForms.tsx',
+  'components/admin/domain/assessment/AssessmentDetail.tsx',
+  'components/admin/domain/organization/AssignmentList.tsx',
+  'components/admin/domain/settings/SettingsWorkspace.tsx',
+  'components/admin/domain/organization/OrganizationWorkspace.tsx',
+  'components/admin/ArticleStatusActions.tsx',
 ]
 
 function source(relativePath: string) {
-    return readFileSync(resolve(repoRoot, relativePath), 'utf8')
+  return readFileSync(resolve(repoRoot, relativePath), 'utf8')
 }
 
 function countMatches(text: string, pattern: RegExp) {
-    return (text.match(pattern) ?? []).length
+  return (text.match(pattern) ?? []).length
 }
 
 /**
@@ -66,81 +66,88 @@ function countMatches(text: string, pattern: RegExp) {
  * memindai direktori, berkas baru otomatis ikut terjaga.
  */
 function collectAdminSurfaces(directory: string): string[] {
-    const files: string[] = []
-    for (const entry of readdirSync(resolve(repoRoot, directory), { withFileTypes: true })) {
-        const relative = `${directory}/${entry.name}`
-        if (entry.isDirectory()) files.push(...collectAdminSurfaces(relative))
-        else if (/\.tsx?$/.test(entry.name)) files.push(relative)
-    }
-    return files
+  const files: string[] = []
+  for (const entry of readdirSync(resolve(repoRoot, directory), { withFileTypes: true })) {
+    const relative = `${directory}/${entry.name}`
+    if (entry.isDirectory()) files.push(...collectAdminSurfaces(relative))
+    else if (/\.tsx?$/.test(entry.name)) files.push(relative)
+  }
+  return files
 }
 
-const ADMIN_SURFACE_FILES = [...collectAdminSurfaces('components/admin'), ...collectAdminSurfaces('app/admin')]
+const ADMIN_SURFACE_FILES = [
+  ...collectAdminSurfaces('components/admin'),
+  ...collectAdminSurfaces('app/admin'),
+]
 
 describe('ConfirmSubmit', () => {
-    it('menerima elemen lewat slot `trigger`, bukan fungsi', () => {
-        expect(component).toMatch(/trigger:\s*ReactElement/)
-        expect(component).toContain('cloneElement')
-    })
+  it('menerima elemen lewat slot `trigger`, bukan fungsi', () => {
+    expect(component).toMatch(/trigger:\s*ReactElement/)
+    expect(component).toContain('cloneElement')
+  })
 
-    it('tidak memakai render prop `children` sebagai fungsi', () => {
-        // `children: (confirm) => …` adalah bentuk yang ditolak React dari Server
-        // Component; kehadirannya kembali berarti halaman akan error lagi.
-        expect(componentCode).not.toMatch(/children:\s*\(/)
-        expect(componentCode).not.toMatch(/\{\(confirm\)\s*=>/)
-    })
+  it('tidak memakai render prop `children` sebagai fungsi', () => {
+    // `children: (confirm) => …` adalah bentuk yang ditolak React dari Server
+    // Component; kehadirannya kembali berarti halaman akan error lagi.
+    expect(componentCode).not.toMatch(/children:\s*\(/)
+    expect(componentCode).not.toMatch(/\{\(confirm\)\s*=>/)
+  })
 
-    /**
-     * Bukan `type="submit"`: React mengganti atribut `action` form server action
-     * dengan `javascript:throw new Error('A React form was unexpectedly
-     * submitted…')`, sehingga submit native DITOLAK dan aksinya tidak pernah
-     * berjalan. Yang bekerja adalah `requestSubmit()`, yang memicu jalur submit
-     * React beserta seluruh field form induk. Ditemukan lewat E2E: tombol
-     * konfirmasi ada, dialognya terbuka, tetapi peserta tidak pernah terhapus
-     * dan tidak ada satu pun permintaan POST yang terkirim.
-     */
-    it('mengirim form lewat requestSubmit() dan bertipe submit', () => {
-        // `requestSubmit(tombol)` menolak tombol bertipe `button`
-        // ("The specified element is not a submit button"), jadi tipenya wajib
-        // `submit`; dan pemanggilannya tanpa argumen supaya React memilih jalurnya.
-        expect(component).toMatch(/requestSubmit\(\)/)
-        expect(componentCode).toMatch(/type="submit"/)
-    })
+  /**
+   * Bukan `type="submit"`: React mengganti atribut `action` form server action
+   * dengan `javascript:throw new Error('A React form was unexpectedly
+   * submitted…')`, sehingga submit native DITOLAK dan aksinya tidak pernah
+   * berjalan. Yang bekerja adalah `requestSubmit()`, yang memicu jalur submit
+   * React beserta seluruh field form induk. Ditemukan lewat E2E: tombol
+   * konfirmasi ada, dialognya terbuka, tetapi peserta tidak pernah terhapus
+   * dan tidak ada satu pun permintaan POST yang terkirim.
+   */
+  it('mengirim form lewat requestSubmit() dan bertipe submit', () => {
+    // `requestSubmit(tombol)` menolak tombol bertipe `button`
+    // ("The specified element is not a submit button"), jadi tipenya wajib
+    // `submit`; dan pemanggilannya tanpa argumen supaya React memilih jalurnya.
+    expect(component).toMatch(/requestSubmit\(\)/)
+    expect(componentCode).toMatch(/type="submit"/)
+  })
 
-    it('memakai pemilik form dari tombolnya, bukan closest(form)', () => {
-        expect(component).toMatch(/currentTarget\.form/)
-        expect(componentCode).not.toMatch(/closest\(['"]form['"]\)/)
-    })
+  it('memakai pemilik form dari tombolnya, bukan closest(form)', () => {
+    expect(component).toMatch(/currentTarget\.form/)
+    expect(componentCode).not.toMatch(/closest\(['"]form['"]\)/)
+  })
 
-    it('menyebut konsekuensi, bukan sekadar "yakin?"', () => {
-        // Pesan wajib datang dari pemanggil, dan `detail` tersedia untuk rincian.
-        expect(component).toMatch(/message:\s*string/)
-        expect(component).toMatch(/detail\?:\s*string/)
-    })
+  it('menyebut konsekuensi, bukan sekadar "yakin?"', () => {
+    // Pesan wajib datang dari pemanggil, dan `detail` tersedia untuk rincian.
+    expect(component).toMatch(/message:\s*string/)
+    expect(component).toMatch(/detail\?:\s*string/)
+  })
 })
 
 describe('pemasangan dialog di halaman admin', () => {
-    for (const file of CONSUMERS) {
-        it(`${file} memakai slot trigger`, () => {
-            const text = source(file)
-            const usages = countMatches(text, /<ConfirmSubmit\b/g)
-            if (usages === 0) {
-                // Berkas boleh tidak memakai sama sekali; yang dilarang adalah
-                // memakai bentuk yang salah.
-                return
-            }
-            expect(countMatches(text, /trigger=\{/g), `${file}: setiap ConfirmSubmit butuh trigger`).toBe(usages)
-            expect(text).not.toMatch(/\{\(confirm\)\s*=>/)
-            expect(text).not.toMatch(/\{\(\)\s*=>\s*<button/)
-        })
-    }
-
-    it('tidak ada lagi `window.confirm` di seluruh permukaan admin', () => {
-        expect(ADMIN_SURFACE_FILES.length).toBeGreaterThan(20)
-        for (const file of ADMIN_SURFACE_FILES) {
-            // Komentar yang menyebut window.confirm tidak dihitung.
-            const withoutComments = stripComments(source(file))
-            expect(withoutComments, `${file} masih memakai window.confirm`).not.toContain('window.confirm')
-        }
+  for (const file of CONSUMERS) {
+    it(`${file} memakai slot trigger`, () => {
+      const text = source(file)
+      const usages = countMatches(text, /<ConfirmSubmit\b/g)
+      if (usages === 0) {
+        // Berkas boleh tidak memakai sama sekali; yang dilarang adalah
+        // memakai bentuk yang salah.
+        return
+      }
+      expect(countMatches(text, /trigger=\{/g), `${file}: setiap ConfirmSubmit butuh trigger`).toBe(
+        usages,
+      )
+      expect(text).not.toMatch(/\{\(confirm\)\s*=>/)
+      expect(text).not.toMatch(/\{\(\)\s*=>\s*<button/)
     })
+  }
+
+  it('tidak ada lagi `window.confirm` di seluruh permukaan admin', () => {
+    expect(ADMIN_SURFACE_FILES.length).toBeGreaterThan(20)
+    for (const file of ADMIN_SURFACE_FILES) {
+      // Komentar yang menyebut window.confirm tidak dihitung.
+      const withoutComments = stripComments(source(file))
+      expect(withoutComments, `${file} masih memakai window.confirm`).not.toContain(
+        'window.confirm',
+      )
+    }
+  })
 })

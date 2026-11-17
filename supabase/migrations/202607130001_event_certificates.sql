@@ -1,112 +1,92 @@
 -- E-certificate support for completed Tryout Akbar events.
 -- This migration is intentionally not applied by Codex.
+ALTER TABLE public.tryout_events
+  ADD COLUMN IF NOT EXISTS certificate_enabled boolean NOT NULL DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS certificate_released_at timestamptz;
 
-alter table public.tryout_events
-  add column if not exists certificate_enabled boolean not null default false,
-  add column if not exists certificate_released_at timestamptz;
-
-comment on column public.tryout_events.certificate_enabled is
-  'When true, completed participants can claim event certificates after ranking is final/released.';
-comment on column public.tryout_events.certificate_released_at is
-  'Timestamp when certificates are released for this event. Null means not released yet.';
-
-create table if not exists public.event_certificates (
-  id uuid primary key default gen_random_uuid(),
-  event_id uuid not null references public.tryout_events(id) on delete cascade,
-  user_id uuid not null references auth.users(id) on delete cascade,
-  certificate_number text not null unique,
-  certificate_name text not null,
-  certificate_kind text not null,
+COMMENT ON COLUMN public.tryout_events.certificate_enabled IS TEXTVALUE0E; COMMENT ON COLUMN public.tryout_events.certificate_released_at IS TEXTVALUE1E; CREATE TABLE IF NOT EXISTS public.event_certificates (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid (),
+  event_id uuid NOT NULL REFERENCES public.tryout_events (id) ON DELETE CASCADE,
+  user_id uuid NOT NULL REFERENCES auth.users (id) ON DELETE CASCADE,
+  certificate_number text NOT NULL UNIQUE,
+  certificate_name text NOT NULL,
+  certificate_kind text NOT NULL,
   rank integer,
   score integer,
   storage_path text,
   generated_at timestamptz,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  created_by uuid references auth.users(id),
-  updated_by uuid references auth.users(id),
-  constraint event_certificates_kind_check check (
-    certificate_kind in ('winner_1', 'winner_2', 'winner_3', 'participant')
-  ),
-  constraint event_certificates_rank_check check (
-    (certificate_kind = 'winner_1' and rank = 1)
-    or (certificate_kind = 'winner_2' and rank = 2)
-    or (certificate_kind = 'winner_3' and rank = 3)
-    or (certificate_kind = 'participant' and (rank is null or rank > 3))
-  ),
-  constraint event_certificates_name_check check (
-    char_length(trim(certificate_name)) between 3 and 100
-  ),
-  unique(event_id, user_id)
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  created_by uuid REFERENCES auth.users (id),
+  updated_by uuid REFERENCES auth.users (id),
+  CONSTRAINT event_certificates_kind_check CHECK (certificate_kind IN ('winner_1', 'winner_2', 'winner_3', 'participant')),
+  CONSTRAINT event_certificates_rank_check CHECK ((certificate_kind = 'winner_1' AND rank = 1) OR (certificate_kind = 'winner_2' AND rank = 2) OR (certificate_kind = 'winner_3' AND rank = 3) OR (certificate_kind = 'participant' AND (rank IS NULL OR rank > 3))),
+  CONSTRAINT event_certificates_name_check CHECK (char_length(trim(certificate_name)) BETWEEN 3 AND 100),
+  UNIQUE (event_id, user_id)
 );
 
-create index if not exists event_certificates_event_idx
-  on public.event_certificates(event_id, certificate_kind, rank);
+CREATE INDEX IF NOT EXISTS event_certificates_event_idx ON public.event_certificates (event_id, certificate_kind, rank);
 
-create index if not exists event_certificates_user_idx
-  on public.event_certificates(user_id, created_at desc);
+CREATE INDEX IF NOT EXISTS event_certificates_user_idx ON public.event_certificates (user_id, created_at DESC);
 
-alter table public.event_certificates enable row level security;
+ALTER TABLE public.event_certificates ENABLE ROW LEVEL SECURITY;
 
-revoke all on public.event_certificates from anon, authenticated;
-grant select on public.event_certificates to authenticated;
-grant select, insert, update on public.event_certificates to service_role;
+REVOKE ALL ON public.event_certificates FROM anon, authenticated;
 
-drop policy if exists "Users can read own event certificates" on public.event_certificates;
-create policy "Users can read own event certificates"
-on public.event_certificates
-for select
-to authenticated
-using (auth.uid() = user_id);
+GRANT SELECT ON public.event_certificates TO authenticated;
 
-drop policy if exists "Admins can read event certificates" on public.event_certificates;
-create policy "Admins can read event certificates"
-on public.event_certificates
-for select
-to authenticated
-using (
-  exists (
-    select 1
-    from public.profiles p
-    where p.id = auth.uid()
-      and p.role in ('admin', 'superadmin')
-  )
-);
+GRANT SELECT, INSERT, UPDATE ON public.event_certificates TO service_role;
 
-insert into storage.buckets (id, name, public)
-values ('event-certificates', 'event-certificates', false)
-on conflict (id) do nothing;
+DROP POLICY IF EXISTS "Users can read own event certificates" ON public.event_certificates;
 
-drop policy if exists "Users can read own event certificate files" on storage.objects;
-create policy "Users can read own event certificate files"
-on storage.objects
-for select
-to authenticated
-using (
-  bucket_id = 'event-certificates'
-  and (storage.foldername(name))[2] = auth.uid()::text
-);
+CREATE POLICY "Users can read own event certificates" ON public.event_certificates
+  FOR SELECT TO authenticated
+  USING (auth.uid () = user_id);
 
-drop policy if exists "Admins can manage event certificate files" on storage.objects;
-create policy "Admins can manage event certificate files"
-on storage.objects
-for all
-to authenticated
-using (
-  bucket_id = 'event-certificates'
-  and exists (
-    select 1
-    from public.profiles p
-    where p.id = auth.uid()
-      and p.role in ('admin', 'superadmin')
-  )
-)
-with check (
-  bucket_id = 'event-certificates'
-  and exists (
-    select 1
-    from public.profiles p
-    where p.id = auth.uid()
-      and p.role in ('admin', 'superadmin')
-  )
-);
+DROP POLICY IF EXISTS "Admins can read event certificates" ON public.event_certificates;
+
+CREATE POLICY "Admins can read event certificates" ON public.event_certificates
+  FOR SELECT TO authenticated
+  USING (EXISTS (
+    SELECT
+      1
+    FROM
+      public.profiles p
+    WHERE
+      p.id = auth.uid ()
+      AND p.role IN ('admin', 'superadmin')));
+
+INSERT INTO storage.buckets (id, name, public)
+  VALUES ('event-certificates', 'event-certificates', FALSE)
+ON CONFLICT (id)
+  DO NOTHING;
+
+DROP POLICY IF EXISTS "Users can read own event certificate files" ON storage.objects;
+
+CREATE POLICY "Users can read own event certificate files" ON storage.objects
+  FOR SELECT TO authenticated
+  USING (bucket_id = 'event-certificates'
+    AND (storage.foldername (name))[2] = auth.uid ()::text);
+
+DROP POLICY IF EXISTS "Admins can manage event certificate files" ON storage.objects;
+
+CREATE POLICY "Admins can manage event certificate files" ON storage.objects
+  FOR ALL TO authenticated
+  USING (bucket_id = 'event-certificates'
+    AND EXISTS (
+      SELECT
+        1
+      FROM
+        public.profiles p
+      WHERE
+        p.id = auth.uid ()
+        AND p.role IN ('admin', 'superadmin')))
+  WITH CHECK (bucket_id = 'event-certificates'
+  AND EXISTS (
+    SELECT
+      1
+    FROM
+      public.profiles p
+    WHERE
+      p.id = auth.uid ()
+      AND p.role IN ('admin', 'superadmin')));

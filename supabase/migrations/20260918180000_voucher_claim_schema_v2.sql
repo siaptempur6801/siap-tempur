@@ -45,221 +45,253 @@
 --   `create table if not exists`, `add column if not exists`, dan seed dengan
 --   `on conflict ... do nothing`.
 -- =============================================================================
-
 -- -----------------------------------------------------------------------------
 -- 1. Tabel
 -- -----------------------------------------------------------------------------
-create table if not exists public.vouchers (
-    id           uuid primary key default gen_random_uuid(),
-    code         text not null unique,
-    quota_amount integer not null default 1,
-    max_uses     integer,
-    used_count   integer not null default 0,
-    expires_at   timestamptz,
-    is_active    boolean not null default true,
-    -- null = boleh diklaim untuk wallet program mana pun (perilaku voucher lama).
-    wallet_type  text,
-    created_at   timestamptz not null default now(),
-    updated_at   timestamptz,
-    constraint vouchers_quota_positive check (quota_amount > 0),
-    constraint vouchers_max_uses_positive check (max_uses is null or max_uses > 0),
-    constraint vouchers_used_non_negative check (used_count >= 0),
-    constraint vouchers_wallet_type_check check (
-        wallet_type is null or wallet_type in ('exam_token_cpns', 'exam_token_tka')
-    )
+CREATE TABLE IF NOT EXISTS public.vouchers (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid (),
+  code text NOT NULL UNIQUE,
+  quota_amount integer NOT NULL DEFAULT 1,
+  max_uses integer,
+  used_count integer NOT NULL DEFAULT 0,
+  expires_at timestamptz,
+  is_active boolean NOT NULL DEFAULT TRUE,
+  -- null = boleh diklaim untuk wallet program mana pun (perilaku voucher lama).
+  wallet_type text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz,
+  CONSTRAINT vouchers_quota_positive CHECK (quota_amount > 0),
+  CONSTRAINT vouchers_max_uses_positive CHECK (max_uses IS NULL OR max_uses > 0),
+  CONSTRAINT vouchers_used_non_negative CHECK (used_count >= 0),
+  CONSTRAINT vouchers_wallet_type_check CHECK (wallet_type IS NULL OR wallet_type IN ('exam_token_cpns', 'exam_token_tka'))
 );
 
-create table if not exists public.voucher_claims (
-    id         uuid primary key default gen_random_uuid(),
-    voucher_id uuid not null references public.vouchers(id) on delete cascade,
-    user_id    uuid not null references public.profiles(id) on delete cascade,
-    user_email text,
-    claimed_at timestamptz not null default now()
+CREATE TABLE IF NOT EXISTS public.voucher_claims (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid (),
+  voucher_id uuid NOT NULL REFERENCES public.vouchers (id) ON DELETE CASCADE,
+  user_id uuid NOT NULL REFERENCES public.profiles (id) ON DELETE CASCADE,
+  user_email text,
+  claimed_at timestamptz NOT NULL DEFAULT now()
 );
 
-create unique index if not exists voucher_claims_voucher_user_uq
-    on public.voucher_claims(voucher_id, user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS voucher_claims_voucher_user_uq ON public.voucher_claims (voucher_id, user_id);
 
-create index if not exists voucher_claims_user_idx
-    on public.voucher_claims(user_id);
+CREATE INDEX IF NOT EXISTS voucher_claims_user_idx ON public.voucher_claims (user_id);
 
 -- Dedup per email: satu email hanya boleh mengklaim satu voucher satu kali.
-create unique index if not exists voucher_claims_voucher_email_uq
-    on public.voucher_claims(voucher_id, lower(trim(user_email)))
-    where user_email is not null;
+CREATE UNIQUE INDEX IF NOT EXISTS voucher_claims_voucher_email_uq ON public.voucher_claims (voucher_id, lower(trim(user_email)))
+WHERE
+  user_email IS NOT NULL;
 
 -- -----------------------------------------------------------------------------
 -- 2. RLS
 --    Klien hanya boleh MELIHAT klaimnya sendiri. Tidak ada policy INSERT/UPDATE/
 --    DELETE: satu-satunya jalur tulis adalah RPC di bawah.
 -- -----------------------------------------------------------------------------
-alter table public.vouchers enable row level security;
-alter table public.voucher_claims enable row level security;
+ALTER TABLE public.vouchers ENABLE ROW LEVEL SECURITY;
 
-drop policy if exists voucher_claims_select_own on public.voucher_claims;
-create policy voucher_claims_select_own on public.voucher_claims
-    for select to authenticated
-    using (user_id = (select auth.uid()));
+ALTER TABLE public.voucher_claims ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS voucher_claims_select_own ON public.voucher_claims;
+
+CREATE POLICY voucher_claims_select_own ON public.voucher_claims
+  FOR SELECT TO authenticated
+  USING (user_id = (
+    SELECT
+      auth.uid ()));
 
 -- `vouchers` sengaja TANPA policy: daftar kode voucher tidak boleh terbaca klien.
-revoke all on public.vouchers from anon, authenticated;
-revoke all on public.voucher_claims from anon;
-grant select on public.voucher_claims to authenticated;
+REVOKE ALL ON public.vouchers FROM anon, authenticated;
+
+REVOKE ALL ON public.voucher_claims FROM anon;
+
+GRANT SELECT ON public.voucher_claims TO authenticated;
 
 -- -----------------------------------------------------------------------------
 -- 3. RPC klaim voucher
 -- -----------------------------------------------------------------------------
-create or replace function public.claim_voucher(
-    p_user_id     uuid,
-    p_voucher_code text,
-    p_wallet_type  text
-)
-returns jsonb
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-    v_voucher_id    uuid;
-    v_quota         integer;
-    v_max_uses      integer;
-    v_used_count    integer;
-    v_expires_at    timestamptz;
-    v_is_active     boolean;
-    v_voucher_wallet text;
-    v_email         text;
-    v_wallet_id     uuid;
-    v_balance       integer;
-    v_new_balance   integer;
-begin
-    -- 3a. Otorisasi: hanya untuk diri sendiri, kecuali service_role.
-    if coalesce(auth.role(), '') <> 'service_role'
-       and p_user_id is distinct from auth.uid()
-    then
-        raise exception 'Not authorized' using errcode = 'P0001';
-    end if;
+CREATE OR REPLACE FUNCTION public.claim_voucher (p_user_id uuid, p_voucher_code text, p_wallet_type text)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path = ''
+  AS $$
+DECLARE
+  v_voucher_id uuid;
+  v_quota integer;
+  v_max_uses integer;
+  v_used_count integer;
+  v_expires_at timestamptz;
+  v_is_active boolean;
+  v_voucher_wallet text;
+  v_email text;
+  v_wallet_id uuid;
+  v_balance integer;
+  v_new_balance integer;
+BEGIN
+  -- 3a. Otorisasi: hanya untuk diri sendiri, kecuali service_role.
+  IF coalesce(auth.role (), '') <> 'service_role' AND p_user_id IS DISTINCT FROM auth.uid () THEN
+    RAISE EXCEPTION 'Not authorized'
+      USING errcode = 'P0001';
+  END IF;
 
-    if p_user_id is null or p_voucher_code is null or btrim(p_voucher_code) = '' then
-        raise exception 'User ID dan Kode Voucher tidak boleh kosong' using errcode = 'P0001';
-    end if;
+  IF p_user_id IS NULL OR p_voucher_code IS NULL OR btrim(p_voucher_code) = '' THEN
+    RAISE EXCEPTION 'User ID dan Kode Voucher tidak boleh kosong'
+      USING errcode = 'P0001';
+  END IF;
 
-    if p_wallet_type is null or p_wallet_type not in ('exam_token_cpns', 'exam_token_tka') then
-        raise exception 'WALLET_TYPE_INVALID' using errcode = 'P0001';
-    end if;
+  IF p_wallet_type IS NULL OR p_wallet_type NOT IN ('exam_token_cpns', 'exam_token_tka') THEN
+    RAISE EXCEPTION 'WALLET_TYPE_INVALID'
+      USING errcode = 'P0001';
+  END IF;
+  -- 3b. Kunci voucher supaya kuota tidak bisa dilampaui oleh klaim bersamaan.
+  SELECT
+    id,
+    quota_amount,
+    max_uses,
+    used_count,
+    expires_at,
+    is_active,
+    wallet_type
+  INTO
+    v_voucher_id,
+    v_quota,
+    v_max_uses,
+    v_used_count,
+    v_expires_at,
+    v_is_active,
+    v_voucher_wallet
+  FROM
+    public.vouchers
+  WHERE
+    code = upper(btrim(p_voucher_code))
+  FOR UPDATE;
 
-    -- 3b. Kunci voucher supaya kuota tidak bisa dilampaui oleh klaim bersamaan.
-    select id, quota_amount, max_uses, used_count, expires_at, is_active, wallet_type
-      into v_voucher_id, v_quota, v_max_uses, v_used_count, v_expires_at, v_is_active, v_voucher_wallet
-      from public.vouchers
-     where code = upper(btrim(p_voucher_code))
-     for update;
+  IF NOT found THEN
+    RAISE EXCEPTION 'Kode voucher tidak valid atau tidak ditemukan'
+      USING errcode = 'P0001';
+  END IF;
+  -- 3c. Voucher boleh dibatasi ke satu program.
+  IF v_voucher_wallet IS NOT NULL AND v_voucher_wallet <> p_wallet_type THEN
+    RAISE EXCEPTION 'Voucher ini tidak berlaku untuk program tersebut'
+      USING errcode = 'P0001';
+  END IF;
+  -- 3d. Idempotensi diperiksa SEBELUM validasi aktif/kadaluarsa/kuota, supaya
+  --     pengguna yang sudah pernah klaim tidak melihat error menyesatkan
+  --     ketika vouchernya kebetulan sudah tidak aktif atau kuotanya habis.
+  IF EXISTS (
+    SELECT
+      1
+    FROM
+      public.voucher_claims
+    WHERE
+      voucher_id = v_voucher_id
+      AND user_id = p_user_id) THEN
+  SELECT
+    balance
+  INTO
+    v_balance
+  FROM
+    public.wallets
+  WHERE
+    user_id = p_user_id
+    AND wallet_type = p_wallet_type;
 
-    if not found then
-        raise exception 'Kode voucher tidak valid atau tidak ditemukan' using errcode = 'P0001';
-    end if;
+  RETURN jsonb_build_object('claimed', TRUE, 'already_claimed', TRUE, 'amount', 0, 'balance', coalesce(v_balance, 0), 'message', 'Anda sudah pernah mengklaim kode voucher ini sebelumnya');
+END IF;
 
-    -- 3c. Voucher boleh dibatasi ke satu program.
-    if v_voucher_wallet is not null and v_voucher_wallet <> p_wallet_type then
-        raise exception 'Voucher ini tidak berlaku untuk program tersebut' using errcode = 'P0001';
-    end if;
+  IF NOT v_is_active THEN
+    RAISE EXCEPTION 'Kode voucher ini sudah tidak aktif'
+      USING errcode = 'P0001';
+  END IF;
 
-    -- 3d. Idempotensi diperiksa SEBELUM validasi aktif/kadaluarsa/kuota, supaya
-    --     pengguna yang sudah pernah klaim tidak melihat error menyesatkan
-    --     ketika vouchernya kebetulan sudah tidak aktif atau kuotanya habis.
-    if exists (
-        select 1 from public.voucher_claims
-         where voucher_id = v_voucher_id and user_id = p_user_id
-    ) then
-        select balance into v_balance
-          from public.wallets
-         where user_id = p_user_id and wallet_type = p_wallet_type;
+  IF v_expires_at IS NOT NULL AND v_expires_at < now() THEN
+    RAISE EXCEPTION 'Kode voucher ini sudah kadaluarsa'
+      USING errcode = 'P0001';
+  END IF;
 
-        return jsonb_build_object(
-            'claimed', true,
-            'already_claimed', true,
-            'amount', 0,
-            'balance', coalesce(v_balance, 0),
-            'message', 'Anda sudah pernah mengklaim kode voucher ini sebelumnya'
-        );
-    end if;
+  IF v_max_uses IS NOT NULL AND v_used_count >= v_max_uses THEN
+    RAISE EXCEPTION 'Kuota untuk kode voucher ini sudah habis digunakan'
+      USING errcode = 'P0001';
+  END IF;
+  -- 3e. Dedup per email. Email diambil dari auth.users, bukan dari klien.
+  SELECT
+    lower(btrim(u.email))
+  INTO
+    v_email
+  FROM
+    auth.users u
+  WHERE
+    u.id = p_user_id;
 
-    if not v_is_active then
-        raise exception 'Kode voucher ini sudah tidak aktif' using errcode = 'P0001';
-    end if;
+  IF v_email IS NOT NULL AND EXISTS (
+    SELECT
+      1
+    FROM
+      public.voucher_claims
+    WHERE
+      voucher_id = v_voucher_id AND lower(btrim(user_email)) = v_email) THEN
+    RAISE EXCEPTION 'Email ini sudah pernah mengklaim kode voucher ini. Voucher hanya dapat diklaim satu kali per pengguna'
+      USING errcode = 'P0001';
+  END IF;
+  -- 3f. Kredit token ke wallet program yang diminta.
+  SELECT
+    id,
+    balance
+  INTO
+    v_wallet_id,
+    v_balance
+  FROM
+    public.wallets
+  WHERE
+    user_id = p_user_id
+    AND wallet_type = p_wallet_type
+  FOR UPDATE;
 
-    if v_expires_at is not null and v_expires_at < now() then
-        raise exception 'Kode voucher ini sudah kadaluarsa' using errcode = 'P0001';
-    end if;
+  IF NOT found THEN
+    INSERT INTO public.wallets (user_id, wallet_type, balance)
+      VALUES (p_user_id, p_wallet_type, 0)
+    RETURNING
+      id, balance
+    INTO
+      v_wallet_id, v_balance;
+  END IF;
 
-    if v_max_uses is not null and v_used_count >= v_max_uses then
-        raise exception 'Kuota untuk kode voucher ini sudah habis digunakan' using errcode = 'P0001';
-    end if;
+  v_new_balance := coalesce(v_balance, 0) + v_quota;
 
-    -- 3e. Dedup per email. Email diambil dari auth.users, bukan dari klien.
-    select lower(btrim(u.email)) into v_email
-      from auth.users u
-     where u.id = p_user_id;
+  UPDATE
+    public.wallets
+  SET
+    balance = v_new_balance,
+    updated_at = now()
+  WHERE
+    id = v_wallet_id;
 
-    if v_email is not null and exists (
-        select 1 from public.voucher_claims
-         where voucher_id = v_voucher_id
-           and lower(btrim(user_email)) = v_email
-    ) then
-        raise exception 'Email ini sudah pernah mengklaim kode voucher ini. Voucher hanya dapat diklaim satu kali per pengguna'
-            using errcode = 'P0001';
-    end if;
+INSERT INTO public.wallet_transactions (wallet_id, type, amount, source_type, source_id, balance_after)
+  VALUES (v_wallet_id, 'credit', v_quota, 'voucher', v_voucher_id, v_new_balance);
 
-    -- 3f. Kredit token ke wallet program yang diminta.
-    select id, balance into v_wallet_id, v_balance
-      from public.wallets
-     where user_id = p_user_id and wallet_type = p_wallet_type
-     for update;
+INSERT INTO public.voucher_claims (voucher_id, user_id, user_email)
+  VALUES (v_voucher_id, p_user_id, v_email);
 
-    if not found then
-        insert into public.wallets (user_id, wallet_type, balance)
-        values (p_user_id, p_wallet_type, 0)
-        returning id, balance into v_wallet_id, v_balance;
-    end if;
+  UPDATE
+    public.vouchers
+  SET
+    used_count = used_count + 1,
+    updated_at = now()
+  WHERE
+    id = v_voucher_id;
 
-    v_new_balance := coalesce(v_balance, 0) + v_quota;
-
-    update public.wallets
-       set balance = v_new_balance,
-           updated_at = now()
-     where id = v_wallet_id;
-
-    insert into public.wallet_transactions (
-        wallet_id, type, amount, source_type, source_id, balance_after
-    ) values (
-        v_wallet_id, 'credit', v_quota, 'voucher', v_voucher_id, v_new_balance
-    );
-
-    insert into public.voucher_claims (voucher_id, user_id, user_email)
-    values (v_voucher_id, p_user_id, v_email);
-
-    update public.vouchers
-       set used_count = used_count + 1,
-           updated_at = now()
-     where id = v_voucher_id;
-
-    return jsonb_build_object(
-        'claimed', true,
-        'already_claimed', false,
-        'amount', v_quota,
-        'balance', v_new_balance,
-        'message', 'Voucher berhasil diklaim'
-    );
-end;
+  RETURN jsonb_build_object('claimed', TRUE, 'already_claimed', FALSE, 'amount', v_quota, 'balance', v_new_balance, 'message', 'Voucher berhasil diklaim');
+END;
 $$;
 
-comment on function public.claim_voucher(uuid, text, text) is
-    'Klaim kode voucher dan kredit token ke wallet program yang diminta. '
-    'Idempoten per user+voucher. Hanya boleh untuk diri sendiri (kecuali service_role).';
+COMMENT ON FUNCTION public.claim_voucher (uuid, text, text) IS TEXTVALUE0E; REVOKE ALL ON FUNCTION public.claim_voucher (uuid, text, text) FROM public;
 
-revoke all on function public.claim_voucher(uuid, text, text) from public;
-revoke all on function public.claim_voucher(uuid, text, text) from anon;
-grant execute on function public.claim_voucher(uuid, text, text) to authenticated;
-grant execute on function public.claim_voucher(uuid, text, text) to service_role;
+REVOKE ALL ON FUNCTION public.claim_voucher (uuid, text, text) FROM anon;
+
+GRANT EXECUTE ON FUNCTION public.claim_voucher (uuid, text, text) TO authenticated;
+
+GRANT EXECUTE ON FUNCTION public.claim_voucher (uuid, text, text) TO service_role;
 
 -- -----------------------------------------------------------------------------
 -- 4. Pindahkan voucher & klaim lama
@@ -269,24 +301,63 @@ grant execute on function public.claim_voucher(uuid, text, text) to service_role
 -- Dijalankan hanya bila `legacy_prod` ada. Staging tidak punya schema itu, dan
 -- migration ini harus tetap berhasil di sana (skemanya identik; hanya datanya
 -- yang berbeda).
-do $$
-begin
-    if not exists (select 1 from pg_namespace where nspname = 'legacy_prod') then
-        raise notice 'legacy_prod tidak ada — pemindahan voucher dilewati (environment tanpa arsip cutover)';
-        return;
-    end if;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT
+      1
+    FROM
+      pg_namespace
+    WHERE
+      nspname = 'legacy_prod') THEN
+  RAISE NOTICE 'legacy_prod tidak ada — pemindahan voucher dilewati (environment tanpa arsip cutover)';
+  RETURN;
+END IF;
 
-    insert into public.vouchers (id, code, quota_amount, max_uses, used_count, expires_at, is_active, wallet_type, created_at, updated_at)
-    select l.id, l.code, l.quota_amount, l.max_uses, coalesce(l.used_count, 0), l.expires_at,
-           coalesce(l.is_active, false), null, l.created_at, l.updated_at
-    from legacy_prod.vouchers l
-    on conflict (code) do nothing;
+  INSERT INTO public.vouchers (id, code, quota_amount, max_uses, used_count, expires_at, is_active, wallet_type, created_at, updated_at)
+  SELECT
+    l.id,
+    l.code,
+    l.quota_amount,
+    l.max_uses,
+    coalesce(l.used_count, 0),
+    l.expires_at,
+    coalesce(l.is_active, FALSE),
+    NULL,
+    l.created_at,
+    l.updated_at
+  FROM
+    legacy_prod.vouchers l
+  ON CONFLICT (code)
+    DO NOTHING;
 
-    insert into public.voucher_claims (id, voucher_id, user_id, user_email, claimed_at)
-    select c.id, c.voucher_id, c.user_id, c.user_email, c.claimed_at
-    from legacy_prod.voucher_claims c
-    where c.user_id is not null
-      and exists (select 1 from public.vouchers v where v.id = c.voucher_id)
-      and exists (select 1 from public.profiles p where p.id = c.user_id)
-    on conflict (voucher_id, user_id) do nothing;
-end $$;
+  INSERT INTO public.voucher_claims (id, voucher_id, user_id, user_email, claimed_at)
+  SELECT
+    c.id,
+    c.voucher_id,
+    c.user_id,
+    c.user_email,
+    c.claimed_at
+  FROM
+    legacy_prod.voucher_claims c
+  WHERE
+    c.user_id IS NOT NULL
+    AND EXISTS (
+      SELECT
+        1
+      FROM
+        public.vouchers v
+      WHERE
+        v.id = c.voucher_id)
+    AND EXISTS (
+      SELECT
+        1
+      FROM
+        public.profiles p
+      WHERE
+        p.id = c.user_id)
+  ON CONFLICT (voucher_id,
+    user_id)
+    DO NOTHING;
+END
+$$;

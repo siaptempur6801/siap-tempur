@@ -1,65 +1,55 @@
 -- Harden security-definer RPCs and hide answer keys from direct client reads.
-
 -- Authenticated users may read questions/options for active sessions, but they
 -- must not be able to read answer keys or explanations directly from PostgREST.
-revoke select on public.questions from anon, authenticated;
-grant select (
-  id,
-  question_code,
-  content,
-  type,
-  category,
-  sub_category,
-  image_url,
-  created_at
-) on public.questions to anon, authenticated;
+REVOKE SELECT ON public.questions FROM anon, authenticated;
 
-revoke select on public.options from anon, authenticated;
-grant select (
-  id,
-  question_id,
-  content,
-  image_url,
-  created_at
-) on public.options to anon, authenticated;
+GRANT SELECT (id, question_code, content, type, category, sub_category, image_url, created_at) ON public.questions TO anon, authenticated;
+
+REVOKE SELECT ON public.options FROM anon, authenticated;
+
+GRANT SELECT (id, question_id, content, image_url, created_at) ON public.options TO anon, authenticated;
 
 -- Keep direct writes blocked for normal clients. Admin/server code should use
 -- the service role client or explicit admin-only RPCs.
-revoke insert, update, delete on public.questions from anon, authenticated;
-revoke insert, update, delete on public.options from anon, authenticated;
+REVOKE INSERT, UPDATE, DELETE ON public.questions FROM anon, authenticated;
 
-create or replace function public.increment_tryout_quota(user_id_param uuid, increment_by int)
-returns void
-language plpgsql
-security definer
-set search_path = public
-as $$
-begin
-  if coalesce(auth.role(), '') <> 'service_role' then
-    raise exception 'Not authorized';
-  end if;
+REVOKE INSERT, UPDATE, DELETE ON public.options FROM anon, authenticated;
 
-  if user_id_param is null or increment_by is null or increment_by <= 0 then
-    raise exception 'Invalid quota increment';
-  end if;
+CREATE OR REPLACE FUNCTION public.increment_tryout_quota (user_id_param uuid, increment_by int)
+  RETURNS void
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path = public
+  AS $$
+BEGIN
+  IF coalesce(auth.role (), '') <> 'service_role' THEN
+    RAISE EXCEPTION 'Not authorized';
+  END IF;
 
-  update public.profiles
-  set tryout_quota = coalesce(tryout_quota, 0) + increment_by
-  where id = user_id_param;
+  IF user_id_param IS NULL OR increment_by IS NULL OR increment_by <= 0 THEN
+    RAISE EXCEPTION 'Invalid quota increment';
+  END IF;
 
-  if not found then
-    raise exception 'Profile not found';
-  end if;
-end;
+  UPDATE
+    public.profiles
+  SET
+    tryout_quota = coalesce(tryout_quota, 0) + increment_by
+  WHERE
+    id = user_id_param;
+
+  IF NOT found THEN
+    RAISE EXCEPTION 'Profile not found';
+  END IF;
+END;
 $$;
 
-create or replace function public.calculate_session_score(session_uuid uuid)
-returns void
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
+CREATE OR REPLACE FUNCTION public.calculate_session_score (session_uuid uuid)
+  RETURNS void
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path = public
+  AS $$
+DECLARE
   v_session_user_id uuid;
   v_twk int;
   v_tiu int;
@@ -69,48 +59,87 @@ declare
   pass_twk int := 65;
   pass_tiu int := 80;
   pass_tkp int := 166;
-begin
-  select user_id
-  into v_session_user_id
-  from public.test_sessions
-  where id = session_uuid;
+BEGIN
+  SELECT
+    user_id
+  INTO
+    v_session_user_id
+  FROM
+    public.test_sessions
+  WHERE
+    id = session_uuid;
 
-  if v_session_user_id is null then
-    raise exception 'Session not found';
-  end if;
+  IF v_session_user_id IS NULL THEN
+    RAISE EXCEPTION 'Session not found';
+  END IF;
 
-  if coalesce(auth.role(), '') <> 'service_role'
-    and v_session_user_id <> (select auth.uid())
-  then
-    raise exception 'Not authorized';
-  end if;
+  IF coalesce(auth.role (), '') <> 'service_role' AND v_session_user_id <> (
+    SELECT
+      auth.uid ()) THEN
+    RAISE EXCEPTION 'Not authorized';
+  END IF;
 
-  select coalesce(sum(case when q.type = 'TWK' and o.is_correct then 5 else 0 end), 0)
-  into v_twk
-  from public.test_answers a
-  join public.questions q on a.question_id = q.id
-  left join public.options o on a.option_id = o.id and o.question_id = a.question_id
-  where a.session_id = session_uuid;
+  SELECT
+    coalesce(sum(
+        CASE WHEN q.type = 'TWK'
+          AND o.is_correct THEN
+          5
+        ELSE
+          0
+        END), 0)
+  INTO
+    v_twk
+  FROM
+    public.test_answers a
+    JOIN public.questions q ON a.question_id = q.id
+    LEFT JOIN public.options o ON a.option_id = o.id
+      AND o.question_id = a.question_id
+  WHERE
+    a.session_id = session_uuid;
 
-  select coalesce(sum(case when q.type = 'TIU' and o.is_correct then 5 else 0 end), 0)
-  into v_tiu
-  from public.test_answers a
-  join public.questions q on a.question_id = q.id
-  left join public.options o on a.option_id = o.id and o.question_id = a.question_id
-  where a.session_id = session_uuid;
+  SELECT
+    coalesce(sum(
+        CASE WHEN q.type = 'TIU'
+          AND o.is_correct THEN
+          5
+        ELSE
+          0
+        END), 0)
+  INTO
+    v_tiu
+  FROM
+    public.test_answers a
+    JOIN public.questions q ON a.question_id = q.id
+    LEFT JOIN public.options o ON a.option_id = o.id
+      AND o.question_id = a.question_id
+  WHERE
+    a.session_id = session_uuid;
 
-  select coalesce(sum(case when q.type = 'TKP' then coalesce(o.score_value, 0) else 0 end), 0)
-  into v_tkp
-  from public.test_answers a
-  join public.questions q on a.question_id = q.id
-  left join public.options o on a.option_id = o.id and o.question_id = a.question_id
-  where a.session_id = session_uuid;
+  SELECT
+    coalesce(sum(
+        CASE WHEN q.type = 'TKP' THEN
+          coalesce(o.score_value, 0)
+        ELSE
+          0
+        END), 0)
+  INTO
+    v_tkp
+  FROM
+    public.test_answers a
+    JOIN public.questions q ON a.question_id = q.id
+    LEFT JOIN public.options o ON a.option_id = o.id
+      AND o.question_id = a.question_id
+  WHERE
+    a.session_id = session_uuid;
 
   v_total := v_twk + v_tiu + v_tkp;
-  v_passed := (v_twk >= pass_twk and v_tiu >= pass_tiu and v_tkp >= pass_tkp);
+  v_passed := (v_twk >= pass_twk
+    AND v_tiu >= pass_tiu
+    AND v_tkp >= pass_tkp);
 
-  update public.test_sessions
-  set
+  UPDATE
+    public.test_sessions
+  SET
     score_twk = v_twk,
     score_tiu = v_tiu,
     score_tkp = v_tkp,
@@ -119,180 +148,192 @@ begin
     status = 'completed',
     end_time = now(),
     last_activity_at = now()
-  where id = session_uuid;
-end;
+  WHERE
+    id = session_uuid;
+END;
 $$;
 
-create or replace function public.start_practice_session(
-  p_user_id uuid,
-  p_type question_type,
-  p_limit int default 10
-)
-returns table (
-  session_id uuid,
-  questions json
-)
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
+CREATE OR REPLACE FUNCTION public.start_practice_session (p_user_id uuid, p_type question_type, p_limit int DEFAULT 10)
+  RETURNS TABLE (
+    session_id uuid,
+    questions json)
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path = public
+  AS $$
+DECLARE
   v_session_id uuid;
   v_questions json;
-begin
-  if coalesce(auth.role(), '') <> 'service_role'
-    and p_user_id <> (select auth.uid())
-  then
-    raise exception 'Not authorized';
-  end if;
+BEGIN
+  IF coalesce(auth.role (), '') <> 'service_role' AND p_user_id <> (
+    SELECT
+      auth.uid ()) THEN
+    RAISE EXCEPTION 'Not authorized';
+  END IF;
 
-  if p_user_id is null or p_type is null or p_limit is null or p_limit < 1 or p_limit > 110 then
-    raise exception 'Invalid practice request';
-  end if;
+  IF p_user_id IS NULL OR p_type IS NULL OR p_limit IS NULL OR p_limit < 1 OR p_limit > 110 THEN
+    RAISE EXCEPTION 'Invalid practice request';
+  END IF;
 
-  insert into public.test_sessions (user_id, mode, status, start_time, last_activity_at)
-  values (p_user_id, 'practice', 'in_progress', now(), now())
-  returning id into v_session_id;
+  INSERT INTO public.test_sessions (user_id, mode, status, start_time, last_activity_at)
+    VALUES (p_user_id, 'practice', 'in_progress', now(), now())
+  RETURNING
+    id
+  INTO
+    v_session_id;
 
-  with selected_questions as (
-    select id, content, type, category, sub_category, image_url
-    from public.questions
-    where type = p_type
-    order by random()
-    limit p_limit
-  ),
-  inserted_answers as (
-    insert into public.test_answers (session_id, question_id)
-    select v_session_id, id from selected_questions
-    returning question_id
-  )
-  select json_agg(
-    json_build_object(
-      'id', q.id,
-      'content', q.content,
-      'type', q.type,
-      'category', q.category,
-      'sub_category', q.sub_category,
-      'image_url', q.image_url,
-      'options', (
-        select json_agg(
-          json_build_object(
-            'id', o.id,
-            'content', o.content,
-            'image_url', o.image_url
-          ) order by random()
-        )
-        from public.options o
-        where o.question_id = q.id
-      )
-    )
-  )
-  into v_questions
-  from selected_questions q
-  join inserted_answers ia on ia.question_id = q.id;
+  WITH selected_questions AS (
+    SELECT
+      id,
+      content,
+      type,
+      category,
+      sub_category,
+      image_url
+    FROM
+      public.questions
+    WHERE
+      type = p_type
+    ORDER BY
+      random()
+    LIMIT p_limit
+),
+inserted_answers AS (
+INSERT INTO public.test_answers (session_id, question_id)
+  SELECT
+    v_session_id,
+    id
+  FROM
+    selected_questions
+  RETURNING
+    question_id
+)
+SELECT
+  json_agg(json_build_object('id', q.id, 'content', q.content, 'type', q.type, 'category', q.category, 'sub_category', q.sub_category, 'image_url', q.image_url, 'options', (
+        SELECT
+          json_agg(json_build_object('id', o.id, 'content', o.content, 'image_url', o.image_url)
+        ORDER BY random())
+      FROM public.options o
+      WHERE
+        o.question_id = q.id)))
+INTO
+  v_questions
+FROM
+  selected_questions q
+  JOIN inserted_answers ia ON ia.question_id = q.id;
 
-  return query select v_session_id, v_questions;
-end;
+  RETURN QUERY
+  SELECT
+    v_session_id,
+    v_questions;
+END;
 $$;
 
-create or replace function public.start_tryout_session(p_user_id uuid)
-returns table (
-  session_id uuid,
-  questions json
-)
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
+CREATE OR REPLACE FUNCTION public.start_tryout_session (p_user_id uuid)
+  RETURNS TABLE (
+    session_id uuid,
+    questions json)
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path = public
+  AS $$
+DECLARE
   v_session_id uuid;
   v_questions json;
   v_remaining_quota int;
-begin
-  if coalesce(auth.role(), '') <> 'service_role'
-    and p_user_id <> (select auth.uid())
-  then
-    raise exception 'Not authorized';
-  end if;
+BEGIN
+  IF coalesce(auth.role (), '') <> 'service_role' AND p_user_id <> (
+    SELECT
+      auth.uid ()) THEN
+    RAISE EXCEPTION 'Not authorized';
+  END IF;
 
-  update public.profiles
-  set tryout_quota = tryout_quota - 1
-  where id = p_user_id
-    and coalesce(tryout_quota, 0) > 0
-  returning tryout_quota into v_remaining_quota;
+  UPDATE
+    public.profiles
+  SET
+    tryout_quota = tryout_quota - 1
+  WHERE
+    id = p_user_id
+    AND coalesce(tryout_quota, 0) > 0
+  RETURNING
+    tryout_quota
+  INTO
+    v_remaining_quota;
 
-  if not found then
-    raise exception 'Not enough SKD tickets';
-  end if;
+  IF NOT found THEN
+    RAISE EXCEPTION 'Not enough SKD tickets';
+  END IF;
 
-  insert into public.test_sessions (user_id, mode, status, start_time, last_activity_at)
-  values (p_user_id, 'tryout', 'in_progress', now(), now())
-  returning id into v_session_id;
+  INSERT INTO public.test_sessions (user_id, mode, status, start_time, last_activity_at)
+    VALUES (p_user_id, 'tryout', 'in_progress', now(), now())
+  RETURNING
+    id
+  INTO
+    v_session_id;
 
-  create temp table if not exists temp_selected_questions (
+  CREATE temp TABLE IF NOT EXISTS temp_selected_questions (
     question_id uuid,
     sort_order int
-  ) on commit drop;
+  ) ON COMMIT DROP;
 
-  truncate temp_selected_questions;
+  TRUNCATE temp_selected_questions;
 
-  insert into temp_selected_questions (question_id, sort_order)
-  select q.id, tc.sort_order
-  from public.tryout_configurations tc
-  cross join lateral (
-    select id
-    from public.questions q_inner
-    where q_inner.type = tc.type::question_type
-      and q_inner.sub_category = tc.sub_category
-    order by random()
-    limit tc.question_count
-  ) q
-  where tc.is_active = true;
+INSERT INTO temp_selected_questions (question_id, sort_order)
+SELECT
+  q.id,
+  tc.sort_order
+FROM
+  public.tryout_configurations tc
+  CROSS JOIN LATERAL (
+    SELECT
+      id
+    FROM
+      public.questions q_inner
+    WHERE
+      q_inner.type = tc.type::question_type
+      AND q_inner.sub_category = tc.sub_category
+    ORDER BY
+      random()
+    LIMIT tc.question_count) q
+WHERE
+  tc.is_active = TRUE;
 
-  insert into public.test_answers (session_id, question_id)
-  select v_session_id, question_id
-  from temp_selected_questions;
+INSERT INTO public.test_answers (session_id, question_id)
+SELECT
+  v_session_id,
+  question_id
+FROM
+  temp_selected_questions;
 
-  select json_agg(
-    json_build_object(
-      'id', q.id,
-      'content', q.content,
-      'type', q.type,
-      'category', q.category,
-      'sub_category', q.sub_category,
-      'image_url', q.image_url,
-      'options', (
-        select json_agg(
-          json_build_object(
-            'id', o.id,
-            'content', o.content,
-            'image_url', o.image_url
-          ) order by random()
-        )
-        from public.options o
-        where o.question_id = q.id
-      )
-    ) order by tsq.sort_order, random()
-  )
-  into v_questions
-  from temp_selected_questions tsq
-  join public.questions q on q.id = tsq.question_id;
+  SELECT
+    json_agg(json_build_object('id', q.id, 'content', q.content, 'type', q.type, 'category', q.category, 'sub_category', q.sub_category, 'image_url', q.image_url, 'options', (
+          SELECT
+            json_agg(json_build_object('id', o.id, 'content', o.content, 'image_url', o.image_url)
+          ORDER BY random())
+        FROM public.options o
+        WHERE
+          o.question_id = q.id))
+    ORDER BY tsq.sort_order, random())
+  INTO
+    v_questions
+  FROM
+    temp_selected_questions tsq
+    JOIN public.questions q ON q.id = tsq.question_id;
 
-  return query select v_session_id, v_questions;
-end;
+  RETURN QUERY
+  SELECT
+    v_session_id,
+    v_questions;
+END;
 $$;
 
-create or replace function public.claim_voucher(
-  p_user_id uuid,
-  p_voucher_code text,
-  p_user_email text default null
-)
-returns boolean
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
+CREATE OR REPLACE FUNCTION public.claim_voucher (p_user_id uuid, p_voucher_code text, p_user_email text DEFAULT NULL)
+  RETURNS boolean
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path = public
+  AS $$
+DECLARE
   v_voucher_id uuid;
   v_quota_amount int;
   v_max_uses int;
@@ -301,108 +342,152 @@ declare
   v_is_active boolean;
   v_has_claimed boolean;
   v_resolved_email text;
-begin
-  if coalesce(auth.role(), '') <> 'service_role'
-    and p_user_id <> (select auth.uid())
-  then
-    raise exception 'Not authorized';
-  end if;
+BEGIN
+  IF coalesce(auth.role (), '') <> 'service_role' AND p_user_id <> (
+    SELECT
+      auth.uid ()) THEN
+    RAISE EXCEPTION 'Not authorized';
+  END IF;
 
-  if p_user_id is null or p_voucher_code is null or btrim(p_voucher_code) = '' then
-    raise exception 'User ID dan Kode Voucher tidak boleh kosong';
-  end if;
+  IF p_user_id IS NULL OR p_voucher_code IS NULL OR btrim(p_voucher_code) = '' THEN
+    RAISE EXCEPTION 'User ID dan Kode Voucher tidak boleh kosong';
+  END IF;
 
-  select lower(trim(email))
-  into v_resolved_email
-  from auth.users
-  where id = p_user_id;
+  SELECT
+    lower(trim(email))
+  INTO
+    v_resolved_email
+  FROM
+    auth.users
+  WHERE
+    id = p_user_id;
 
-  if v_resolved_email is null and coalesce(auth.role(), '') = 'service_role' then
-    v_resolved_email := nullif(lower(trim(p_user_email)), '');
-  end if;
+  IF v_resolved_email IS NULL AND coalesce(auth.role (), '') = 'service_role' THEN
+    v_resolved_email := nullif (lower(trim(p_user_email)), '');
+  END IF;
 
-  select id, quota_amount, max_uses, used_count, expires_at, is_active
-  into v_voucher_id, v_quota_amount, v_max_uses, v_used_count, v_expires_at, v_is_active
-  from public.vouchers
-  where code = upper(trim(p_voucher_code))
-  for update;
+  SELECT
+    id,
+    quota_amount,
+    max_uses,
+    used_count,
+    expires_at,
+    is_active
+  INTO
+    v_voucher_id,
+    v_quota_amount,
+    v_max_uses,
+    v_used_count,
+    v_expires_at,
+    v_is_active
+  FROM
+    public.vouchers
+  WHERE
+    code = upper(trim(p_voucher_code))
+  FOR UPDATE;
 
-  if not found then
-    raise exception 'Kode voucher tidak valid atau tidak ditemukan';
-  end if;
+  IF NOT found THEN
+    RAISE EXCEPTION 'Kode voucher tidak valid atau tidak ditemukan';
+  END IF;
 
-  if not v_is_active then
-    raise exception 'Kode voucher ini sudah tidak aktif';
-  end if;
+  IF NOT v_is_active THEN
+    RAISE EXCEPTION 'Kode voucher ini sudah tidak aktif';
+  END IF;
 
-  if v_expires_at is not null and v_expires_at < now() then
-    raise exception 'Kode voucher ini sudah kadaluarsa';
-  end if;
+  IF v_expires_at IS NOT NULL AND v_expires_at < now() THEN
+    RAISE EXCEPTION 'Kode voucher ini sudah kadaluarsa';
+  END IF;
 
-  if v_used_count >= v_max_uses then
-    raise exception 'Kuota untuk kode voucher ini sudah habis digunakan';
-  end if;
+  IF v_used_count >= v_max_uses THEN
+    RAISE EXCEPTION 'Kuota untuk kode voucher ini sudah habis digunakan';
+  END IF;
 
-  select exists (
-    select 1 from public.voucher_claims
-    where voucher_id = v_voucher_id and user_id = p_user_id
-  ) into v_has_claimed;
+  SELECT
+    EXISTS (
+      SELECT
+        1
+      FROM
+        public.voucher_claims
+      WHERE
+        voucher_id = v_voucher_id
+        AND user_id = p_user_id)
+  INTO
+    v_has_claimed;
 
-  if v_has_claimed then
-    raise exception 'Anda sudah pernah mengklaim kode voucher ini sebelumnya';
-  end if;
+  IF v_has_claimed THEN
+    RAISE EXCEPTION 'Anda sudah pernah mengklaim kode voucher ini sebelumnya';
+  END IF;
 
-  if v_resolved_email is not null then
-    select exists (
-      select 1 from public.voucher_claims
-      where voucher_id = v_voucher_id
-        and lower(trim(user_email)) = v_resolved_email
-    ) into v_has_claimed;
+  IF v_resolved_email IS NOT NULL THEN
+    SELECT
+      EXISTS (
+        SELECT
+          1
+        FROM
+          public.voucher_claims
+        WHERE
+          voucher_id = v_voucher_id
+          AND lower(trim(user_email)) = v_resolved_email)
+    INTO
+      v_has_claimed;
 
-    if v_has_claimed then
-      raise exception 'Email ini sudah pernah mengklaim kode voucher ini. Voucher hanya dapat diklaim satu kali per pengguna';
-    end if;
-  end if;
+    IF v_has_claimed THEN
+      RAISE EXCEPTION 'Email ini sudah pernah mengklaim kode voucher ini. Voucher hanya dapat diklaim satu kali per pengguna';
+    END IF;
+  END IF;
 
-  insert into public.voucher_claims (voucher_id, user_id, user_email)
-  values (v_voucher_id, p_user_id, v_resolved_email);
+  INSERT INTO public.voucher_claims (voucher_id, user_id, user_email)
+    VALUES (v_voucher_id, p_user_id, v_resolved_email);
 
-  update public.vouchers
-  set used_count = used_count + 1,
-      updated_at = now()
-  where id = v_voucher_id;
+  UPDATE
+    public.vouchers
+  SET
+    used_count = used_count + 1,
+    updated_at = now()
+  WHERE
+    id = v_voucher_id;
 
-  update public.profiles
-  set tryout_quota = coalesce(tryout_quota, 0) + v_quota_amount
-  where id = p_user_id;
+  UPDATE
+    public.profiles
+  SET
+    tryout_quota = coalesce(tryout_quota, 0) + v_quota_amount
+  WHERE
+    id = p_user_id;
 
-  return true;
-end;
+  RETURN TRUE;
+END;
 $$;
 
-create or replace function public.claim_voucher(
-  p_user_id uuid,
-  p_voucher_code text
-)
-returns boolean
-language sql
-security definer
-set search_path = public
-as $$
-  select public.claim_voucher(p_user_id, p_voucher_code, null);
+CREATE OR REPLACE FUNCTION public.claim_voucher (p_user_id uuid, p_voucher_code text)
+  RETURNS boolean
+  LANGUAGE sql
+  SECURITY DEFINER
+  SET search_path = public
+  AS $$
+  SELECT
+    public.claim_voucher (p_user_id, p_voucher_code, NULL);
 $$;
 
-revoke execute on function public.increment_tryout_quota(uuid, int) from public, anon, authenticated;
-grant execute on function public.increment_tryout_quota(uuid, int) to service_role;
+REVOKE EXECUTE ON FUNCTION public.increment_tryout_quota (uuid, int) FROM public, anon, authenticated;
 
-revoke execute on function public.calculate_session_score(uuid) from public;
-revoke execute on function public.start_practice_session(uuid, question_type, int) from public;
-revoke execute on function public.start_tryout_session(uuid) from public;
-revoke execute on function public.claim_voucher(uuid, text) from public;
-revoke execute on function public.claim_voucher(uuid, text, text) from public;
+GRANT EXECUTE ON FUNCTION public.increment_tryout_quota (uuid, int) TO service_role;
 
-grant execute on function public.calculate_session_score(uuid) to authenticated, service_role;
-grant execute on function public.start_practice_session(uuid, question_type, int) to authenticated, service_role;
-grant execute on function public.start_tryout_session(uuid) to authenticated, service_role;
-grant execute on function public.claim_voucher(uuid, text) to authenticated, service_role;
-grant execute on function public.claim_voucher(uuid, text, text) to authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.calculate_session_score (uuid) FROM public;
+
+REVOKE EXECUTE ON FUNCTION public.start_practice_session (uuid, question_type, int) FROM public;
+
+REVOKE EXECUTE ON FUNCTION public.start_tryout_session (uuid) FROM public;
+
+REVOKE EXECUTE ON FUNCTION public.claim_voucher (uuid, text) FROM public;
+
+REVOKE EXECUTE ON FUNCTION public.claim_voucher (uuid, text, text) FROM public;
+
+GRANT EXECUTE ON FUNCTION public.calculate_session_score (uuid) TO authenticated, service_role;
+
+GRANT EXECUTE ON FUNCTION public.start_practice_session (uuid, question_type, int) TO authenticated, service_role;
+
+GRANT EXECUTE ON FUNCTION public.start_tryout_session (uuid) TO authenticated, service_role;
+
+GRANT EXECUTE ON FUNCTION public.claim_voucher (uuid, text) TO authenticated, service_role;
+
+GRANT EXECUTE ON FUNCTION public.claim_voucher (uuid, text, text) TO authenticated, service_role;

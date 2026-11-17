@@ -10,7 +10,9 @@ const REVIEWER_USER_ID = process.env.CPNS_MAPPING_REVIEWER_USER_ID
 const args = new Set(process.argv.slice(2))
 const importReviewed = args.has('--import-reviewed')
 const publish = args.has('--publish')
-const publishConfirmation = process.argv.find((arg) => arg.startsWith('--confirm-publish='))?.split('=')[1]
+const publishConfirmation = process.argv
+  .find((arg) => arg.startsWith('--confirm-publish='))
+  ?.split('=')[1]
 const limitArg = process.argv.find((arg) => arg.startsWith('--limit='))?.split('=')[1]
 const batchLimit = limitArg ? Number.parseInt(limitArg, 10) : 500
 
@@ -54,7 +56,10 @@ function chunk(values, size) {
 }
 
 async function loadReviewDecisions() {
-  const text = await readFile(new URL('../data/cpns_legacy_mapping_review_v1.json', import.meta.url), 'utf8')
+  const text = await readFile(
+    new URL('../data/cpns_legacy_mapping_review_v1.json', import.meta.url),
+    'utf8',
+  )
   const artifact = JSON.parse(text)
   const decisionByCode = new Map()
 
@@ -83,9 +88,10 @@ async function loadReviewDecisions() {
         primary: group.primary ?? null,
         secondary: group.secondary ?? null,
         method: artifact.defaultReviewMethod ?? 'manual_semantic_review',
-        note: artifact.needsRevisionNotes?.[questionCode]
-          ?? artifact.defaultReviewedNote
-          ?? 'Explicit source-controlled manual semantic review decision.',
+        note:
+          artifact.needsRevisionNotes?.[questionCode] ??
+          artifact.defaultReviewedNote ??
+          'Explicit source-controlled manual semantic review decision.',
       })
     }
   }
@@ -115,9 +121,7 @@ async function fetchSourceQuestions() {
     .single()
   if (programError) throw programError
 
-  const { data: subjects, error: subjectError } = await source
-    .from('subjects')
-    .select('id,code')
+  const { data: subjects, error: subjectError } = await source.from('subjects').select('id,code')
   if (subjectError) throw subjectError
   const subjectCodeById = new Map(subjects.map((row) => [row.id, row.code]))
 
@@ -126,25 +130,27 @@ async function fetchSourceQuestions() {
   for (let from = 0; ; from += pageSize) {
     const { data, error } = await source
       .from('questions')
-      .select([
-        'id',
-        'question_code',
-        'subject_id',
-        'content',
-        'category',
-        'sub_category',
-        'explanation',
-        'response_type',
-        'difficulty',
-        'cognitive_level',
-        'source',
-        'status',
-        'version',
-        'created_at',
-        'updated_at',
-        'published_at',
-        'image_url',
-      ].join(','))
+      .select(
+        [
+          'id',
+          'question_code',
+          'subject_id',
+          'content',
+          'category',
+          'sub_category',
+          'explanation',
+          'response_type',
+          'difficulty',
+          'cognitive_level',
+          'source',
+          'status',
+          'version',
+          'created_at',
+          'updated_at',
+          'published_at',
+          'image_url',
+        ].join(','),
+      )
       .eq('program_id', program.id)
       .order('question_code', { ascending: true })
       .range(from, from + pageSize - 1)
@@ -155,10 +161,15 @@ async function fetchSourceQuestions() {
   }
 
   const optionMap = new Map()
-  for (const ids of chunk(allQuestions.map((row) => row.id), 100)) {
+  for (const ids of chunk(
+    allQuestions.map((row) => row.id),
+    100,
+  )) {
     const { data: options, error } = await source
       .from('options')
-      .select('id,question_id,content,is_correct,score_value,image_url,sort_order,response_group,response_group_order,created_at')
+      .select(
+        'id,question_id,content,is_correct,score_value,image_url,sort_order,response_group,response_group_order,created_at',
+      )
       .in('question_id', ids)
       .order('sort_order', { ascending: true })
     if (error) throw error
@@ -197,7 +208,9 @@ function reconcileSourceWithReviewArtifact(items, artifact, decisionByCode) {
   for (const item of items) {
     const decision = decisionByCode.get(item.question.question_code)
     if (!decision) {
-      throw new Error(`Source question has no explicit review decision: ${item.question.question_code}`)
+      throw new Error(
+        `Source question has no explicit review decision: ${item.question.question_code}`,
+      )
     }
     if (decision.subject !== item.subject) {
       throw new Error(
@@ -229,14 +242,20 @@ async function syncReviewDecision(item, decision) {
   })
 
   if (error) {
-    throw new Error(`Failed to sync review decision for ${item.question.question_code}: ${error.message}`)
+    throw new Error(
+      `Failed to sync review decision for ${item.question.question_code}: ${error.message}`,
+    )
   }
 }
 
 async function syncReviewRegistry(items, decisionByCode) {
   let completed = 0
   for (const group of chunk(items, 10)) {
-    await Promise.all(group.map((item) => syncReviewDecision(item, decisionByCode.get(item.question.question_code))))
+    await Promise.all(
+      group.map((item) =>
+        syncReviewDecision(item, decisionByCode.get(item.question.question_code)),
+      ),
+    )
     completed += group.length
     console.log(`Synced review registry ${completed}/${items.length}`)
   }
@@ -262,7 +281,10 @@ async function migrateQuestionAsset(question) {
   const { data: blob, error: downloadError } = await source.storage
     .from('question-images')
     .download(sourcePath)
-  if (downloadError) throw new Error(`Failed to download image for ${question.question_code}: ${downloadError.message}`)
+  if (downloadError)
+    throw new Error(
+      `Failed to download image for ${question.question_code}: ${downloadError.message}`,
+    )
 
   const { error: uploadError } = await staging.storage
     .from('question-images')
@@ -271,7 +293,8 @@ async function migrateQuestionAsset(question) {
       contentType: blob.type || undefined,
       cacheControl: '3600',
     })
-  if (uploadError) throw new Error(`Failed to upload image for ${question.question_code}: ${uploadError.message}`)
+  if (uploadError)
+    throw new Error(`Failed to upload image for ${question.question_code}: ${uploadError.message}`)
 
   return destinationPath
 }
@@ -365,7 +388,9 @@ async function main() {
     )
   }
 
-  const expectedNeedsRevision = [...decisionByCode.values()].filter((decision) => decision.status === 'needs_revision').length
+  const expectedNeedsRevision = [...decisionByCode.values()].filter(
+    (decision) => decision.status === 'needs_revision',
+  ).length
   if (Number(beforeStage.needs_revision) !== expectedNeedsRevision) {
     throw new Error(
       `Review-status reconciliation failed: expected ${expectedNeedsRevision} needs_revision, got ${beforeStage.needs_revision}`,
@@ -378,10 +403,14 @@ async function main() {
   console.log('After staging:', staged)
 
   if (Number(staged.raw_staged) !== sourceQuestions.length) {
-    throw new Error(`Raw stage reconciliation failed: expected ${sourceQuestions.length}, got ${staged.raw_staged}`)
+    throw new Error(
+      `Raw stage reconciliation failed: expected ${sourceQuestions.length}, got ${staged.raw_staged}`,
+    )
   }
 
-  const expectedReady = [...decisionByCode.values()].filter((decision) => decision.status === 'reviewed').length
+  const expectedReady = [...decisionByCode.values()].filter(
+    (decision) => decision.status === 'reviewed',
+  ).length
   if (Number(staged.import_ready) !== expectedReady) {
     throw new Error(
       `Import-ready reconciliation failed: expected ${expectedReady}, got ${staged.import_ready}. Check reviewed mappings and canonical assets.`,

@@ -1,47 +1,80 @@
-do $$
-declare
+DO $$
+DECLARE
   v_product_id uuid;
-begin
-  if exists (
-    select 1 from information_schema.tables
-    where table_schema = 'public' and table_name = 'transactions'
-  ) then
-    raise exception 'Refusing Schema V2 commerce QA seed on legacy/production-shaped database';
-  end if;
+BEGIN
+  IF EXISTS (
+    SELECT
+      1
+    FROM
+      information_schema.tables
+    WHERE
+      table_schema = 'public'
+      AND table_name = 'transactions') THEN
+  RAISE EXCEPTION 'Refusing Schema V2 commerce QA seed on legacy/production-shaped database';
+END IF;
 
-  update public.products
-  set status = 'active', updated_at = now()
-  where code in ('CPNS_TOKEN_1', 'CPNS_TOKEN_5', 'CPNS_TOKEN_10');
+  UPDATE
+    public.products
+  SET
+    status = 'active',
+    updated_at = now()
+  WHERE
+    code IN ('CPNS_TOKEN_1', 'CPNS_TOKEN_5', 'CPNS_TOKEN_10');
 
-  for v_product_id in
-    select id from public.products where code in ('CPNS_TOKEN_1', 'CPNS_TOKEN_5', 'CPNS_TOKEN_10')
-  loop
-    delete from public.product_prices
-    where product_id = v_product_id and lower(status) = 'active';
-  end loop;
+  FOR v_product_id IN
+  SELECT
+    id
+  FROM
+    public.products
+  WHERE
+    code IN ('CPNS_TOKEN_1', 'CPNS_TOKEN_5', 'CPNS_TOKEN_10')
+    LOOP
+      DELETE FROM public.product_prices
+      WHERE product_id = v_product_id
+        AND lower(status) = 'active';
+    END LOOP;
 
-  insert into public.product_prices(product_id, currency, amount, starts_at, ends_at, status)
-  select id, 'IDR',
-    case code
-      when 'CPNS_TOKEN_1' then 10000
-      when 'CPNS_TOKEN_5' then 40000
-      when 'CPNS_TOKEN_10' then 75000
-    end,
-    now() - interval '1 minute', null, 'active'
-  from public.products
-  where code in ('CPNS_TOKEN_1', 'CPNS_TOKEN_5', 'CPNS_TOKEN_10');
+  INSERT INTO public.product_prices (product_id, currency, amount, starts_at, ends_at, status)
+  SELECT
+    id,
+    'IDR',
+    CASE code
+    WHEN 'CPNS_TOKEN_1' THEN
+      10000
+    WHEN 'CPNS_TOKEN_5' THEN
+      40000
+    WHEN 'CPNS_TOKEN_10' THEN
+      75000
+    END,
+    now() - interval '1 minute',
+    NULL,
+    'active'
+  FROM
+    public.products
+  WHERE
+    code IN ('CPNS_TOKEN_1', 'CPNS_TOKEN_5', 'CPNS_TOKEN_10');
 
-  insert into public.product_wallet_grants(product_id, wallet_type, amount, config)
-  select id, 'exam_token',
-    case code
-      when 'CPNS_TOKEN_1' then 1
-      when 'CPNS_TOKEN_5' then 5
-      when 'CPNS_TOKEN_10' then 10
-    end,
+  INSERT INTO public.product_wallet_grants (product_id, wallet_type, amount, config)
+  SELECT
+    id,
+    'exam_token',
+    CASE code
+    WHEN 'CPNS_TOKEN_1' THEN
+      1
+    WHEN 'CPNS_TOKEN_5' THEN
+      5
+    WHEN 'CPNS_TOKEN_10' THEN
+      10
+    END,
     '{}'::jsonb
-  from public.products
-  where code in ('CPNS_TOKEN_1', 'CPNS_TOKEN_5', 'CPNS_TOKEN_10')
-  on conflict (product_id, wallet_type) do update set
-    amount = excluded.amount,
-    config = excluded.config;
-end $$;
+  FROM
+    public.products
+  WHERE
+    code IN ('CPNS_TOKEN_1', 'CPNS_TOKEN_5', 'CPNS_TOKEN_10')
+  ON CONFLICT (product_id,
+    wallet_type)
+    DO UPDATE SET
+      amount = excluded.amount,
+      config = excluded.config;
+END
+$$;

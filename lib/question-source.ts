@@ -9,8 +9,8 @@
  * Karena bentuknya seperti draft biasa, daftar admin menandainya secara eksplisit
  * dan mematikan editnya — supaya tidak terlihat seperti konten yang belum lengkap.
  */
-export const LEGACY_HISTORY_PLACEHOLDER = 'legacy_history_placeholder'
+const LEGACY_HISTORY_PLACEHOLDER = 'legacy_history_placeholder'
 
 export function isLegacyHistoryPlaceholder(value: unknown): boolean {
-    return String(value ?? '') === LEGACY_HISTORY_PLACEHOLDER
+  return String(value ?? '') === LEGACY_HISTORY_PLACEHOLDER
 }

@@ -1,16 +1,16 @@
 import {
-AdminCard,
-AdminEmptyState,
-AdminPage,
-AdminPageHeader,
-AdminStatusBadge,
-AdminTh,
-adminSecondaryButtonClass,
-adminTableHeadClass
+  AdminCard,
+  AdminEmptyState,
+  AdminPage,
+  AdminPageHeader,
+  AdminStatusBadge,
+  AdminTh,
+  adminSecondaryButtonClass,
+  adminTableHeadClass,
 } from '@/components/admin/AdminUi'
 import { AdminDataTable } from '@/components/admin/data-display/AdminDataTable'
 import { AdminBreadcrumbs } from '@/components/admin/navigation/AdminBreadcrumbs'
-import { formatDateTime,formatRupiah } from '@/lib/admin-format'
+import { formatDateTime, formatRupiah } from '@/lib/admin-format'
 import { adminReturnUrl } from '@/lib/admin-return-url'
 import { PERMISSIONS } from '@/src/auth/permissions'
 import { getAdminOrderResources } from '@/src/services/admin-commerce-workspace.service'
@@ -21,7 +21,7 @@ import { notFound } from 'next/navigation'
 export const dynamic = 'force-dynamic'
 export default async function OrderDetailPage({
   params,
-  searchParams
+  searchParams,
 }: {
   params: Promise<{ orderId: string }>
   searchParams: Promise<{ returnTo?: string }>
@@ -35,7 +35,7 @@ export default async function OrderDetailPage({
     return (
       <AdminEmptyState
         title="Akses tidak tersedia"
-        description="Akun ini tidak memiliki akses order."
+        description="Akun ini tidak memiliki akses pesanan."
       />
     )
   const { order, payments } = await getAdminOrderDetail(orderId)
@@ -46,33 +46,28 @@ export default async function OrderDetailPage({
     (p) =>
       p === PERMISSIONS.USER_READ ||
       p === PERMISSIONS.USER_MANAGE ||
-      p === PERMISSIONS.ENTITLEMENT_MANAGE
+      p === PERMISSIONS.ENTITLEMENT_MANAGE,
   )
   const name = String(
-    resources.customer?.full_name || resources.customer?.display_name || 'Pengguna'
+    resources.customer?.full_name || resources.customer?.display_name || 'Pengguna',
   )
   return (
     <AdminPage>
       <AdminBreadcrumbs
         items={[
           { label: 'Commerce' },
-          { label: 'Orders', href: back },
-          { label: String(order.order_number) }
+          { label: 'Pesanan', href: back },
+          { label: String(order.order_number) },
         ]}
       />
       <AdminPageHeader
-        title={`Order ${order.order_number}`}
-        description="Customer, produk, pembayaran, dan akses dalam satu konteks."
-        action={
-          <Link className={adminSecondaryButtonClass} href={back}>
-            Kembali ke Orders
-          </Link>
-        }
+        title="Detail pesanan"
+        description="Pengguna, produk, pembayaran, dan akses dalam satu konteks."
       />
       <AdminCard className="p-5">
         <dl className="grid gap-5 sm:grid-cols-4">
           <div>
-            <dt className="text-xs text-muted-foreground">Customer</dt>
+            <dt className="text-xs text-muted-foreground">Pengguna</dt>
             <dd className="mt-1 text-sm font-medium">
               {canUser ? (
                 <Link
@@ -91,35 +86,61 @@ export default async function OrderDetailPage({
             <dd className="mt-1 font-semibold tabular-nums">{formatRupiah(order.total_amount)}</dd>
           </div>
           <div>
-            <dt className="text-xs text-muted-foreground">Order Status</dt>
+            <dt className="text-xs text-muted-foreground">Status pesanan</dt>
             <dd className="mt-1">
               <AdminStatusBadge status={order.status} />
             </dd>
           </div>
           <div>
-            <dt className="text-xs text-muted-foreground">Created</dt>
+            <dt className="text-xs text-muted-foreground">Dibuat</dt>
             <dd className="mt-1 text-sm">{formatDateTime(order.created_at)}</dd>
           </div>
         </dl>
       </AdminCard>
+      {['partial_refund_review', 'partial_chargeback_review'].includes(
+        String(order.status).toLowerCase(),
+      ) ? (
+        <AdminCard className="border-warning-border bg-warning-muted p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="font-semibold text-warning">
+                Perlu tinjauan manual sebelum saldo token disesuaikan
+              </h2>
+              <p className="mt-1 text-sm text-warning">
+                {String(order.status).toLowerCase() === 'partial_refund_review'
+                  ? 'Refund sebagian tercatat. Saldo Token TKA belum berubah otomatis; tinjau jumlah refund dan pemakaian token, lalu sesuaikan secara manual bila diperlukan.'
+                  : 'Sengketa sebagian tercatat. Saldo Token TKA belum berubah otomatis; tinjau kasus dan pemakaian token sebelum melakukan penyesuaian manual.'}
+              </p>
+            </div>
+            {actor.permissions.includes(PERMISSIONS.ENTITLEMENT_MANAGE) ? (
+              <Link
+                className={`${adminSecondaryButtonClass} shrink-0`}
+                href={`/admin/users/access?${new URLSearchParams({ user: String(order.user_id), wallet_type: 'exam_token_tka' })}`}
+              >
+                Buka penyesuaian Token TKA
+              </Link>
+            ) : null}
+          </div>
+        </AdminCard>
+      ) : null}
       <section>
-        <h2 className="mb-3 text-base font-semibold">Produk & Harga</h2>
+        <h2 className="mb-3 text-base font-semibold">Produk dan harga</h2>
         <AdminCard>
           <AdminDataTable
-            caption="Produk dalam order"
+            caption="Produk dalam pesanan"
             className="min-w-[600px]"
             empty={
               !resources.items.length
                 ? {
                     title: 'Produk belum tercatat',
-                    description: 'Order ini belum memiliki item produk.'
+                    description: 'Pesanan ini belum memiliki item produk.',
                   }
                 : undefined
             }
           >
             <thead className={adminTableHeadClass}>
               <tr>
-                {['Product', 'Quantity', 'Unit Price', 'Amount'].map((h) => (
+                {['Produk', 'Jumlah', 'Harga satuan', 'Total'].map((h) => (
                   <AdminTh key={h}>{h}</AdminTh>
                 ))}
               </tr>
@@ -138,23 +159,23 @@ export default async function OrderDetailPage({
         </AdminCard>
       </section>
       <section>
-        <h2 className="mb-3 text-base font-semibold">Payment information</h2>
+        <h2 className="mb-3 text-base font-semibold">Informasi pembayaran</h2>
         <AdminCard>
           <AdminDataTable
-            caption="Pembayaran order"
+            caption="Pembayaran pesanan"
             className="min-w-[650px]"
             empty={
               !payments.length
                 ? {
                     title: 'Belum ada pembayaran',
-                    description: 'Pembayaran untuk order ini belum tercatat.'
+                    description: 'Pembayaran untuk pesanan ini belum tercatat.',
                   }
                 : undefined
             }
           >
             <thead className={adminTableHeadClass}>
               <tr>
-                {['Provider', 'Method', 'Amount', 'Status', 'Paid At'].map((h) => (
+                {['Penyedia', 'Metode', 'Jumlah', 'Status', 'Dibayar pada'].map((h) => (
                   <AdminTh key={h}>{h}</AdminTh>
                 ))}
               </tr>
@@ -176,40 +197,42 @@ export default async function OrderDetailPage({
         </AdminCard>
       </section>
       <section>
-        <h2 className="mb-3 text-base font-semibold">Transaction history</h2>
+        <h2 className="mb-3 text-base font-semibold">Riwayat transaksi</h2>
         <ol className="flex flex-col gap-3 text-sm">
           <li>
-            <span className="text-muted-foreground">{formatDateTime(order.created_at)}</span> · Order
-            dibuat
+            <span className="text-muted-foreground">{formatDateTime(order.created_at)}</span> ·
+            Pesanan dibuat
           </li>
           {payments.map((p) => (
             <li key={String(p.id)}>
-              <span className="text-muted-foreground">{formatDateTime(p.paid_at || p.created_at)}</span> ·{' '}
-              {String(p.provider)} <AdminStatusBadge status={p.status} />
+              <span className="text-muted-foreground">
+                {formatDateTime(p.paid_at || p.created_at)}
+              </span>{' '}
+              · {String(p.provider)} <AdminStatusBadge status={p.status} />
             </li>
           ))}
         </ol>
       </section>
       {resources.canAccess && (
         <section>
-          <h2 className="mb-3 text-base font-semibold">Granted Access</h2>
+          <h2 className="mb-3 text-base font-semibold">Akses yang diberikan</h2>
           <AdminCard>
             <AdminDataTable
-              caption="Granted Access"
+              caption="Akses yang diberikan"
               className="min-w-[550px]"
               empty={
                 !resources.grants.length
                   ? {
-                      title: 'Belum ada akses fitur dari order ini',
+                      title: 'Belum ada akses fitur dari pesanan ini',
                       description:
-                        'Akses diberikan setelah pembayaran dan fulfillment berhasil. Produk token menambah saldo dompet pengguna.'
+                        'Akses diberikan setelah pembayaran dan pemrosesan berhasil. Produk token menambah saldo dompet pengguna.',
                     }
                   : undefined
               }
             >
               <thead className={adminTableHeadClass}>
                 <tr>
-                  {['Access', 'Status', 'Expires'].map((h) => (
+                  {['Akses', 'Status', 'Berakhir pada'].map((h) => (
                     <AdminTh key={h}>{h}</AdminTh>
                   ))}
                 </tr>
@@ -233,7 +256,7 @@ export default async function OrderDetailPage({
             className={`${adminSecondaryButtonClass} mt-3`}
             href={`/admin/users/${order.user_id}?${new URLSearchParams({ tab: 'entitlements', returnTo: `/admin/commerce/orders/${orderId}?${new URLSearchParams({ returnTo: back })}` })}`}
           >
-            Entitlements pengguna
+            Akses pengguna
           </Link>
         </section>
       )}

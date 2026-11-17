@@ -1,6 +1,6 @@
 import { saveProductAction } from '@/app/actions/admin-v2'
-import { ContextFields,s,type ViewRow } from '@/components/admin/AdminResourceShared'
-import { AdminField,adminInputClass,adminPrimaryButtonClass } from '@/components/admin/AdminUi'
+import { ContextFields, s, type ViewRow } from '@/components/admin/AdminResourceShared'
+import { AdminField, adminInputClass, adminPrimaryButtonClass } from '@/components/admin/AdminUi'
 import { AdminFormActions } from '@/components/admin/forms/AdminFormActions'
 import { AdminFormSection } from '@/components/admin/forms/AdminFormSection'
 import ProductAvailabilityFields from '@/components/admin/ProductAvailabilityFields'
@@ -13,7 +13,7 @@ export default async function ProductForm({
   grant,
   program,
   track,
-  returnTo
+  returnTo,
 }: {
   product?: ViewRow
   price?: ViewRow
@@ -24,11 +24,11 @@ export default async function ProductForm({
 }) {
   const readiness = Object.fromEntries(
     await Promise.all(
-      ['PASS', 'TOKEN_PACK', 'EVENT_TICKET'].map(async (type) => [
+      ['TOKEN_PACK', 'EVENT_TICKET'].map(async (type) => [
         type,
-        await productReadiness(program, track, type, product ? s(product.id) : undefined)
-      ])
-    )
+        await productReadiness(program, track, type, product ? s(product.id) : undefined),
+      ]),
+    ),
   )
   return (
     <form data-admin-form action={saveProductAction}>
@@ -95,11 +95,11 @@ export default async function ProductForm({
         </AdminField>
       </AdminFormSection>
       <AdminFormSection
-        title="Availability & Readiness"
-        description="Requirement konten harus terpenuhi sebelum produk dapat diaktifkan."
+        title="Ketersediaan & kesiapan"
+        description="Persyaratan konten harus terpenuhi sebelum produk dapat diaktifkan."
       >
         <ProductAvailabilityFields
-          type={s(product?.product_type) || 'PASS'}
+          type={s(product?.product_type) || 'TOKEN_PACK'}
           status={s(product?.status) || 'DRAFT'}
           readiness={readiness}
         />

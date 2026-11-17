@@ -1,105 +1,74 @@
-create or replace function app_private.audit_question_workflow_change()
-returns trigger
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
+CREATE OR REPLACE FUNCTION app_private.audit_question_workflow_change ()
+  RETURNS TRIGGER
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path = ''
+  AS $$
+DECLARE
   v_action text;
-begin
-  if old.status is distinct from new.status then
-    v_action := 'question.workflow.' || lower(new.status);
-  elsif old.reviewer_id is distinct from new.reviewer_id then
+BEGIN
+  IF OLD.status IS DISTINCT FROM NEW.status THEN
+    v_action := 'question.workflow.' || lower(NEW.status);
+  ELSIF OLD.reviewer_id IS DISTINCT FROM NEW.reviewer_id THEN
     v_action := 'question.workflow.reviewer_changed';
-  else
-    return new;
-  end if;
+  ELSE
+    RETURN new;
+  END IF;
 
-  insert into public.audit_logs(actor_user_id, action, entity_type, entity_id, old_data, new_data)
-  values (
-    auth.uid(),
-    v_action,
-    'question',
-    new.id,
-    jsonb_build_object(
-      'status', old.status,
-      'reviewer_id', old.reviewer_id,
-      'version', old.version,
-      'published_at', old.published_at
-    ),
-    jsonb_build_object(
-      'status', new.status,
-      'reviewer_id', new.reviewer_id,
-      'version', new.version,
-      'published_at', new.published_at
-    )
-  );
+  INSERT INTO public.audit_logs (actor_user_id, action, entity_type, entity_id, old_data, new_data)
+    VALUES (auth.uid (), v_action, 'question', NEW.id, jsonb_build_object('status', OLD.status, 'reviewer_id', OLD.reviewer_id, 'version', OLD.version, 'published_at', OLD.published_at), jsonb_build_object('status', NEW.status, 'reviewer_id', NEW.reviewer_id, 'version', NEW.version, 'published_at', NEW.published_at));
 
-  return new;
-end;
+  RETURN new;
+END;
 $$;
 
-create or replace function app_private.audit_content_review_change()
-returns trigger
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
+CREATE OR REPLACE FUNCTION app_private.audit_content_review_change ()
+  RETURNS TRIGGER
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path = ''
+  AS $$
+DECLARE
   v_action text;
   v_entity_id uuid;
-begin
-  v_entity_id := coalesce(new.entity_id, old.entity_id);
+BEGIN
+  v_entity_id := coalesce(NEW.entity_id, OLD.entity_id);
 
-  if tg_op = 'INSERT' then
+  IF tg_op = 'INSERT' THEN
     v_action := 'content.review.created';
-  elsif old.reviewer_id is distinct from new.reviewer_id and new.reviewer_id is not null then
-    v_action := 'content.review.assigned';
-  elsif old.status is distinct from new.status then
-    v_action := 'content.review.' || lower(new.status);
-  else
-    return new;
-  end if;
+  ELSIF OLD.reviewer_id IS DISTINCT FROM NEW.reviewer_id
+      AND NEW.reviewer_id IS NOT NULL THEN
+      v_action := 'content.review.assigned';
+  ELSIF OLD.status IS DISTINCT FROM NEW.status THEN
+    v_action := 'content.review.' || lower(NEW.status);
+  ELSE
+    RETURN new;
+  END IF;
 
-  insert into public.audit_logs(actor_user_id, action, entity_type, entity_id, old_data, new_data)
-  values (
-    auth.uid(),
-    v_action,
-    'question',
-    v_entity_id,
-    case when tg_op = 'INSERT' then null else jsonb_build_object(
-      'review_id', old.id,
-      'review_stage', old.review_stage,
-      'review_round', old.review_round,
-      'reviewer_id', old.reviewer_id,
-      'status', old.status,
-      'notes', old.notes,
-      'question_version', old.question_version
-    ) end,
-    jsonb_build_object(
-      'review_id', new.id,
-      'review_stage', new.review_stage,
-      'review_round', new.review_round,
-      'reviewer_id', new.reviewer_id,
-      'status', new.status,
-      'notes', new.notes,
-      'question_version', new.question_version
-    )
-  );
+  INSERT INTO public.audit_logs (actor_user_id, action, entity_type, entity_id, old_data, new_data)
+    VALUES (auth.uid (), v_action, 'question', v_entity_id, CASE WHEN tg_op = 'INSERT' THEN
+        NULL
+      ELSE
+        jsonb_build_object('review_id', OLD.id, 'review_stage', OLD.review_stage, 'review_round', OLD.review_round, 'reviewer_id', OLD.reviewer_id, 'status', OLD.status, 'notes', OLD.notes, 'question_version', OLD.question_version)
+      END, jsonb_build_object('review_id', NEW.id, 'review_stage', NEW.review_stage, 'review_round', NEW.review_round, 'reviewer_id', NEW.reviewer_id, 'status', NEW.status, 'notes', NEW.notes, 'question_version', NEW.question_version));
 
-  return new;
-end;
+  RETURN new;
+END;
 $$;
 
-drop trigger if exists trg_audit_question_workflow on public.questions;
-create trigger trg_audit_question_workflow
-after update of status, reviewer_id on public.questions
-for each row
-when (old.status is distinct from new.status or old.reviewer_id is distinct from new.reviewer_id)
-execute function app_private.audit_question_workflow_change();
+DROP TRIGGER IF EXISTS trg_audit_question_workflow ON public.questions;
 
-drop trigger if exists trg_audit_content_review on public.content_reviews;
-create trigger trg_audit_content_review
-after insert or update of reviewer_id, status on public.content_reviews
-for each row
-execute function app_private.audit_content_review_change();
+CREATE TRIGGER trg_audit_question_workflow
+  AFTER UPDATE OF status,
+  reviewer_id ON public.questions
+  FOR EACH ROW
+  WHEN (old.status IS DISTINCT FROM new.status OR old.reviewer_id IS DISTINCT FROM new.reviewer_id)
+  EXECUTE FUNCTION app_private.audit_question_workflow_change ();
+
+DROP TRIGGER IF EXISTS trg_audit_content_review ON public.content_reviews;
+
+CREATE TRIGGER trg_audit_content_review
+  AFTER INSERT OR UPDATE OF reviewer_id,
+  status ON public.content_reviews
+  FOR EACH ROW
+  EXECUTE FUNCTION app_private.audit_content_review_change ();

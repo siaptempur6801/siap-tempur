@@ -92,13 +92,17 @@ def main() -> None:
 
     print("Safety gate: LOCAL ONLY 127.0.0.1:54322")
     print("Phase 2: 476 sessions + 16,889 answers + 1,273 subject scores")
-    print("Withheld needs_revision questions remain outside the canonical bank; snapshots preserve their history.")
+    print(
+        "Withheld needs_revision questions remain outside the canonical bank; snapshots preserve their history."
+    )
 
     try:
         typed_script, replacements = normalized_typed_copy(script_path)
     except Exception as exc:
         die(f"could not normalize Phase 2 SQL for exact typed legacy clone: {exc}")
-    print(f"Exact-clone compatibility: normalized {replacements} NULLIF empty-string expression(s).")
+    print(
+        f"Exact-clone compatibility: normalized {replacements} NULLIF empty-string expression(s)."
+    )
     try:
         proc = subprocess.run(
             ["psql", args.db_url, "-X", "-v", "ON_ERROR_STOP=1", "-f", str(typed_script)]

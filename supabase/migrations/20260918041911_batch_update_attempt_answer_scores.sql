@@ -27,45 +27,47 @@
 --   Murni UPDATE berdasarkan primary key; dijalankan dua kali menghasilkan state
 --   yang sama. Baris yang tidak ada cukup diabaikan (tidak di-INSERT).
 -- =============================================================================
+CREATE OR REPLACE FUNCTION public.update_attempt_answer_scores (p_scores jsonb)
+  RETURNS integer
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path = ''
+  AS $function$
+DECLARE
+  v_updated integer;
+BEGIN
+  IF p_scores IS NULL OR jsonb_typeof(p_scores) <> 'array' THEN
+    RAISE EXCEPTION 'update_attempt_answer_scores expects a JSON array'
+      USING errcode = '22023';
+  END IF;
 
-create or replace function public.update_attempt_answer_scores(p_scores jsonb)
-returns integer
-language plpgsql
-security definer
-set search_path = ''
-as $function$
-declare
-    v_updated integer;
-begin
-    if p_scores is null or jsonb_typeof(p_scores) <> 'array' then
-        raise exception 'update_attempt_answer_scores expects a JSON array'
-            using errcode = '22023';
-    end if;
+  WITH incoming AS (
+    SELECT
+      *
+    FROM
+      jsonb_to_recordset(p_scores) AS x (id uuid,
+        is_correct boolean,
+        score_awarded numeric))
+  UPDATE
+    public.attempt_answers aa
+  SET
+    is_correct = incoming.is_correct,
+    score_awarded = incoming.score_awarded,
+    updated_at = now()
+  FROM
+    incoming
+  WHERE
+    aa.id = incoming.id;
 
-    with incoming as (
-        select *
-        from jsonb_to_recordset(p_scores) as x(
-            id uuid,
-            is_correct boolean,
-            score_awarded numeric
-        )
-    )
-    update public.attempt_answers aa
-       set is_correct    = incoming.is_correct,
-           score_awarded = incoming.score_awarded,
-           updated_at    = now()
-      from incoming
-     where aa.id = incoming.id;
-
-    get diagnostics v_updated = row_count;
-    return v_updated;
-end;
+  get diagnostics v_updated = row_count;
+  RETURN v_updated;
+END;
 $function$;
 
-comment on function public.update_attempt_answer_scores(jsonb) is
-    'Menulis skor seluruh jawaban satu attempt dalam satu round trip. Hanya service_role.';
+COMMENT ON FUNCTION public.update_attempt_answer_scores (jsonb) IS TEXTVALUE0E; REVOKE ALL ON FUNCTION public.update_attempt_answer_scores (jsonb) FROM public;
 
-revoke all on function public.update_attempt_answer_scores(jsonb) from public;
-revoke all on function public.update_attempt_answer_scores(jsonb) from anon;
-revoke all on function public.update_attempt_answer_scores(jsonb) from authenticated;
-grant execute on function public.update_attempt_answer_scores(jsonb) to service_role;
+REVOKE ALL ON FUNCTION public.update_attempt_answer_scores (jsonb) FROM anon;
+
+REVOKE ALL ON FUNCTION public.update_attempt_answer_scores (jsonb) FROM authenticated;
+
+GRANT EXECUTE ON FUNCTION public.update_attempt_answer_scores (jsonb) TO service_role;

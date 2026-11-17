@@ -120,9 +120,11 @@ Authorization: Bearer <any learner access token>
 
 ---
 
-### P1-2 — Midtrans `fraud_status` is never validated; fulfilment proceeds on `capture` regardless of fraud review
+### P1-2 (historical) — Midtrans `fraud_status` validation gap
 
-**Confidence:** CONFIRMED (the omission) / POSSIBLE (real-world impact depends on Midtrans channel config).
+> **Status update (2026-10-11): SUPERSEDED in the current source tree.** Both the webhook and status-sync paths now pass Midtrans `capture` responses through `resolveMidtransFulfilment()` before applying provider status. `deny` blocks fulfilment; `challenge` and an unrecognized supplied fraud value remain pending. A missing fraud field is allowed for payment methods that do not use FDS. See `lib/midtrans-status.ts`, `app/api/payments/webhook/route.ts`, and `src/services/payment.service.ts`. The analysis and snippets below record the earlier audit snapshot; production deployment parity still needs verification.
+
+**Confidence at that snapshot:** CONFIRMED (the omission) / POSSIBLE (real-world impact depended on Midtrans channel config).
 
 ```ts
 // app/api/payments/webhook/route.ts:39-43
@@ -136,23 +138,23 @@ if (!isSupportedMidtransStatus(transactionStatus)) {
 const SUCCESS_STATUSES = new Set(['capture', 'settlement'])
 ```
 
-`fraud_status` exists in the typed payload (`lib/midtrans.ts:53`) and survives Zod `.passthrough()`, but a repo-wide grep across `app/`, `src/`, `lib/`, `components/`, `supabase/`, `scripts/`, `tests/`, `types/` returns **exactly one hit — the type declaration itself**:
+At the time of the original snapshot, `fraud_status` existed in the typed payload (`lib/midtrans.ts:53`) and survived Zod `.passthrough()`, but a repo-wide grep across `app/`, `src/`, `lib/`, `components/`, `supabase/`, `scripts/`, `tests/`, `types/` returned **one hit — the type declaration itself**:
 
 ```
 lib/midtrans.ts:53:    fraud_status?: string;
 ```
 
-Neither the route, nor `paymentService.processWebhook`, nor `fulfill_paid_order` reads it. The SQL success predicate is only:
+In that snapshot, neither the route, `paymentService.processWebhook`, nor `fulfill_paid_order` read it. The SQL success predicate was only:
 ```sql
 -- 20260823071419_tka_pass_renewal_stacking_v1.sql:28
 v_success boolean := lower(p_status) in ('capture', 'settlement');
 ```
 
-**Exploit path:** on card/credit channels where Midtrans returns `transaction_status='capture'` with `fraud_status='challenge'` or `'deny'`, the webhook sets the order to `paid`, credits wallet tokens, extends entitlements, and creates the event registration — before or despite the fraud decision. A later `deny`/`refund` notification hits the monotonic guard (`:62-70` keeps `capture`/`settlement`) and **does not claw back** the granted goods.
+**Historical exploit path:** on card/credit channels where Midtrans returned `transaction_status='capture'` with `fraud_status='challenge'` or `'deny'`, the webhook could set the order to `paid`, credit wallet tokens, extend entitlements, and create the event registration before or despite the fraud decision. A later `deny`/`refund` notification could hit the monotonic guard (`:62-70` kept `capture`/`settlement`) without clawing back granted goods.
 
-**Impact:** direct revenue loss and free premium/event access, with no compensating reversal path.
+**Impact at that snapshot:** direct revenue loss and free premium/event access, with no compensating reversal path.
 
-**Fix:** when `transaction_status === 'capture'`, require `fraud_status === 'accept'`; treat `challenge`/`deny` as non-fulfilling (record the event, do not call `processWebhook`).
+**Historical recommendation:** when `transaction_status === 'capture'`, require `fraud_status === 'accept'`; treat `challenge`/`deny` as non-fulfilling. The current shared resolver implements the policy described in the status update above.
 
 ---
 
@@ -450,7 +452,7 @@ question_options  → same
 | # | Sev | Confidence | Finding | Exploit path | Primary evidence |
 |---|---|---|---|---|---|
 | 1 | **P1** | CONFIRMED (repo) / NEEDS VERIFICATION (live) | `authenticated` holds `EXECUTE` on `recalculate_leaderboard` (SECURITY DEFINER, no caller check) and `recalculate_event_rankings`, contradicting migrations that revoke both | `POST /rest/v1/rpc/recalculate_leaderboard {"p_leaderboard_id":"<any>"}` with any learner token → wipes and rewrites an arbitrary leaderboard | `18_acl.sql:361-362` inside block ending `:403`; `13_functions_public_learning_rankings.sql:393-398` (SECURITY DEFINER) vs `202608200630:103-106` (revoke) |
-| 2 | **P1** | CONFIRMED (omission) / POSSIBLE (impact) | Midtrans `fraud_status` never validated; fulfilment on `capture` regardless of fraud review, with no claw-back | Channel returns `capture` + `fraud_status='deny'` → tokens credited, entitlements extended, event registration created; later `deny` cannot reverse it | `app/api/payments/webhook/route.ts:39-43`; `lib/midtrans-status.ts`; grep shows `fraud_status` appears **only** at `lib/midtrans.ts:53`; SQL `20260823071419:28` |
+| 2 | **P1** | Historical finding; remediated in current source, deployment needs verification | Earlier snapshot did not validate Midtrans `fraud_status` before fulfilment; both webhook and status sync now use the shared resolver | Historical risk: `capture` + `fraud_status='deny'` could grant goods before the fix | Earlier evidence: `app/api/payments/webhook/route.ts:39-43`; current guard: `lib/midtrans-status.ts`, `app/api/payments/webhook/route.ts`, `src/services/payment.service.ts` |
 | 3 | **P1** | CONFIRMED | `202402280006_security_fixes.sql` is invalid SQL (top-level bare `BEGIN…EXCEPTION`), so all its `search_path` hardening is inert; 2 live SECURITY DEFINER functions remain unpinned and the "fix" uses the wrong signature | Latent search-path privilege escalation on legacy functions | `202402280006:29-33,38-41,43-46,48-51`; `202401290007:34`; `202402120003:23` |
 | 4 | **P2** | CONFIRMED | RLS write policies exist for `exam_attempts` (`total_score`/`passed`/`percentage`/`rank`), `attempt_answers`, `event_registrations` with no column scoping; only the missing table GRANT prevents escalation | One future `GRANT UPDATE` → `PATCH /rest/v1/exam_attempts?id=eq.<own>` `{"total_score":500,"passed":true}` | `15_policies_a_p.sql:102-110,28-48,90-91`; contrast the deliberate column grants at `18_acl.sql:283-285` |
 | 5 | **P2** | CONFIRMED | Canonical ACL ≠ migration chain ≠ `docs/STATUS.md`; ≥49/161 local files absent from production's ledger, no test pins the answer-table ACL. Unscoped `USING (true)` on `leaderboard_entries` + `event_rankings` | Cross-program enumeration of every user's `user_id`/`score`/`rank`; `supabase db push` semantics untrustworthy | `18_acl.sql` vs `20260916213100` (only `question_versions` revoked); `migration-history-archive/*.json`; `15_policies_a_p.sql:139-140,87-88` |
@@ -468,7 +470,7 @@ question_options  → same
 
 **Before exposing the public domain**
 1. Resolve finding #1: remove `recalculate_leaderboard` / `recalculate_event_rankings` from the `TO authenticated` block in `18_acl.sql:374-403`, add in-function permission guards, normalize `pg_temp` → `''`.
-2. Resolve finding #2: gate `capture` on `fraud_status === 'accept'`.
+2. Verify that the active deployment includes the shared fraud-status resolver in both webhook and status-sync paths; the current source already contains this guard.
 3. Run the two verification queries in `docs/STATUS.md:158-168` (expect 0 rows) plus the `pg_proc.proconfig` query below, to convert every NEEDS VERIFICATION into settled fact.
 
 ```sql

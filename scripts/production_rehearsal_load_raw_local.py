@@ -131,11 +131,15 @@ def write_loader_sql(snapshot: Path, columns, manifest, out_path: Path):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Load a production raw snapshot into local legacy_prod staging tables.")
+    parser = argparse.ArgumentParser(
+        description="Load a production raw snapshot into local legacy_prod staging tables."
+    )
     parser.add_argument("snapshot_dir", help="Path like snapshots/production-raw-YYYYMMDD-HHMMSS")
     parser.add_argument(
         "--db-url",
-        default=os.environ.get("LOCAL_DB_URL", "postgresql://postgres:postgres@127.0.0.1:54322/postgres"),
+        default=os.environ.get(
+            "LOCAL_DB_URL", "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+        ),
         help="Supabase Local PostgreSQL URI only",
     )
     args = parser.parse_args()
@@ -189,7 +193,9 @@ def main():
         if actual != expected:
             mismatches.append((table, expected, actual))
 
-    auth_count = int(run_psql(args.db_url, "select count(*) from legacy_prod.auth_users_identity;", capture=True))
+    auth_count = int(
+        run_psql(args.db_url, "select count(*) from legacy_prod.auth_users_identity;", capture=True)
+    )
 
     print()
     print("Raw snapshot load verification")

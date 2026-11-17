@@ -3,8 +3,8 @@ import { saveAssignmentAction } from '@/app/actions/admin-organization-exam'
 import type { AssignmentRow } from '@/lib/organization-exam'
 import { useState } from 'react'
 import AdminSubmitButton from './AdminSubmitButton'
-import { AdminField,adminInputClass,adminSecondaryButtonClass } from './AdminUi'
-import AssessmentSelector,{ type AssessmentOption } from './AssessmentSelector'
+import { AdminField, adminInputClass, adminSecondaryButtonClass } from './AdminUi'
+import AssessmentSelector, { type AssessmentOption } from './AssessmentSelector'
 import { AssignmentList } from './domain/organization/AssignmentList'
 import { AdminFormSection } from './forms/AdminFormSection'
 export default function BatchExamPanel({
@@ -17,7 +17,7 @@ export default function BatchExamPanel({
   selectedExamId,
   returnTo,
   total,
-  page
+  page,
 }: {
   batchId: string
   organizationId: string
@@ -42,12 +42,10 @@ export default function BatchExamPanel({
     setReview(false)
   }
   const scheduleInvalid = Boolean(start && end && start >= end)
+  const scheduleError = scheduleInvalid ? 'Jadwal tutup harus setelah jadwal buka.' : ''
   const selected = assessments.find((a) => a.id === exam)
-  const invalid = !selected?.eligible
-    ? 'Pilih assessment yang tersedia.'
-    : scheduleInvalid
-      ? 'Jadwal tutup harus setelah jadwal buka.'
-      : ''
+  const selectionInvalid = !selected?.eligible
+  const invalid = selectionInvalid || Boolean(scheduleError)
   const hidden = (
     <>
       <input type="hidden" name="batch_id" value={batchId} />
@@ -84,6 +82,15 @@ export default function BatchExamPanel({
               total={total}
               page={page}
             />
+            {selectionInvalid && (
+              <p
+                id="assignment-selection-hint"
+                role="status"
+                className="mt-3 text-sm text-muted-foreground"
+              >
+                Pilih satu assessment di atas untuk mengaktifkan review penugasan.
+              </p>
+            )}
           </div>
         </AdminFormSection>
         <AdminFormSection title="Jadwal (WIB)">
@@ -94,7 +101,7 @@ export default function BatchExamPanel({
                 type="datetime-local"
                 name="starts_at"
                 aria-invalid={scheduleInvalid || undefined}
-                aria-describedby={scheduleInvalid ? 'assignment-error' : undefined}
+                aria-describedby={scheduleInvalid ? 'assignment-schedule-error' : undefined}
                 value={start}
                 onChange={(e) => {
                   setStart(e.target.value)
@@ -108,7 +115,7 @@ export default function BatchExamPanel({
                 type="datetime-local"
                 name="due_at"
                 aria-invalid={scheduleInvalid || undefined}
-                aria-describedby={scheduleInvalid ? 'assignment-error' : undefined}
+                aria-describedby={scheduleInvalid ? 'assignment-schedule-error' : undefined}
                 value={end}
                 onChange={(e) => {
                   setEnd(e.target.value)
@@ -117,6 +124,15 @@ export default function BatchExamPanel({
               />
             </AdminField>
           </div>
+          {scheduleError && (
+            <p
+              id="assignment-schedule-error"
+              role="alert"
+              className="text-sm font-medium text-danger sm:col-span-2"
+            >
+              {scheduleError}
+            </p>
+          )}
           <label className="mt-3 flex gap-2 text-sm">
             <input
               type="checkbox"
@@ -131,11 +147,6 @@ export default function BatchExamPanel({
           </label>
         </AdminFormSection>
         <AdminFormSection title="Review">
-          {invalid && (
-            <p role="alert" id="assignment-error" className="text-sm text-warning">
-              {invalid}
-            </p>
-          )}
           {review && !invalid && (
             <dl className="grid gap-3 text-sm sm:col-span-2 sm:grid-cols-2">
               {[
@@ -144,10 +155,10 @@ export default function BatchExamPanel({
                 ['Assessment', selected?.title || ''],
                 [
                   'Ketersediaan',
-                  `${start || 'Tanpa batas mulai'} — ${end || 'Tanpa batas selesai'}`
+                  `${start || 'Tanpa batas mulai'} — ${end || 'Tanpa batas selesai'}`,
                 ],
                 ['Peserta', 'Seluruh peserta batch'],
-                ['Status', active ? 'Aktif' : 'Nonaktif']
+                ['Status', active ? 'Aktif' : 'Nonaktif'],
               ].map(([label, value]) => (
                 <div key={label}>
                   <dt className="text-muted-foreground">{label}</dt>
@@ -156,19 +167,27 @@ export default function BatchExamPanel({
               ))}
             </dl>
           )}
-          {review && !invalid ? (
-            <AdminSubmitButton>Jadwalkan assessment</AdminSubmitButton>
-          ) : (
-            <button
-              type="button"
-              className={adminSecondaryButtonClass}
-              disabled={!!invalid}
-              aria-describedby={invalid ? 'assignment-error' : undefined}
-              onClick={() => setReview(true)}
-            >
-              Review Penugasan
-            </button>
-          )}
+          <div className="flex justify-end sm:col-span-2">
+            {review && !invalid ? (
+              <AdminSubmitButton>Jadwalkan assessment</AdminSubmitButton>
+            ) : (
+              <button
+                type="button"
+                className={adminSecondaryButtonClass}
+                disabled={!!invalid}
+                aria-describedby={
+                  scheduleError
+                    ? 'assignment-schedule-error'
+                    : selectionInvalid
+                      ? 'assignment-selection-hint'
+                      : undefined
+                }
+                onClick={() => setReview(true)}
+              >
+                Review Penugasan
+              </button>
+            )}
+          </div>
         </AdminFormSection>
       </form>
       <h3 className="font-semibold">Penugasan ({assignments.length})</h3>

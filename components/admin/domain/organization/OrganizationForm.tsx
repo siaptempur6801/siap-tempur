@@ -1,8 +1,8 @@
 import { saveOrganizationAction } from '@/app/actions/admin-organization'
-import { AdminField,adminInputClass,adminPrimaryButtonClass } from '@/components/admin/AdminUi'
+import { AdminField, adminInputClass, adminPrimaryButtonClass } from '@/components/admin/AdminUi'
 import { AdminFormActions } from '@/components/admin/forms/AdminFormActions'
 import { AdminFormSection } from '@/components/admin/forms/AdminFormSection'
-import { organizationService,organizationTypeLabel } from '@/src/services/organization.service'
+import { organizationService, organizationTypeLabel } from '@/src/services/organization.service'
 type Detail = NonNullable<Awaited<ReturnType<typeof organizationService.getOrganization>>>
 type Context = Record<string, string | undefined>
 const ORG_TYPES = ['instansi', 'sekolah', 'komunitas', 'lainnya'] as const
@@ -10,7 +10,7 @@ export function OrganizationForm({
   editingOrg,
   params,
   tab,
-  cancelHref
+  cancelHref,
 }: {
   editingOrg: Detail['organization'] | null
   params: Context
@@ -66,8 +66,8 @@ export function OrganizationForm({
             aria-label="Status instansi"
             defaultValue={editingOrg?.status ?? 'active'}
           >
-            <option value="active">Active</option>
-            <option value="inactive">Unavailable</option>
+            <option value="active">Aktif</option>
+            <option value="inactive">Nonaktif</option>
           </select>
         </AdminField>
         <AdminField label="Kota">

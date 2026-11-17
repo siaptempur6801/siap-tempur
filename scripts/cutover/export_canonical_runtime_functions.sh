@@ -19,11 +19,17 @@ if [[ -z "${ARTIFACT_DIR:-}" ]]; then
 fi
 
 case "$STAGING_DB_URL" in
-  postgresql://*|postgres://*) ;;
-  *) echo "ERROR: STAGING_DB_URL is not a PostgreSQL URI." >&2; exit 1 ;;
+  postgresql://* | postgres://*) ;;
+  *)
+    echo "ERROR: STAGING_DB_URL is not a PostgreSQL URI." >&2
+    exit 1
+    ;;
 esac
 case "$STAGING_DB_URL" in
-  *127.0.0.1*|*localhost*) echo "ERROR: STAGING_DB_URL unexpectedly points to localhost." >&2; exit 1 ;;
+  *127.0.0.1* | *localhost*)
+    echo "ERROR: STAGING_DB_URL unexpectedly points to localhost." >&2
+    exit 1
+    ;;
 esac
 if [[ "$STAGING_DB_URL" != *"${EXPECTED_STAGING_REF}"* ]]; then
   echo "ERROR: STAGING_DB_URL does not contain expected project ref ${EXPECTED_STAGING_REF}." >&2
@@ -78,7 +84,7 @@ if [[ "$GATE" != "$EXPECTED_GATE" ]]; then
   echo "actual:   $GATE" >&2
   exit 1
 fi
-printf '%s\n' "$GATE" > "$GATE_FILE"
+printf '%s\n' "$GATE" >"$GATE_FILE"
 
 EXPORT_SQL="select rtrim(pg_get_functiondef(p.oid)) || E';\\n'
 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
@@ -89,7 +95,7 @@ psql "$STAGING_DB_URL" -X -v ON_ERROR_STOP=1 -qAt \
   -c 'BEGIN TRANSACTION READ ONLY;' \
   -c "SET LOCAL statement_timeout = '120s';" \
   -c "$EXPORT_SQL" \
-  -c 'ROLLBACK;' > "$TMP_FILE"
+  -c 'ROLLBACK;' >"$TMP_FILE"
 
 COUNT="$(grep -c '^CREATE OR REPLACE \(FUNCTION\|PROCEDURE\)' "$TMP_FILE" || true)"
 if [[ "$COUNT" != "$EXPECTED_FUNCTION_COUNT" ]]; then
@@ -106,7 +112,7 @@ if command -v shasum >/dev/null 2>&1; then
 else
   SHA="$(sha256sum "$OUT_FILE" | awk '{print $1}')"
 fi
-printf 'canonical_runtime_functions_sha256=%s\n' "$SHA" >> "$GATE_FILE"
+printf 'canonical_runtime_functions_sha256=%s\n' "$SHA" >>"$GATE_FILE"
 
 echo "PASS: canonical staging runtime functions frozen read-only."
 echo "Function gate: $GATE"

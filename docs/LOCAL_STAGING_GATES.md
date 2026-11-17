@@ -97,7 +97,7 @@ named volume `siap-tempur-gate-node-modules` supaya **tidak** menimpa `node_modu
 
 ## 4. Cara kerja emulator
 
-Edge Function `ci-e2e-user`, `ci-e2e-cpns`, `ci-e2e-admin`, dan `ci-e2e-m4` diverifikasi dengan
+Edge Function `ci-e2e-user`, `ci-e2e-cpns`, dan `ci-e2e-admin` diverifikasi dengan
 GitHub OIDC sehingga tidak bisa dipanggil dari lokal. Emulator meniru endpoint dan aksi yang sama
 memakai service-role key:
 
@@ -106,7 +106,6 @@ memakai service-role key:
 | `ci-e2e-user` | `provision` (user + jalur TKA SMP aktif, atau role content), `cleanup` |
 | `ci-e2e-cpns` | `provision` (user + jalur CPNS SKD aktif + wallet 3 token), `cleanup` |
 | `ci-e2e-admin` | `provision` (user + role ADMIN), `cleanup` |
-| `ci-e2e-m4` | `set_enforcement`, `grant_pass`, `clear_pass`, `consume_mini`, `seed_order`, `assign_admin`, `clear_m4`, `snapshot` |
 
 Spec E2E memakai helper `tests/e2e/ci-helper.ts` untuk menentukan base URL:
 

@@ -6,16 +6,20 @@ import { practiceOverviewService } from '@/src/services/practice-overview.servic
 export const dynamic = 'force-dynamic'
 
 export const metadata = {
-    title: 'Mini Tryout SKD - SIAP TEMPUR',
-    description: 'Latihan mini tryout terfokus untuk TWK, TIU, dan TKP.',
+  title: 'Mini Tryout SKD - SIAP TEMPUR',
+  description: 'Latihan mini tryout terfokus untuk TWK, TIU, dan TKP.',
 }
 
 export default async function MiniTryoutPage() {
-    const supabase = await createV2Client()
-    const { data: { user } } = await supabase.auth.getUser()
+  const supabase = await createV2Client()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-    if (!user) redirect('/login')
+  if (!user) redirect('/login')
 
-    const { activeSessionsByType, quota } = await practiceOverviewService.getMiniTryoutPageData(user.id)
-    return <MiniTryoutClient activeSessionsByType={activeSessionsByType} quota={quota} />
+  const { activeSessionsByType, quota } = await practiceOverviewService.getMiniTryoutPageData(
+    user.id,
+  )
+  return <MiniTryoutClient activeSessionsByType={activeSessionsByType} quota={quota} />
 }

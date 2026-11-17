@@ -1,9 +1,8 @@
 -- Generated from canonical staging lpgrivowdcepcxradavu.
 -- Runtime public tables A-F only. Constraints/indexes/RLS/functions/grants are separate fragments.
 -- DO NOT apply to production before explicit final GO.
-
 CREATE TABLE public.articles (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   title text NOT NULL,
   slug text NOT NULL,
   excerpt text,
@@ -23,15 +22,15 @@ CREATE TABLE public.attempt_answer_options (
 );
 
 CREATE TABLE public.attempt_answers (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   attempt_question_id uuid NOT NULL,
   selected_option_id uuid,
   answer_value text,
   is_correct boolean,
-  score_awarded numeric(10,2) DEFAULT 0 NOT NULL,
+  score_awarded numeric(10, 2) DEFAULT 0 NOT NULL,
   answered_at timestamp with time zone,
   time_spent_seconds integer DEFAULT 0 NOT NULL,
-  is_flagged boolean DEFAULT false NOT NULL,
+  is_flagged boolean DEFAULT FALSE NOT NULL,
   created_at timestamp with time zone DEFAULT now() NOT NULL,
   updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -46,25 +45,25 @@ CREATE TABLE public.attempt_events (
 );
 
 CREATE TABLE public.attempt_questions (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   attempt_id uuid NOT NULL,
   question_id uuid NOT NULL,
   question_version integer NOT NULL,
   "position" integer NOT NULL,
   section_id uuid,
   question_snapshot jsonb NOT NULL,
-  max_score numeric(10,2) DEFAULT 0 NOT NULL,
+  max_score numeric(10, 2) DEFAULT 0 NOT NULL,
   created_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
 CREATE TABLE public.attempt_scores (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   attempt_id uuid NOT NULL,
   subject_id uuid,
-  raw_score numeric(12,2) NOT NULL,
-  normalized_score numeric(12,2),
-  percentage numeric(7,4),
-  passing_score numeric(12,2),
+  raw_score numeric(12, 2) NOT NULL,
+  normalized_score numeric(12, 2),
+  percentage numeric(7, 4),
+  passing_score numeric(12, 2),
   passed boolean,
   correct_count integer DEFAULT 0 NOT NULL,
   wrong_count integer DEFAULT 0 NOT NULL,
@@ -73,7 +72,7 @@ CREATE TABLE public.attempt_scores (
 );
 
 CREATE TABLE public.attempt_section_states (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   attempt_id uuid NOT NULL,
   section_id uuid NOT NULL,
   status text DEFAULT 'locked'::text NOT NULL,
@@ -99,7 +98,7 @@ CREATE TABLE public.audit_logs (
 );
 
 CREATE TABLE public.certificate_templates (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   name text NOT NULL,
   template_url text NOT NULL,
   config jsonb DEFAULT '{}'::jsonb NOT NULL,
@@ -107,7 +106,7 @@ CREATE TABLE public.certificate_templates (
 );
 
 CREATE TABLE public.certificates (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   user_id uuid NOT NULL,
   event_id uuid NOT NULL,
   certificate_number text NOT NULL,
@@ -124,7 +123,7 @@ CREATE TABLE public.class_members (
 );
 
 CREATE TABLE public.classes (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   organization_id uuid NOT NULL,
   name text NOT NULL,
   grade_level text,
@@ -134,7 +133,7 @@ CREATE TABLE public.classes (
 );
 
 CREATE TABLE public.content_reviews (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   entity_type text NOT NULL,
   entity_id uuid NOT NULL,
   reviewer_id uuid,
@@ -151,7 +150,7 @@ CREATE TABLE public.content_reviews (
 );
 
 CREATE TABLE public.entitlements (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   user_id uuid NOT NULL,
   feature_id uuid NOT NULL,
   source_type text NOT NULL,
@@ -176,7 +175,7 @@ CREATE TABLE public.event_rankings (
   event_id uuid NOT NULL,
   user_id uuid NOT NULL,
   attempt_id uuid NOT NULL,
-  score numeric(12,2) NOT NULL,
+  score numeric(12, 2) NOT NULL,
   duration_seconds integer NOT NULL,
   rank integer NOT NULL,
   rank_group text,
@@ -184,7 +183,7 @@ CREATE TABLE public.event_rankings (
 );
 
 CREATE TABLE public.event_registrations (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   event_id uuid NOT NULL,
   session_id uuid,
   user_id uuid NOT NULL,
@@ -195,7 +194,7 @@ CREATE TABLE public.event_registrations (
 );
 
 CREATE TABLE public.event_sessions (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   event_id uuid NOT NULL,
   exam_id uuid NOT NULL,
   name text NOT NULL,
@@ -206,7 +205,7 @@ CREATE TABLE public.event_sessions (
 );
 
 CREATE TABLE public.events (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   code text NOT NULL,
   title text NOT NULL,
   slug text NOT NULL,
@@ -223,7 +222,7 @@ CREATE TABLE public.events (
 );
 
 CREATE TABLE public.exam_attempts (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   exam_id uuid NOT NULL,
   user_id uuid NOT NULL,
   attempt_number integer DEFAULT 1 NOT NULL,
@@ -231,8 +230,8 @@ CREATE TABLE public.exam_attempts (
   started_at timestamp with time zone,
   submitted_at timestamp with time zone,
   duration_used_seconds integer,
-  total_score numeric(12,2),
-  percentage numeric(7,4),
+  total_score numeric(12, 2),
+  percentage numeric(7, 4),
   rank integer,
   passed boolean,
   last_question_position integer,
@@ -243,18 +242,18 @@ CREATE TABLE public.exam_attempts (
 );
 
 CREATE TABLE public.exam_blueprint_rules (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   blueprint_id uuid NOT NULL,
   subject_id uuid NOT NULL,
   knowledge_node_id uuid,
   difficulty text,
   question_count integer NOT NULL,
-  weight numeric(8,4),
+  weight numeric(8, 4),
   sort_order integer DEFAULT 0 NOT NULL
 );
 
 CREATE TABLE public.exam_blueprints (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   name text NOT NULL,
   program_id uuid NOT NULL,
   track_id uuid NOT NULL,
@@ -266,18 +265,18 @@ CREATE TABLE public.exam_blueprints (
 );
 
 CREATE TABLE public.exam_question_items (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   exam_id uuid NOT NULL,
   section_id uuid,
   question_id uuid NOT NULL,
   question_version integer NOT NULL,
   "position" integer NOT NULL,
-  score_weight numeric(10,2),
+  score_weight numeric(10, 2),
   created_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
 CREATE TABLE public.exam_rules (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   program_id uuid NOT NULL,
   track_id uuid NOT NULL,
   period_id uuid,
@@ -294,7 +293,7 @@ CREATE TABLE public.exam_rules (
 );
 
 CREATE TABLE public.exam_sections (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   exam_id uuid NOT NULL,
   subject_id uuid,
   title text NOT NULL,
@@ -308,22 +307,22 @@ CREATE TABLE public.exam_statistics (
   exam_id uuid NOT NULL,
   total_attempts bigint DEFAULT 0 NOT NULL,
   completed_attempts bigint DEFAULT 0 NOT NULL,
-  average_score numeric(12,2) DEFAULT 0 NOT NULL,
-  median_score numeric(12,2) DEFAULT 0 NOT NULL,
-  average_duration numeric(12,2) DEFAULT 0 NOT NULL,
-  pass_rate numeric(7,4) DEFAULT 0 NOT NULL,
+  average_score numeric(12, 2) DEFAULT 0 NOT NULL,
+  median_score numeric(12, 2) DEFAULT 0 NOT NULL,
+  average_duration numeric(12, 2) DEFAULT 0 NOT NULL,
+  pass_rate numeric(7, 4) DEFAULT 0 NOT NULL,
   updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
 CREATE TABLE public.exam_types (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   code text NOT NULL,
   name text NOT NULL,
   description text
 );
 
 CREATE TABLE public.exams (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   program_id uuid NOT NULL,
   track_id uuid NOT NULL,
   period_id uuid,
@@ -349,7 +348,7 @@ CREATE TABLE public.exams (
 );
 
 CREATE TABLE public.feature_flag_overrides (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   flag_id uuid NOT NULL,
   subject_type text NOT NULL,
   subject_id uuid NOT NULL,
@@ -357,16 +356,16 @@ CREATE TABLE public.feature_flag_overrides (
 );
 
 CREATE TABLE public.feature_flags (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   key text NOT NULL,
   name text NOT NULL,
-  enabled boolean DEFAULT false NOT NULL,
+  enabled boolean DEFAULT FALSE NOT NULL,
   rollout_percentage integer DEFAULT 0 NOT NULL,
   config jsonb DEFAULT '{}'::jsonb NOT NULL
 );
 
 CREATE TABLE public.features (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   code text NOT NULL,
   name text NOT NULL,
   description text

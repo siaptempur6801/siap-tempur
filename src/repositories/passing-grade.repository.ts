@@ -29,62 +29,64 @@ import type { Json } from '@/types/database.types'
  */
 
 const SUBJECT_CODES = ['TWK', 'TIU', 'TKP'] as const
-export type PassingGradeSubject = (typeof SUBJECT_CODES)[number]
+type PassingGradeSubject = (typeof SUBJECT_CODES)[number]
 
 export type PassingGradeMap = Partial<Record<PassingGradeSubject, number>>
 
 function readNumericConfig(config: Json, keys: string[]): number | null {
-    if (!config || Array.isArray(config) || typeof config !== 'object') return null
-    for (const key of keys) {
-        const value = config[key]
-        if (typeof value === 'number' && Number.isFinite(value)) return value
-        if (typeof value === 'string' && value.trim() !== '') {
-            const parsed = Number(value)
-            if (Number.isFinite(parsed)) return parsed
-        }
+  if (!config || Array.isArray(config) || typeof config !== 'object') return null
+  for (const key of keys) {
+    const value = config[key]
+    if (typeof value === 'number' && Number.isFinite(value)) return value
+    if (typeof value === 'string' && value.trim() !== '') {
+      const parsed = Number(value)
+      if (Number.isFinite(parsed)) return parsed
     }
-    return null
+  }
+  return null
 }
 
 type SectionRow = {
-    config: Json
-    subjects: { code: string | null } | { code: string | null }[] | null
+  config: Json
+  subjects: { code: string | null } | { code: string | null }[] | null
 }
 
 function subjectCodeOf(row: SectionRow): string | null {
-    const subject = Array.isArray(row.subjects) ? row.subjects[0] : row.subjects
-    const code = subject?.code
-    return typeof code === 'string' && code.trim() !== '' ? code.trim().toUpperCase() : null
+  const subject = Array.isArray(row.subjects) ? row.subjects[0] : row.subjects
+  const code = subject?.code
+  return typeof code === 'string' && code.trim() !== '' ? code.trim().toUpperCase() : null
 }
 
-export class PassingGradeRepository {
-    /**
-     * Ambang kelulusan per mata pelajaran untuk sebuah program+track.
-     *
-     * Deterministik: baris diurutkan berdasarkan `exam_id` lalu `sort_order`,
-     * sehingga nilai pertama yang ditemukan per mata pelajaran selalu sama untuk
-     * data yang sama (tidak bergantung urutan kembalian Postgres).
-     *
-     * Mengembalikan hanya mata pelajaran yang benar-benar dikonfigurasi; pemanggil
-     * yang melengkapi sisanya dengan nilai cadangan.
-     */
-    async getPassingGradesBySubject(input: {
-        programCode: string
-        trackCode: string
-    }): Promise<PassingGradeMap> {
-        const admin = await createV2AdminClient()
-        const { data, error } = await admin
-            .from('exam_sections')
-            .select('config, sort_order, exam_id, subjects!inner(code, tracks!inner(code, programs!inner(code)))')
-            .eq('subjects.tracks.programs.code', input.programCode)
-            .eq('subjects.tracks.code', input.trackCode)
-            .order('exam_id', { ascending: true })
-            .order('sort_order', { ascending: true })
+class PassingGradeRepository {
+  /**
+   * Ambang kelulusan per mata pelajaran untuk sebuah program+track.
+   *
+   * Deterministik: baris diurutkan berdasarkan `exam_id` lalu `sort_order`,
+   * sehingga nilai pertama yang ditemukan per mata pelajaran selalu sama untuk
+   * data yang sama (tidak bergantung urutan kembalian Postgres).
+   *
+   * Mengembalikan hanya mata pelajaran yang benar-benar dikonfigurasi; pemanggil
+   * yang melengkapi sisanya dengan nilai cadangan.
+   */
+  async getPassingGradesBySubject(input: {
+    programCode: string
+    trackCode: string
+  }): Promise<PassingGradeMap> {
+    const admin = await createV2AdminClient()
+    const { data, error } = await admin
+      .from('exam_sections')
+      .select(
+        'config, sort_order, exam_id, subjects!inner(code, tracks!inner(code, programs!inner(code)))',
+      )
+      .eq('subjects.tracks.programs.code', input.programCode)
+      .eq('subjects.tracks.code', input.trackCode)
+      .order('exam_id', { ascending: true })
+      .order('sort_order', { ascending: true })
 
-        if (error) throw error
+    if (error) throw error
 
-        return mapPassingGrades((data ?? []) as unknown as SectionRow[])
-    }
+    return mapPassingGrades((data ?? []) as unknown as SectionRow[])
+  }
 }
 
 /**
@@ -97,22 +99,21 @@ export class PassingGradeRepository {
  * daripada nilai yang berubah-ubah antar pemanggilan.
  */
 export function mapPassingGrades(rows: SectionRow[]): PassingGradeMap {
-    const grades: PassingGradeMap = {}
-    for (const raw of rows) {
-        const subjectCode = subjectCodeOf(raw)
-        if (!subjectCode || !SUBJECT_CODES.includes(subjectCode as PassingGradeSubject)) continue
-        const key = subjectCode as PassingGradeSubject
-        if (grades[key] !== undefined) continue
-        const passingScore = readNumericConfig(raw.config, [
-            'passing_score',
-            'passingScore',
-            'passing_grade',
-            'passingGrade',
-        ])
-        if (passingScore !== null) grades[key] = passingScore
-    }
-    return grades
+  const grades: PassingGradeMap = {}
+  for (const raw of rows) {
+    const subjectCode = subjectCodeOf(raw)
+    if (!subjectCode || !SUBJECT_CODES.includes(subjectCode as PassingGradeSubject)) continue
+    const key = subjectCode as PassingGradeSubject
+    if (grades[key] !== undefined) continue
+    const passingScore = readNumericConfig(raw.config, [
+      'passing_score',
+      'passingScore',
+      'passing_grade',
+      'passingGrade',
+    ])
+    if (passingScore !== null) grades[key] = passingScore
+  }
+  return grades
 }
 
 export const passingGradeRepository = new PassingGradeRepository()
-export { SUBJECT_CODES }

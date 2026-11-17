@@ -1,28 +1,28 @@
-"use client";
+'use client'
 
-import Link from "next/link";
-import { useMemo } from "react";
-import { usePathname } from "next/navigation";
-import { Menu } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { sectionIdFromHref, useActiveSection, type SectionNavItem } from "@/lib/use-active-section";
+import Link from 'next/link'
+import { useMemo } from 'react'
+import { usePathname } from 'next/navigation'
+import { Menu } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { sectionIdFromHref, useActiveSection, type SectionNavItem } from '@/lib/use-active-section'
 import InPageLink from '@/components/marketing/InPageLink'
 
 const navItems = [
-    { href: "/#produk", label: "Program" },
-    { href: "/#beda", label: "Kenapa berbeda" },
-    { href: "/#cara-belajar", label: "Cara kerja" },
-    { href: "/#fitur", label: "Fitur" },
-    { href: "/blog", label: "Artikel" },
-] as const;
+  { href: '/#produk', label: 'Program' },
+  { href: '/#beda', label: 'Kenapa berbeda' },
+  { href: '/#cara-belajar', label: 'Cara kerja' },
+  { href: '/#fitur', label: 'Fitur' },
+  { href: '/blog', label: 'Artikel' },
+] as const
 
 const programItems = [
-    { href: "/cpns", label: "CPNS" },
-    { href: "/tka", label: "TKA" },
-    { href: "/cpns/mini-tryout", label: "Mini Tryout" },
-    { href: "/cpns/full-tryout", label: "Full Tryout" },
-    { href: "/cpns/drilling-materi", label: "Drilling Materi" },
-] as const;
+  { href: '/cpns', label: 'CPNS' },
+  { href: '/tka', label: 'TKA' },
+  { href: '/cpns/mini-tryout', label: 'Mini Tryout' },
+  { href: '/cpns/full-tryout', label: 'Full Tryout' },
+  { href: '/cpns/drilling-materi', label: 'Drilling Materi' },
+] as const
 
 /**
  * Warna penanda untuk tautan LINTAS PROGRAM.
@@ -36,219 +36,250 @@ const programItems = [
  * hubungannya terbaca tanpa perlu dijelaskan.
  */
 function programSwitchTone(href: string): string | null {
-    if (href === '/cpns') return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
-    if (href === '/tka') return 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200';
-    return null;
+  if (href === '/cpns') return 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+  if (href === '/tka') return 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
+  return null
 }
 
 function NavLink({
-    href,
-    label,
-    active,
-    ariaCurrent = 'page',
-    compact = false,
+  href,
+  label,
+  active,
+  ariaCurrent = 'page',
+  compact = false,
 }: {
-    href: string;
-    label: string;
-    active?: boolean;
-    ariaCurrent?: 'page' | 'location';
-    /** Ukuran rapat (13px) untuk landing dengan banyak item, mengikuti landing CPNS. */
-    compact?: boolean;
+  href: string
+  label: string
+  active?: boolean
+  ariaCurrent?: 'page' | 'location'
+  /** Ukuran rapat (13px) untuk landing dengan banyak item, mengikuti landing CPNS. */
+  compact?: boolean
 }) {
-    const switchTone = programSwitchTone(href);
+  const switchTone = programSwitchTone(href)
 
-    return (
-        <InPageLink
-            href={href}
-            aria-current={active ? ariaCurrent : undefined}
-            className={cn(
-                "st-focus rounded-xl py-2 font-black",
-                compact ? "px-2.5 text-[13px]" : "px-3 text-sm",
-                // Tautan lintas program memakai warnanya sendiri; penanda section
-                // aktif tidak berlaku untuknya karena ia bukan bagian halaman ini.
-                switchTone ?? "text-gray-700 hover:bg-blue-50 hover:text-blue-700",
-                !switchTone && active && "bg-blue-50 text-blue-700"
-            )}
-        >
-            {label}
-        </InPageLink>
-    );
+  return (
+    <InPageLink
+      href={href}
+      aria-current={active ? ariaCurrent : undefined}
+      className={cn(
+        'st-focus rounded-xl py-2 font-black',
+        compact ? 'px-2.5 text-[13px]' : 'px-3 text-sm',
+        // Tautan lintas program memakai warnanya sendiri; penanda section
+        // aktif tidak berlaku untuknya karena ia bukan bagian halaman ini.
+        switchTone ?? 'text-gray-700 hover:bg-blue-50 hover:text-blue-700',
+        !switchTone && active && 'bg-blue-50 text-blue-700',
+      )}
+    >
+      {label}
+    </InPageLink>
+  )
 }
 
-type ProgramLabel = "CPNS" | "TKA";
+type ProgramLabel = 'CPNS' | 'TKA'
 
 export default function SeoNavbarClient({
-    isAuthenticated,
-    programLabel,
-    navItems: customNavItems,
-    compactNav = false,
+  isAuthenticated,
+  programLabel,
+  navItems: customNavItems,
+  compactNav = false,
 }: {
-    isAuthenticated: boolean;
-    programLabel?: ProgramLabel;
-    /** Item navigasi khusus halaman ini (mis. anchor section landing TKA). */
-    navItems?: readonly { href: string; label: string }[];
-    /** Nav lebih rapat (13px), dipakai landing TKA agar seragam dengan landing CPNS. */
-    compactNav?: boolean;
+  isAuthenticated: boolean
+  programLabel?: ProgramLabel
+  /** Item navigasi khusus halaman ini (mis. anchor section landing TKA). */
+  navItems?: readonly { href: string; label: string }[]
+  /** Nav lebih rapat (13px), dipakai landing TKA agar seragam dengan landing CPNS. */
+  compactNav?: boolean
 }) {
-    const pathname = usePathname();
-    const currentPath = pathname || "/";
-    const items = customNavItems && customNavItems.length > 0 ? customNavItems : navItems;
-    // Tujuan untuk pengguna yang sudah login mengikuti program halaman ini:
-    // `/tka` akan mengarahkan ke jenjang TKA aktif, sehingga tidak dilempar ke dashboard CPNS.
-    const authedHref = programLabel === "TKA" ? "/tka" : "/cpns/dashboard";
-    const authHref = isAuthenticated ? authedHref : `/login?returnTo=${encodeURIComponent(currentPath)}`;
-    const authLabel = isAuthenticated ? "Dashboard" : "Masuk";
-    const primaryHref = isAuthenticated ? authedHref : `/register?returnTo=${encodeURIComponent(currentPath)}`;
-    const primaryLabel = isAuthenticated ? "Lanjut belajar" : "Mulai belajar gratis";
+  const pathname = usePathname()
+  const currentPath = pathname || '/'
+  const items = customNavItems && customNavItems.length > 0 ? customNavItems : navItems
+  // Tujuan untuk pengguna yang sudah login mengikuti program halaman ini:
+  // `/tka` akan mengarahkan ke jenjang TKA aktif, sehingga tidak dilempar ke dashboard CPNS.
+  const authedHref = programLabel === 'TKA' ? '/tka' : '/cpns/dashboard'
+  const authHref = isAuthenticated
+    ? authedHref
+    : `/login?returnTo=${encodeURIComponent(currentPath)}`
+  const authLabel = isAuthenticated ? 'Dashboard' : 'Masuk'
+  const primaryHref = isAuthenticated
+    ? authedHref
+    : `/register?returnTo=${encodeURIComponent(currentPath)}`
+  const primaryLabel = isAuthenticated ? 'Lanjut belajar' : 'Mulai belajar gratis'
 
-    /**
-     * Pada landing TKA, pengguna yang sudah login cukup melihat SATU tombol:
-     * "Dashboard".
-     *
-     * Alasannya bukan sekadar merapikan: untuk TKA, `authHref` dan `primaryHref`
-     * menunjuk ke tujuan yang PERSIS SAMA (`/tka`, yang lalu mengalihkan ke jenjang
-     * aktif). Dua tombol berbeda label dengan tujuan identik membuat pengguna
-     * menebak-nebak apakah keduanya memang berbeda.
-     *
-     * Dibatasi pada TKA sesuai permintaan; landing CPNS tidak diubah.
-     */
-    const showPrimaryCta = !(isAuthenticated && programLabel === "TKA");
+  /**
+   * Pada landing TKA, pengguna yang sudah login cukup melihat SATU tombol:
+   * "Dashboard".
+   *
+   * Alasannya bukan sekadar merapikan: untuk TKA, `authHref` dan `primaryHref`
+   * menunjuk ke tujuan yang PERSIS SAMA (`/tka`, yang lalu mengalihkan ke jenjang
+   * aktif). Dua tombol berbeda label dengan tujuan identik membuat pengguna
+   * menebak-nebak apakah keduanya memang berbeda.
+   *
+   * Dibatasi pada TKA sesuai permintaan; landing CPNS tidak diubah.
+   */
+  const showPrimaryCta = !(isAuthenticated && programLabel === 'TKA')
 
-    /**
-     * Ketika tombol utama disembunyikan, tombol "Dashboard" MENGAMBIL ALIH gayanya.
-     *
-     * Menyembunyikan tombol biru tanpa memindahkan gayanya akan meninggalkan
-     * halaman tanpa CTA yang menonjol: yang tersisa hanya tautan teks abu-abu,
-     * padahal justru "Dashboard" satu-satunya jalan masuk di halaman ini. Kelasnya
-     * disalin persis dari tombol utama supaya tingginya, paddingnya, dan warnanya
-     * identik — bukan disusun ulang dari nol.
-     */
-    const authAsPrimary = !showPrimaryCta;
+  /**
+   * Ketika tombol utama disembunyikan, tombol "Dashboard" MENGAMBIL ALIH gayanya.
+   *
+   * Menyembunyikan tombol biru tanpa memindahkan gayanya akan meninggalkan
+   * halaman tanpa CTA yang menonjol: yang tersisa hanya tautan teks abu-abu,
+   * padahal justru "Dashboard" satu-satunya jalan masuk di halaman ini. Kelasnya
+   * disalin persis dari tombol utama supaya tingginya, paddingnya, dan warnanya
+   * identik — bukan disusun ulang dari nol.
+   */
+  const authAsPrimary = !showPrimaryCta
 
-    // Penanda section aktif hanya berlaku untuk tautan anchor (`#...`) di halaman ini.
-    const sectionItems: SectionNavItem[] = useMemo(
-        () => items
-            .map((item) => ({ item, id: sectionIdFromHref(item.href) }))
-            .filter((entry): entry is { item: { href: string; label: string }; id: string } => entry.id !== null)
-            .map((entry) => ({ id: entry.id, label: entry.item.label })),
-        [items],
-    );
-    const { activeId } = useActiveSection(sectionItems);
+  // Penanda section aktif hanya berlaku untuk tautan anchor (`#...`) di halaman ini.
+  const sectionItems: SectionNavItem[] = useMemo(
+    () =>
+      items
+        .map((item) => ({ item, id: sectionIdFromHref(item.href) }))
+        .filter(
+          (entry): entry is { item: { href: string; label: string }; id: string } =>
+            entry.id !== null,
+        )
+        .map((entry) => ({ id: entry.id, label: entry.item.label })),
+    [items],
+  )
+  const { activeId } = useActiveSection(sectionItems)
 
-    return (
-        <header className="st-product fixed left-0 right-0 top-0 z-50 !bg-transparent px-4 py-3 md:px-8 md:py-4">
-            <div className="relative mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 rounded-2xl border-2 border-[var(--st-ink)] bg-white/90 px-4 st-shadow-sm backdrop-blur-md supports-[backdrop-filter]:bg-white/80 md:px-5">
-                <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-                    <Link href="/" className="st-focus shrink-0 font-script text-2xl font-black tracking-tight md:text-3xl">
-                        Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.
-                    </Link>
-                    {programLabel ? (
-                        <span
-                            className={cn(
-                                "inline-flex shrink-0 rounded-full border-2 border-[var(--st-ink)] px-2 py-1 text-[10px] font-black uppercase tracking-[0.1em]",
-                                programLabel === "TKA"
-                                    ? "bg-emerald-100 text-emerald-800"
-                                    : "bg-blue-100 text-blue-800",
-                            )}
-                        >
-                            {programLabel}
-                        </span>
-                    ) : null}
-                </div>
+  return (
+    <header className="st-product fixed left-0 right-0 top-0 z-50 !bg-transparent px-4 py-3 md:px-8 md:py-4">
+      <div className="relative mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 rounded-2xl border-2 border-[var(--st-ink)] bg-white/90 px-4 st-shadow-sm backdrop-blur-md supports-[backdrop-filter]:bg-white/80 md:px-5">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          <Link
+            href="/"
+            className="st-focus shrink-0 font-script text-2xl font-black tracking-tight md:text-3xl"
+          >
+            Siap
+            <span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">
+              Tempur
+            </span>
+            .
+          </Link>
+          {programLabel ? (
+            <span
+              className={cn(
+                'inline-flex shrink-0 rounded-full border-2 border-[var(--st-ink)] px-2 py-1 text-[10px] font-black uppercase tracking-[0.1em]',
+                programLabel === 'TKA'
+                  ? 'bg-emerald-100 text-emerald-800'
+                  : 'bg-blue-100 text-blue-800',
+              )}
+            >
+              {programLabel}
+            </span>
+          ) : null}
+        </div>
 
-                <nav
-                    className={cn('hidden items-center lg:flex', compactNav ? 'gap-0.5 text-[13px]' : 'gap-1')}
-                    aria-label="Navigasi utama"
-                >
-                    {items.map((item) => {
-                        const targetId = sectionIdFromHref(item.href);
-                        const active = targetId !== null ? targetId === activeId : item.href === currentPath;
-                        return (
-                            <NavLink
-                                key={item.href}
-                                href={item.href}
-                                label={item.label}
-                                active={active}
-                                ariaCurrent={targetId !== null ? 'location' : 'page'}
-                                compact={compactNav}
-                            />
-                        );
-                    })}
-                </nav>
+        <nav
+          className={cn(
+            'hidden items-center lg:flex',
+            compactNav ? 'gap-0.5 text-[13px]' : 'gap-1',
+          )}
+          aria-label="Navigasi utama"
+        >
+          {items.map((item) => {
+            const targetId = sectionIdFromHref(item.href)
+            const active = targetId !== null ? targetId === activeId : item.href === currentPath
+            return (
+              <NavLink
+                key={item.href}
+                href={item.href}
+                label={item.label}
+                active={active}
+                ariaCurrent={targetId !== null ? 'location' : 'page'}
+                compact={compactNav}
+              />
+            )
+          })}
+        </nav>
 
-                <div className="flex items-center gap-2">
-                    <Link
-                        href={authHref}
-                        className={cn(
-                            "hidden min-h-11 items-center sm:inline-flex",
-                            authAsPrimary
-                                ? "st-button justify-center bg-blue-600 px-4 py-2 text-sm font-black text-white"
-                                : "st-focus rounded-xl px-3 text-sm font-black text-gray-700 hover:bg-gray-100",
-                        )}
+        <div className="flex items-center gap-2">
+          <Link
+            href={authHref}
+            className={cn(
+              'hidden min-h-11 items-center sm:inline-flex',
+              authAsPrimary
+                ? 'st-button justify-center bg-blue-600 px-4 py-2 text-sm font-black text-white'
+                : 'st-focus rounded-xl px-3 text-sm font-black text-gray-700 hover:bg-gray-100',
+            )}
+          >
+            {authLabel}
+          </Link>
+
+          {showPrimaryCta ? (
+            <Link
+              href={primaryHref}
+              className="st-button hidden min-h-11 items-center justify-center bg-blue-600 px-4 py-2 text-sm font-black text-white sm:inline-flex"
+            >
+              {primaryLabel}
+            </Link>
+          ) : null}
+
+          <details className="group relative lg:hidden">
+            <summary
+              className="st-focus flex h-11 w-11 cursor-pointer list-none items-center justify-center rounded-xl border-2 border-[var(--st-ink)] bg-white marker:hidden"
+              aria-label="Buka navigasi"
+            >
+              <Menu size={20} />
+            </summary>
+            <div className="absolute right-0 top-full mt-3 w-[min(21rem,calc(100vw-2rem))] rounded-2xl border-2 border-[var(--st-ink)] bg-white p-3 st-shadow-md">
+              <nav className="grid gap-1 text-sm font-black" aria-label="Navigasi mobile">
+                {items.map((item) => {
+                  const targetId = sectionIdFromHref(item.href)
+                  const active = targetId !== null && targetId === activeId
+                  return (
+                    <InPageLink
+                      key={item.href}
+                      href={item.href}
+                      aria-current={active ? 'location' : undefined}
+                      className={cn(
+                        'st-focus rounded-xl px-3 py-3',
+                        programSwitchTone(item.href) ??
+                          (active ? 'bg-blue-50 font-black text-blue-700' : 'hover:bg-blue-50'),
+                      )}
                     >
-                        {authLabel}
-                    </Link>
-
-                    {showPrimaryCta ? (
-                        <Link href={primaryHref} className="st-button hidden min-h-11 items-center justify-center bg-blue-600 px-4 py-2 text-sm font-black text-white sm:inline-flex">
-                            {primaryLabel}
-                        </Link>
-                    ) : null}
-
-                    <details className="group relative lg:hidden">
-                        <summary className="st-focus flex h-11 w-11 cursor-pointer list-none items-center justify-center rounded-xl border-2 border-[var(--st-ink)] bg-white marker:hidden" aria-label="Buka navigasi">
-                            <Menu size={20} />
-                        </summary>
-                        <div className="absolute right-0 top-full mt-3 w-[min(21rem,calc(100vw-2rem))] rounded-2xl border-2 border-[var(--st-ink)] bg-white p-3 st-shadow-md">
-                            <nav className="grid gap-1 text-sm font-black" aria-label="Navigasi mobile">
-                                {items.map((item) => {
-                                    const targetId = sectionIdFromHref(item.href);
-                                    const active = targetId !== null && targetId === activeId;
-                                    return (
-                                        <InPageLink
-                                            key={item.href}
-                                            href={item.href}
-                                            aria-current={active ? 'location' : undefined}
-                                            className={cn(
-                                                'st-focus rounded-xl px-3 py-3',
-                                                programSwitchTone(item.href)
-                                                    ?? (active ? 'bg-blue-50 font-black text-blue-700' : 'hover:bg-blue-50'),
-                                            )}
-                                        >
-                                            {item.label}
-                                        </InPageLink>
-                                    );
-                                })}
-                            </nav>
-                            <div className="mt-2 grid gap-1 border-t border-gray-200 pt-3 text-sm font-black">
-                                {programItems.map((item) => (
-                                    <Link key={item.href} href={item.href} className="st-focus rounded-xl px-3 py-3 text-gray-700 hover:bg-amber-50 hover:text-blue-700">
-                                        {item.label}
-                                    </Link>
-                                ))}
-                            </div>
-                            <div className="mt-2 grid gap-2 border-t border-gray-200 pt-3 sm:hidden">
-                                <Link
-                                    href={authHref}
-                                    className={cn(
-                                        "flex min-h-11 items-center justify-center",
-                                        authAsPrimary
-                                            ? "st-button bg-blue-600 px-4 py-2 text-sm font-black text-white"
-                                            : "st-focus rounded-xl font-black hover:bg-gray-100",
-                                    )}
-                                >
-                                    {authLabel}
-                                </Link>
-                                {showPrimaryCta ? (
-                                    <Link href={primaryHref} className="st-button flex min-h-11 items-center justify-center bg-blue-600 px-4 py-2 text-sm font-black text-white">
-                                        {primaryLabel}
-                                    </Link>
-                                ) : null}
-                            </div>
-                        </div>
-                    </details>
-                </div>
+                      {item.label}
+                    </InPageLink>
+                  )
+                })}
+              </nav>
+              <div className="mt-2 grid gap-1 border-t border-gray-200 pt-3 text-sm font-black">
+                {programItems.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="st-focus rounded-xl px-3 py-3 text-gray-700 hover:bg-amber-50 hover:text-blue-700"
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+              <div className="mt-2 grid gap-2 border-t border-gray-200 pt-3 sm:hidden">
+                <Link
+                  href={authHref}
+                  className={cn(
+                    'flex min-h-11 items-center justify-center',
+                    authAsPrimary
+                      ? 'st-button bg-blue-600 px-4 py-2 text-sm font-black text-white'
+                      : 'st-focus rounded-xl font-black hover:bg-gray-100',
+                  )}
+                >
+                  {authLabel}
+                </Link>
+                {showPrimaryCta ? (
+                  <Link
+                    href={primaryHref}
+                    className="st-button flex min-h-11 items-center justify-center bg-blue-600 px-4 py-2 text-sm font-black text-white"
+                  >
+                    {primaryLabel}
+                  </Link>
+                ) : null}
+              </div>
             </div>
-        </header>
-    );
+          </details>
+        </div>
+      </div>
+    </header>
+  )
 }

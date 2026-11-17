@@ -1,7 +1,6 @@
 -- Expand bot name pool and remove visibly numbered bot names.
-
-insert into public.event_bot_names (full_name)
-values
+INSERT INTO public.event_bot_names (full_name)
+VALUES
   ('Aditya Ramadhan'),
   ('Aldi Prakoso'),
   ('Ananda Putra'),
@@ -82,7 +81,8 @@ values
   ('Hilmi Fauzan'),
   ('Irene Natalia'),
   ('Jefri Pradana')
-on conflict (full_name) do nothing;
+ON CONFLICT (full_name)
+  DO NOTHING;
 
-delete from public.tryout_event_bot_entries
-where display_name ~ '\s[0-9]+$';
+DELETE FROM public.tryout_event_bot_entries
+WHERE display_name ~ '\s[0-9]+$';

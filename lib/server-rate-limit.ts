@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { headers } from 'next/headers'
 import { checkRateLimit } from '@/lib/api-utils'
 import { getClientIp } from '@/lib/request-ip'
+import { env } from '@/lib/env'
 
 /**
  * Helper for applying rate limiting inside Next.js Server Actions.
@@ -14,13 +15,13 @@ import { getClientIp } from '@/lib/request-ip'
  * @returns boolean true if rate limited, false if allowed
  */
 export async function isServerActionRateLimited(
-    userId: string,
-    actionName: string,
-    limit: number,
-    windowMs: number
+  userId: string,
+  actionName: string,
+  limit: number,
+  windowMs: number,
 ): Promise<boolean> {
-    const identifier = `action_${actionName}_${userId}`
-    return checkRateLimit(identifier, limit, windowMs)
+  const identifier = `action_${actionName}_${userId}`
+  return checkRateLimit(identifier, limit, windowMs)
 }
 
 type RateWindow = { limit: number; windowMs: number }
@@ -40,34 +41,35 @@ type AuthRateLimitAction = 'login' | 'signup' | 'forgotPassword' | 'resendVerifi
  * (`supabase/config.toml`: sign_in_sign_ups = 30 / 5 menit / IP) — nilai di sini
  * lebih ketat sehingga Supabase tetap menjadi lapis terluar.
  */
-export const AUTH_RATE_LIMITS: Record<AuthRateLimitAction, { ip: RateWindow; email?: RateWindow }> = {
+export const AUTH_RATE_LIMITS: Record<AuthRateLimitAction, { ip: RateWindow; email?: RateWindow }> =
+  {
     login: { ip: { limit: 10, windowMs: 5 * 60_000 } },
     signup: { ip: { limit: 5, windowMs: 15 * 60_000 } },
     forgotPassword: {
-        ip: { limit: 10, windowMs: 15 * 60_000 },
-        email: { limit: 3, windowMs: 15 * 60_000 },
+      ip: { limit: 10, windowMs: 15 * 60_000 },
+      email: { limit: 3, windowMs: 15 * 60_000 },
     },
     resendVerification: {
-        ip: { limit: 10, windowMs: 15 * 60_000 },
-        email: { limit: 3, windowMs: 15 * 60_000 },
+      ip: { limit: 10, windowMs: 15 * 60_000 },
+      email: { limit: 3, windowMs: 15 * 60_000 },
     },
-}
+  }
 
 /**
  * Kunci rate limit yang memuat data pribadi (email) di-hash supaya Redis tidak
  * menyimpan PII dan key-nya tidak bisa dibaca balik.
  */
 export function hashRateLimitSubject(value: string): string {
-    return createHash('sha256').update(value.trim().toLowerCase()).digest('hex').slice(0, 32)
+  return createHash('sha256').update(value.trim().toLowerCase()).digest('hex').slice(0, 32)
 }
 
 /** IP request saat ini. `headers()` hanya tersedia di dalam scope request. */
-export async function getRequestIp(): Promise<string> {
-    try {
-        return getClientIp(await headers())
-    } catch {
-        return '0.0.0.0'
-    }
+async function getRequestIp(): Promise<string> {
+  try {
+    return getClientIp(await headers())
+  } catch {
+    return '0.0.0.0'
+  }
 }
 
 /**
@@ -77,7 +79,7 @@ export async function getRequestIp(): Promise<string> {
  * produksi, dan default tanpa env tetap memakai limit ketat di atas.
  */
 export function isAuthRateLimitBypassed() {
-    return process.env.E2E_DISABLE_AUTH_RATE_LIMIT === '1'
+  return env.appEnvironment() !== 'production' && process.env.E2E_DISABLE_AUTH_RATE_LIMIT === '1'
 }
 
 /**
@@ -87,24 +89,30 @@ export function isAuthRateLimitBypassed() {
  * @returns true bila permintaan harus ditolak
  */
 export async function isAuthActionRateLimited(
-    action: AuthRateLimitAction,
-    email?: string | null,
+  action: AuthRateLimitAction,
+  email?: string | null,
 ): Promise<boolean> {
-    if (isAuthRateLimitBypassed()) return false
+  if (isAuthRateLimitBypassed()) return false
 
-    const policy = AUTH_RATE_LIMITS[action]
-    const ip = await getRequestIp()
+  const policy = AUTH_RATE_LIMITS[action]
+  const ip = await getRequestIp()
 
-    if (await checkRateLimit(`auth_ip_${action}_${ip}`, policy.ip.limit, policy.ip.windowMs)) {
-        return true
+  if (await checkRateLimit(`auth_ip_${action}_${ip}`, policy.ip.limit, policy.ip.windowMs)) {
+    return true
+  }
+
+  if (policy.email && email) {
+    const subject = hashRateLimitSubject(email)
+    if (
+      await checkRateLimit(
+        `auth_email_${action}_${subject}`,
+        policy.email.limit,
+        policy.email.windowMs,
+      )
+    ) {
+      return true
     }
+  }
 
-    if (policy.email && email) {
-        const subject = hashRateLimitSubject(email)
-        if (await checkRateLimit(`auth_email_${action}_${subject}`, policy.email.limit, policy.email.windowMs)) {
-            return true
-        }
-    }
-
-    return false
+  return false
 }

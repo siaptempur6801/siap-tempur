@@ -84,7 +84,11 @@ select jsonb_agg(to_jsonb(ordered) order by nspname,proname,args)::text from ord
 
 
 def query_json_read_only(url: str) -> list[dict[str, Any]]:
-    sql = "BEGIN TRANSACTION READ ONLY; SET LOCAL statement_timeout='120s'; " + FUNCTION_JSON_SQL + " ROLLBACK;"
+    sql = (
+        "BEGIN TRANSACTION READ ONLY; SET LOCAL statement_timeout='120s'; "
+        + FUNCTION_JSON_SQL
+        + " ROLLBACK;"
+    )
     proc = subprocess.run(
         ["psql", url, "-X", "-v", "ON_ERROR_STOP=1", "-qAt", "-c", sql],
         text=True,
@@ -111,11 +115,15 @@ def key(row: dict[str, Any]) -> tuple[str, str, str]:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Compare staging vs local runtime functions read-only")
+    parser = argparse.ArgumentParser(
+        description="Compare staging vs local runtime functions read-only"
+    )
     parser.add_argument("--staging-db-url", default=os.environ.get("STAGING_DB_URL", ""))
     parser.add_argument(
         "--local-db-url",
-        default=os.environ.get("LOCAL_DB_URL", "postgresql://postgres:postgres@127.0.0.1:54322/postgres"),
+        default=os.environ.get(
+            "LOCAL_DB_URL", "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+        ),
     )
     args = parser.parse_args()
     if not args.staging_db_url:
@@ -148,8 +156,7 @@ def main() -> None:
     for k in sorted(set(staging) & set(local)):
         s, l = staging[k], local[k]
         fields = sorted(
-            field for field in (set(s) | set(l)) - ignored
-            if s.get(field) != l.get(field)
+            field for field in (set(s) | set(l)) - ignored if s.get(field) != l.get(field)
         )
         if fields:
             mismatches.append((k, fields))
@@ -159,7 +166,9 @@ def main() -> None:
         for k, fields in mismatches:
             print(f"\n  {k[0]}.{k[1]}({k[2]})")
             for field in fields:
-                print(f"    {field}: staging={staging[k].get(field)!r} local={local[k].get(field)!r}")
+                print(
+                    f"    {field}: staging={staging[k].get(field)!r} local={local[k].get(field)!r}"
+                )
     else:
         print("\nPASS: all per-function semantic/exact diagnostic fields match.")
 

@@ -52,16 +52,23 @@ function addOriginWithWwwVariant(origins: Set<string>, origin: string | null) {
 function isLoopbackHost(host: string) {
   try {
     const hostname = new URL(`http://${host}`).hostname
-    return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]' || hostname === '::1'
+    return (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname === '[::1]' ||
+      hostname === '::1'
+    )
   } catch {
     return false
   }
 }
 
 function getRequestHost(headersList: HeaderReader) {
-  return headersList.get('x-forwarded-host')?.split(',')[0]?.trim()
-    || headersList.get('host')?.split(',')[0]?.trim()
-    || null
+  return (
+    headersList.get('x-forwarded-host')?.split(',')[0]?.trim() ||
+    headersList.get('host')?.split(',')[0]?.trim() ||
+    null
+  )
 }
 
 function getRequestOrigin(headersList: HeaderReader): string | null {
@@ -69,14 +76,19 @@ function getRequestOrigin(headersList: HeaderReader): string | null {
   if (!host) return null
 
   const forwardedProto = headersList.get('x-forwarded-proto')?.split(',')[0]?.trim()
-  const protocol = forwardedProto || (isLoopbackHost(host) ? 'http' : process.env.NODE_ENV === 'production' ? 'https' : 'http')
+  const protocol =
+    forwardedProto ||
+    (isLoopbackHost(host) ? 'http' : process.env.NODE_ENV === 'production' ? 'https' : 'http')
 
   return normalizeOrigin(`${protocol}://${host}`)
 }
 
 function addVercelOrigin(origins: Set<string>, value: string | undefined) {
   if (!value) return
-  addOriginWithWwwVariant(origins, normalizeOrigin(value.startsWith('http') ? value : `https://${value}`))
+  addOriginWithWwwVariant(
+    origins,
+    normalizeOrigin(value.startsWith('http') ? value : `https://${value}`),
+  )
 }
 
 function getAllowedOrigins(headersList: HeaderReader): Set<string> {
@@ -133,11 +145,11 @@ export async function validateCsrf(): Promise<void> {
   throw new CsrfError('Invalid origin')
 }
 
-export class CsrfError extends Error {
+class CsrfError extends Error {
   constructor(message: string) {
     super(message)
     this.name = 'CsrfError'
   }
 }
 
-export { CSRF_COOKIE, CSRF_HEADER }
+export { CSRF_COOKIE }

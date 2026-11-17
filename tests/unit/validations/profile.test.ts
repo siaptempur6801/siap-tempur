@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { passwordChangeSchema, passwordUpdateSchema, profileInfoSchema } from '@/lib/validations/profile'
+import {
+  passwordChangeSchema,
+  passwordUpdateSchema,
+  profileInfoSchema,
+} from '@/lib/validations/profile'
 
 describe('Profile validations', () => {
   it('rejects overly long profile fields', () => {
@@ -41,8 +45,18 @@ describe('Profile validations', () => {
   })
 
   it('requires the current password and a different strong new password', () => {
-    expect(passwordChangeSchema.safeParse({ currentPassword: '', newPassword: 'Password123' }).success).toBe(false)
-    expect(passwordChangeSchema.safeParse({ currentPassword: 'Password123', newPassword: 'Password123' }).success).toBe(false)
-    expect(passwordChangeSchema.safeParse({ currentPassword: 'Password123', newPassword: 'NewPassword456' }).success).toBe(true)
+    expect(
+      passwordChangeSchema.safeParse({ currentPassword: '', newPassword: 'Password123' }).success,
+    ).toBe(false)
+    expect(
+      passwordChangeSchema.safeParse({ currentPassword: 'Password123', newPassword: 'Password123' })
+        .success,
+    ).toBe(false)
+    expect(
+      passwordChangeSchema.safeParse({
+        currentPassword: 'Password123',
+        newPassword: 'NewPassword456',
+      }).success,
+    ).toBe(true)
   })
 })

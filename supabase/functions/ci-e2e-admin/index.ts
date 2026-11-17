@@ -3,7 +3,8 @@ import { createClient } from 'npm:@supabase/supabase-js@2.103.2'
 const EXPECTED_ISSUER = 'https://token.actions.githubusercontent.com'
 const EXPECTED_AUDIENCE = 'siap-tempur-staging-e2e'
 const EXPECTED_REPOSITORY = '8shagrid/siap-tempur'
-const EXPECTED_WORKFLOW_PREFIX = '8shagrid/siap-tempur/.github/workflows/admin-workspace-staging-e2e.yml@'
+const EXPECTED_WORKFLOW_PREFIX =
+  '8shagrid/siap-tempur/.github/workflows/admin-workspace-staging-e2e.yml@'
 const GITHUB_JWKS_URL = 'https://token.actions.githubusercontent.com/.well-known/jwks'
 const CI_ADMIN_EMAIL = /^ci-admin-[a-zA-Z0-9-]{1,96}@example\.invalid$/
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -72,19 +73,26 @@ async function verifyGithubOidc(token: string): Promise<Claims> {
   if (parts.length !== 3) throw new Error('OIDC_FORMAT_INVALID')
 
   const header = decodeJson<Record<string, unknown>>(parts[0])
-  if (header.alg !== 'RS256' || typeof header.kid !== 'string') throw new Error('OIDC_HEADER_INVALID')
+  if (header.alg !== 'RS256' || typeof header.kid !== 'string')
+    throw new Error('OIDC_HEADER_INVALID')
 
   const jwksResponse = await fetch(GITHUB_JWKS_URL, { cache: 'no-store' })
   if (!jwksResponse.ok) throw new Error('OIDC_JWKS_UNAVAILABLE')
-  const jwks = await jwksResponse.json() as { keys?: Array<JsonWebKey & { kid?: string }> }
+  const jwks = (await jwksResponse.json()) as { keys?: Array<JsonWebKey & { kid?: string }> }
   const jwk = jwks.keys?.find((candidate) => candidate.kid === header.kid)
   if (!jwk) throw new Error('OIDC_SIGNING_KEY_NOT_FOUND')
 
   const publicKey = await crypto.subtle.importKey(
-    'jwk', jwk, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify'],
+    'jwk',
+    jwk,
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false,
+    ['verify'],
   )
   const validSignature = await crypto.subtle.verify(
-    'RSASSA-PKCS1-v1_5', publicKey, base64UrlBytes(parts[2]),
+    'RSASSA-PKCS1-v1_5',
+    publicKey,
+    base64UrlBytes(parts[2]),
     new TextEncoder().encode(`${parts[0]}.${parts[1]}`),
   )
   if (!validSignature) throw new Error('OIDC_SIGNATURE_INVALID')
@@ -97,9 +105,12 @@ async function verifyGithubOidc(token: string): Promise<Claims> {
   if (typeof claims.exp !== 'number' || claims.exp < now - 30) throw new Error('OIDC_EXPIRED')
   if (typeof claims.nbf === 'number' && claims.nbf > now + 30) throw new Error('OIDC_NOT_YET_VALID')
   if (claims.repository !== EXPECTED_REPOSITORY) throw new Error('OIDC_REPOSITORY_INVALID')
-  if (!claims.sub?.startsWith(`repo:${EXPECTED_REPOSITORY}:`)) throw new Error('OIDC_SUBJECT_INVALID')
-  if (!['workflow_dispatch', 'pull_request'].includes(String(claims.event_name ?? ''))) throw new Error('OIDC_EVENT_INVALID')
-  if (!claims.workflow_ref?.startsWith(EXPECTED_WORKFLOW_PREFIX)) throw new Error('OIDC_WORKFLOW_INVALID')
+  if (!claims.sub?.startsWith(`repo:${EXPECTED_REPOSITORY}:`))
+    throw new Error('OIDC_SUBJECT_INVALID')
+  if (!['workflow_dispatch', 'pull_request'].includes(String(claims.event_name ?? '')))
+    throw new Error('OIDC_EVENT_INVALID')
+  if (!claims.workflow_ref?.startsWith(EXPECTED_WORKFLOW_PREFIX))
+    throw new Error('OIDC_WORKFLOW_INVALID')
   return claims
 }
 
@@ -129,7 +140,8 @@ async function provision(body: Body) {
   const password = body.password ?? ''
   const runId = body.runId?.trim() ?? ''
   if (!CI_ADMIN_EMAIL.test(email)) return json({ error: 'CI_ADMIN_EMAIL_INVALID' }, 400)
-  if (password.length < 20 || password.length > 160) return json({ error: 'CI_ADMIN_PASSWORD_INVALID' }, 400)
+  if (password.length < 20 || password.length > 160)
+    return json({ error: 'CI_ADMIN_PASSWORD_INVALID' }, 400)
   if (!/^[a-zA-Z0-9._-]{1,128}$/.test(runId)) return json({ error: 'CI_RUN_ID_INVALID' }, 400)
 
   const admin = adminClient()
@@ -148,7 +160,7 @@ async function provision(body: Body) {
 
   const userId = created.user.id
   try {
-    const requestedRole = (body.role?.trim().toUpperCase() || 'ADMIN')
+    const requestedRole = body.role?.trim().toUpperCase() || 'ADMIN'
     if (!(ALLOWED_ROLES as readonly string[]).includes(requestedRole)) {
       throw new Error('CI_ADMIN_ROLE_NOT_ALLOWED')
     }
@@ -179,16 +191,21 @@ async function cleanup(body: Body) {
   const admin = adminClient()
   const { data, error: getError } = await admin.auth.admin.getUserById(userId)
   if (getError) {
-    if (String(getError.message).toLowerCase().includes('not found')) return json({ ok: true, alreadyDeleted: true })
+    if (String(getError.message).toLowerCase().includes('not found'))
+      return json({ ok: true, alreadyDeleted: true })
     throw getError
   }
 
   const user = data.user
   const marked = user?.user_metadata?.ci_e2e === true && user?.user_metadata?.ci_kind === 'admin'
   const email = user?.email ?? ''
-  if (!marked || !CI_ADMIN_EMAIL.test(email)) return json({ error: 'CI_ADMIN_DELETE_FORBIDDEN' }, 403)
+  if (!marked || !CI_ADMIN_EMAIL.test(email))
+    return json({ error: 'CI_ADMIN_DELETE_FORBIDDEN' }, 403)
 
-  const { error: auditActorError } = await admin.from('audit_logs').delete().eq('actor_user_id', userId)
+  const { error: auditActorError } = await admin
+    .from('audit_logs')
+    .delete()
+    .eq('actor_user_id', userId)
   if (auditActorError) throw auditActorError
 
   const { error: deleteError } = await admin.auth.admin.deleteUser(userId)
@@ -204,7 +221,7 @@ Deno.serve(async (req) => {
     if (!authHeader.startsWith('Bearer ')) return json({ error: 'OIDC_REQUIRED' }, 401)
     await verifyGithubOidc(authHeader.slice('Bearer '.length).trim())
 
-    const body = await req.json() as Body
+    const body = (await req.json()) as Body
     if (body.action === 'provision') return await provision(body)
     if (body.action === 'cleanup') return await cleanup(body)
     return json({ error: 'ACTION_INVALID' }, 400)

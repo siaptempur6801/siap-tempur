@@ -1,103 +1,97 @@
-create table if not exists public.articles (
-  id uuid primary key default gen_random_uuid(),
-  title text not null,
-  slug text not null unique,
+CREATE TABLE IF NOT EXISTS public.articles (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid (),
+  title text NOT NULL,
+  slug text NOT NULL UNIQUE,
   excerpt text,
-  content text not null,
+  content text NOT NULL,
   category text,
   cover_image_url text,
-  status text not null default 'draft',
-  author_id uuid references public.profiles(id) on delete set null,
+  status text NOT NULL DEFAULT 'draft',
+  author_id uuid REFERENCES public.profiles (id) ON DELETE SET NULL,
   published_at timestamptz,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  constraint articles_status_check check (status in ('draft','published','archived')),
-  constraint articles_published_at_check check (
-    (status = 'published' and published_at is not null)
-    or status <> 'published'
-  )
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT articles_status_check CHECK (status IN ('draft', 'published', 'archived')),
+  CONSTRAINT articles_published_at_check CHECK ((status = 'published' AND published_at IS NOT NULL) OR status <> 'published')
 );
 
-create index if not exists articles_status_published_at_idx
-  on public.articles(status, published_at desc);
-create index if not exists articles_author_status_updated_idx
-  on public.articles(author_id, status, updated_at desc);
+CREATE INDEX IF NOT EXISTS articles_status_published_at_idx ON public.articles (status, published_at DESC);
 
-create or replace function public.set_articles_updated_at()
-returns trigger
-language plpgsql
-set search_path to ''
-as $function$
-begin
-  new.updated_at := pg_catalog.now();
-  return new;
-end;
+CREATE INDEX IF NOT EXISTS articles_author_status_updated_idx ON public.articles (author_id, status, updated_at DESC);
+
+CREATE OR REPLACE FUNCTION public.set_articles_updated_at ()
+  RETURNS TRIGGER
+  LANGUAGE plpgsql
+  SET search_path TO ''
+  AS $function$
+BEGIN
+  NEW.updated_at := pg_catalog.now();
+  RETURN new;
+END;
 $function$;
 
-revoke all on function public.set_articles_updated_at() from public, anon, authenticated;
+REVOKE ALL ON FUNCTION public.set_articles_updated_at () FROM public, anon, authenticated;
 
-drop trigger if exists set_articles_updated_at on public.articles;
-create trigger set_articles_updated_at
-before update on public.articles
-for each row execute function public.set_articles_updated_at();
+DROP TRIGGER IF EXISTS set_articles_updated_at ON public.articles;
 
-alter table public.articles enable row level security;
+CREATE TRIGGER set_articles_updated_at
+  BEFORE UPDATE ON public.articles
+  FOR EACH ROW
+  EXECUTE FUNCTION public.set_articles_updated_at ();
 
-revoke all on table public.articles from public, anon, authenticated;
-grant select on table public.articles to anon;
-grant select, insert, update on table public.articles to authenticated;
-grant all on table public.articles to service_role;
+ALTER TABLE public.articles ENABLE ROW LEVEL SECURITY;
 
-drop policy if exists articles_public_read_published on public.articles;
-create policy articles_public_read_published
-on public.articles
-for select
-to anon, authenticated
-using (status = 'published');
+REVOKE ALL ON TABLE public.articles FROM public, anon, authenticated;
 
-drop policy if exists articles_editor_read_own on public.articles;
-create policy articles_editor_read_own
-on public.articles
-for select
-to authenticated
-using (
-  author_id = (select auth.uid())
-  and app_private.current_user_has_permission('content.read')
-);
+GRANT SELECT ON TABLE public.articles TO anon;
 
-drop policy if exists articles_reviewer_read_all on public.articles;
-create policy articles_reviewer_read_all
-on public.articles
-for select
-to authenticated
-using (
-  app_private.current_user_has_permission('content.review')
-  or app_private.current_user_has_permission('content.publish')
-);
+GRANT SELECT, INSERT, UPDATE ON TABLE public.articles TO authenticated;
 
-drop policy if exists articles_editor_create_own_draft on public.articles;
-create policy articles_editor_create_own_draft
-on public.articles
-for insert
-to authenticated
-with check (
-  author_id = (select auth.uid())
-  and status = 'draft'
-  and app_private.current_user_has_permission('content.create')
-);
+GRANT ALL ON TABLE public.articles TO service_role;
 
-drop policy if exists articles_editor_update_own_nonpublished on public.articles;
-create policy articles_editor_update_own_nonpublished
-on public.articles
-for update
-to authenticated
-using (
-  author_id = (select auth.uid())
-  and status <> 'published'
-  and app_private.current_user_has_permission('content.update')
-)
-with check (
-  author_id = (select auth.uid())
-  and status <> 'published'
-  and app_private.current_user_has_permission('content.update')
-);
+DROP POLICY IF EXISTS articles_public_read_published ON public.articles;
+
+CREATE POLICY articles_public_read_published ON public.articles
+  FOR SELECT TO anon, authenticated
+  USING (status = 'published');
+
+DROP POLICY IF EXISTS articles_editor_read_own ON public.articles;
+
+CREATE POLICY articles_editor_read_own ON public.articles
+  FOR SELECT TO authenticated
+  USING (author_id = (
+    SELECT
+      auth.uid ())
+      AND app_private.current_user_has_permission ('content.read'));
+
+DROP POLICY IF EXISTS articles_reviewer_read_all ON public.articles;
+
+CREATE POLICY articles_reviewer_read_all ON public.articles
+  FOR SELECT TO authenticated
+  USING (app_private.current_user_has_permission ('content.review')
+    OR app_private.current_user_has_permission ('content.publish'));
+
+DROP POLICY IF EXISTS articles_editor_create_own_draft ON public.articles;
+
+CREATE POLICY articles_editor_create_own_draft ON public.articles
+  FOR INSERT TO authenticated
+  WITH CHECK (author_id = (
+    SELECT
+      auth.uid ())
+      AND status = 'draft'
+      AND app_private.current_user_has_permission ('content.create'));
+
+DROP POLICY IF EXISTS articles_editor_update_own_nonpublished ON public.articles;
+
+CREATE POLICY articles_editor_update_own_nonpublished ON public.articles
+  FOR UPDATE TO authenticated
+  USING (author_id = (
+    SELECT
+      auth.uid ())
+      AND status <> 'published'
+      AND app_private.current_user_has_permission ('content.update'))
+  WITH CHECK (author_id = (
+    SELECT
+      auth.uid ())
+      AND status <> 'published'
+      AND app_private.current_user_has_permission ('content.update'));

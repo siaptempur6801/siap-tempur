@@ -1,20 +1,20 @@
 import AdminPagination from '@/components/admin/AdminPagination'
 import AdminTableToolbar from '@/components/admin/AdminTableToolbar'
 import {
-AdminCard,
-AdminEmptyState,
-AdminPage,
-AdminPageHeader,
-AdminRowActions,
-AdminStatusBadge,
-AdminTh,
-adminTableActionClass,
-adminTableHeadClass
+  AdminCard,
+  AdminEmptyState,
+  AdminPage,
+  AdminPageHeader,
+  AdminRowActions,
+  AdminStatusBadge,
+  AdminTh,
+  adminTableActionClass,
+  adminTableHeadClass,
 } from '@/components/admin/AdminUi'
 import { AdminDataTable } from '@/components/admin/data-display/AdminDataTable'
 import { AdminErrorState } from '@/components/admin/feedback/AdminErrorState'
 import { AdminBreadcrumbs } from '@/components/admin/navigation/AdminBreadcrumbs'
-import { formatDateTime,formatRupiah } from '@/lib/admin-format'
+import { adminStatusLabel, formatDateTime, formatRupiah } from '@/lib/admin-format'
 import { adminPageSummary } from '@/lib/admin-pagination'
 import { PERMISSIONS } from '@/src/auth/permissions'
 import { listAdminOrders } from '@/src/services/admin-commerce-workspace.service'
@@ -30,31 +30,40 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
     return (
       <AdminEmptyState
         title="Akses tidak tersedia"
-        description="Hubungi pengelola untuk akses Orders."
+        description="Hubungi pengelola untuk mendapatkan akses pesanan."
       />
     )
   let data
   try {
     data = await listAdminOrders(params)
   } catch {
-    return <AdminErrorState noun="order" retryHref="/admin/commerce/orders" />
+    return <AdminErrorState noun="pesanan" retryHref="/admin/commerce/orders" />
   }
   const current = `/admin/commerce/orders?${new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([, v]) => v)) as Record<string, string>)}`
   return (
     <AdminPage>
-      <AdminBreadcrumbs items={[{ label: 'Commerce' }, { label: 'Orders' }]} />
+      <AdminBreadcrumbs items={[{ label: 'Commerce' }, { label: 'Pesanan' }]} />
       <AdminPageHeader
-        title="Orders"
+        title="Pesanan"
         description="Telusuri pesanan, pembayaran, dan akses yang diberikan."
       />
       <AdminTableToolbar
         pathname="/admin/commerce/orders"
         search={params.q || ''}
-        placeholder="Cari nomor order..."
+        placeholder="Cari nomor pesanan..."
         status={params.status}
-        statusOptions={['pending', 'paid', 'cancelled', 'failed'].map((value) => ({
+        statusOptions={[
+          'pending',
+          'paid',
+          'partial_refund_review',
+          'partial_chargeback_review',
+          'refunded',
+          'chargeback',
+          'cancelled',
+          'failed',
+        ].map((value) => ({
           value,
-          label: value
+          label: adminStatusLabel(value),
         }))}
         resultCount={data.total}
         selects={[
@@ -65,21 +74,21 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
             defaultValue: params.payment || '',
             options: ['pending', 'paid', 'failed', 'expired'].map((value) => ({
               value,
-              label: value
-            }))
-          }
+              label: adminStatusLabel(value),
+            })),
+          },
         ]}
       />
       <AdminCard>
         <AdminDataTable
-          caption="Orders"
+          caption="Pesanan"
           className="min-w-[950px]"
           empty={
             !data.rows.length
               ? {
-                  title: 'Belum ada order yang cocok',
+                  title: 'Belum ada pesanan yang cocok',
                   description:
-                    'Order tercatat saat peserta melakukan checkout. Ubah filter untuk melihat pesanan lainnya.'
+                    'Pesanan tercatat saat peserta melakukan checkout. Ubah filter untuk melihat pesanan lainnya.',
                 }
               : undefined
           }
@@ -88,23 +97,25 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
               pathname="/admin/commerce/orders"
               params={params}
               summary={adminPageSummary(data.page, data.rows.length, data.total)}
-              noun="order"
+              noun="pesanan"
             />
           }
         >
           <thead className={adminTableHeadClass}>
             <tr>
               {[
-                'Order',
-                'User',
-                'Product',
-                'Amount',
-                'Payment Status',
-                'Order Status',
-                'Created',
-                'Actions'
+                'No. pesanan',
+                'Pengguna',
+                'Produk',
+                'Jumlah',
+                'Status pembayaran',
+                'Status pesanan',
+                'Dibuat',
+                'Tindakan',
               ].map((h) => (
-                <AdminTh key={h}>{h}</AdminTh>
+                <AdminTh key={h} align={h === 'Jumlah' ? 'right' : 'left'}>
+                  {h}
+                </AdminTh>
               ))}
             </tr>
           </thead>
@@ -121,7 +132,9 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
                 </td>
                 <td>{o.customer_name}</td>
                 <td className="max-w-xs">{o.product_names || 'Produk tidak tercatat'}</td>
-                <td className="whitespace-nowrap tabular-nums">{formatRupiah(o.total_amount)}</td>
+                <td className="whitespace-nowrap text-right tabular-nums">
+                  {formatRupiah(o.total_amount)}
+                </td>
                 <td>
                   <AdminStatusBadge status={o.payment_status} />
                 </td>
@@ -130,12 +143,15 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
                 </td>
                 <td className="whitespace-nowrap text-xs">{formatDateTime(o.created_at)}</td>
                 <td>
-                  <AdminRowActions><Link
-                    className={adminTableActionClass}
-                    href={`/admin/commerce/orders/${o.id}?${new URLSearchParams({ returnTo: current })}`}
-                  >
-                    Lihat Order
-                  </Link></AdminRowActions>
+                  <AdminRowActions>
+                    <Link
+                      className={`${adminTableActionClass} whitespace-nowrap`}
+                      aria-label={`Lihat pesanan ${o.order_number}`}
+                      href={`/admin/commerce/orders/${o.id}?${new URLSearchParams({ returnTo: current })}`}
+                    >
+                      Lihat
+                    </Link>
+                  </AdminRowActions>
                 </td>
               </tr>
             ))}

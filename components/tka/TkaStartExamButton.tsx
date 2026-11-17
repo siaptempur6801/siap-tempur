@@ -2,92 +2,185 @@
 
 import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Play } from 'lucide-react'
+import Link from 'next/link'
+import { Play, Ticket } from 'lucide-react'
 import { toast } from 'sonner'
 import { startTkaExam } from '@/app/actions/tka-practice'
 import { trackProductEvent } from '@/lib/product-analytics'
 import { LoadingSpinner } from '@/components/ui/LoadingState'
+import TokenUsageConfirmModal from '@/components/practice/TokenUsageConfirmModal'
 import { acquireSingleFlightLock, releaseSingleFlightLock } from '@/lib/single-flight-lock'
+import type { TkaLevel } from '@/src/tka/context'
 
 export default function TkaStartExamButton({
-    level,
-    examSlug,
-    disabledReason,
-    activeAttemptId,
+  level,
+  examSlug,
+  examTitle,
+  disabledReason,
+  activeAttemptId,
+  tokenBalance,
+  tokenCost = 1,
 }: {
-    level: string
-    examSlug: string
-    disabledReason?: string | null
-    activeAttemptId?: string | null
+  level: TkaLevel
+  examSlug: string
+  examTitle: string
+  disabledReason?: string | null
+  activeAttemptId?: string | null
+  tokenBalance: number
+  tokenCost?: number
 }) {
-    const router = useRouter()
-    const [loading, setLoading] = useState(false)
-    const [errorMessage, setErrorMessage] = useState<string | null>(null)
-    const startLockRef = useRef(false)
-    const hasActiveAttempt = Boolean(activeAttemptId)
-    const isDrill = examSlug.toLowerCase().includes('drill')
+  const router = useRouter()
+  const [loading, setLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [showTokenConfirm, setShowTokenConfirm] = useState(false)
+  const startLockRef = useRef(false)
+  const hasActiveAttempt = Boolean(activeAttemptId)
+  const isDrill = examSlug.toLowerCase().includes('drill')
+  const practiceType = isDrill
+    ? 'Latihan Fokus'
+    : examSlug.toLowerCase().includes('mini')
+      ? 'Mini Tryout'
+      : 'Tryout'
 
-    const start = async () => {
-        if ((!hasActiveAttempt && disabledReason) || !acquireSingleFlightLock(startLockRef)) return
-        let isNavigating = false
-        setLoading(true)
-        setErrorMessage(null)
-        try {
-            if (activeAttemptId) {
-                router.push(`/tka/${level.toLowerCase()}/tryout/${activeAttemptId}`)
-                isNavigating = true
-                return
-            }
+  const start = async () => {
+    if ((!hasActiveAttempt && disabledReason) || !acquireSingleFlightLock(startLockRef)) return
+    let isNavigating = false
+    setLoading(true)
+    setErrorMessage(null)
+    try {
+      if (activeAttemptId) {
+        router.push(`/tka/${level.toLowerCase()}/tryout/${activeAttemptId}`)
+        isNavigating = true
+        return
+      }
 
-            const result = await startTkaExam(level, examSlug)
-            if (result?.error) {
-                setErrorMessage(result.error)
-                return
-            }
-            if (result?.success && result.sessionId) {
-                trackProductEvent('px_exam_start', {
-                    program: 'tka_smp',
-                    surface: 'exam',
-                    mode: isDrill ? 'latihan_fokus' : examSlug.includes('full') ? 'full_tryout' : 'mini_tryout',
-                })
-                toast.success(result.resumed ? `Melanjutkan ${isDrill ? 'drill' : 'tryout'} tersimpan.` : `${isDrill ? 'Drill' : 'Tryout TKA'} dimulai!`)
-                router.push(`/tka/${level.toLowerCase()}/tryout/${result.sessionId}`)
-                isNavigating = true
-            }
-        } catch {
-            setErrorMessage('Gagal memulai tryout TKA.')
-        } finally {
-            if (!isNavigating) {
-                releaseSingleFlightLock(startLockRef)
-                setLoading(false)
-            }
-        }
+      const result = await startTkaExam(level, examSlug)
+      if (result?.error) {
+        setErrorMessage(
+          result.error.includes('INSUFFICIENT_TOKEN_BALANCE')
+            ? 'Token TKA kamu belum cukup. Beli token untuk memulai sesi baru.'
+            : result.error,
+        )
+        return
+      }
+      if (result?.success && result.sessionId) {
+        trackProductEvent('px_exam_start', {
+          program: level === 'SD' ? 'tka_sd' : level === 'SMP' ? 'tka_smp' : 'tka_sma',
+          surface: 'exam',
+          mode: isDrill
+            ? 'latihan_fokus'
+            : examSlug.includes('full')
+              ? 'full_tryout'
+              : 'mini_tryout',
+        })
+        toast.success(
+          result.resumed
+            ? `Melanjutkan ${practiceType.toLowerCase()} tersimpan.`
+            : `${practiceType} TKA dimulai!`,
+        )
+        router.push(`/tka/${level.toLowerCase()}/tryout/${result.sessionId}`)
+        isNavigating = true
+      }
+    } catch {
+      setErrorMessage('Gagal memulai sesi TKA.')
+    } finally {
+      if (!isNavigating) {
+        releaseSingleFlightLock(startLockRef)
+        setLoading(false)
+      }
     }
+  }
 
-    const label = loading
-        ? 'Menyiapkan...'
-        : hasActiveAttempt
-            ? isDrill ? 'Lanjutkan Drill' : 'Lanjutkan Tryout'
-            : disabledReason || (isDrill ? 'Mulai Drill' : 'Mulai Tryout')
+  const handleClick = () => {
+    if (hasActiveAttempt) {
+      void start()
+      return
+    }
+    if (tokenBalance < tokenCost) {
+      toast.error('Token TKA belum cukup', {
+        description: `Kamu membutuhkan ${tokenCost} token untuk sesi baru.`,
+        action: {
+          label: 'Beli Token',
+          onClick: () => router.push(`/tka/${level.toLowerCase()}/beli-token`),
+        },
+      })
+      return
+    }
+    setShowTokenConfirm(true)
+  }
 
-    return (
-        <div className="mt-5">
-            <button
-                type="button"
-                onClick={() => void start()}
-                disabled={(!hasActiveAttempt && Boolean(disabledReason)) || loading}
-                title={hasActiveAttempt ? `Lanjutkan ${isDrill ? 'drill' : 'tryout'} yang sedang berjalan` : disabledReason || `Mulai ${isDrill ? 'drill' : 'tryout'}`}
-                aria-describedby={errorMessage ? `${examSlug}-start-error` : undefined}
-                className="st-focus inline-flex min-h-11 w-full min-w-0 items-center justify-center gap-2 overflow-hidden rounded-lg bg-blue-600 px-4 py-3 text-center text-sm font-black leading-tight text-white shadow-none transition hover:bg-blue-700 shadow-none disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none"
-            >
-                {loading ? <LoadingSpinner label="Menyiapkan tryout TKA" size="sm" /> : <Play size={17} className="shrink-0" aria-hidden="true"/>}
-                <span className="min-w-0 whitespace-normal break-words">{label}</span>
-            </button>
-            {errorMessage && (
-                <p id={`${examSlug}-start-error`} role="alert" className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-sm font-black text-red-700">
-                    {errorMessage}
-                </p>
-            )}
-        </div>
-    )
+  const label = loading
+    ? 'Menyiapkan...'
+    : hasActiveAttempt
+      ? `Lanjutkan ${practiceType}`
+      : disabledReason || `Mulai ${practiceType} · ${tokenCost} token`
+  const needsTokens = !hasActiveAttempt && !disabledReason && tokenBalance < tokenCost
+  const actionClassName =
+    'st-focus inline-flex min-h-11 w-full min-w-0 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-center text-sm font-semibold leading-snug text-primary-foreground transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground'
+
+  return (
+    <div className="mt-5">
+      {needsTokens ? (
+        <Link href={`/tka/${level.toLowerCase()}/beli-token`} className={actionClassName}>
+          <Ticket size={17} className="shrink-0" aria-hidden="true" />
+          Beli Token untuk Mulai
+        </Link>
+      ) : (
+        <button
+          type="button"
+          onClick={handleClick}
+          disabled={(!hasActiveAttempt && Boolean(disabledReason)) || loading}
+          title={
+            hasActiveAttempt
+              ? `Lanjutkan ${practiceType.toLowerCase()} yang sedang berjalan`
+              : disabledReason || `Mulai ${practiceType.toLowerCase()} dengan ${tokenCost} token`
+          }
+          aria-describedby={errorMessage ? `${examSlug}-start-error` : undefined}
+          className={actionClassName}
+        >
+          {loading ? (
+            <LoadingSpinner label="Menyiapkan sesi TKA" size="sm" />
+          ) : (
+            <Play size={17} className="shrink-0" aria-hidden="true" />
+          )}
+          <span className="min-w-0 whitespace-normal break-words">{label}</span>
+        </button>
+      )}
+      {hasActiveAttempt || needsTokens ? (
+        <p className="mt-2 text-center text-sm leading-relaxed text-muted-foreground">
+          {hasActiveAttempt
+            ? 'Lanjutkan tanpa token tambahan.'
+            : `Butuh ${tokenCost} token untuk sesi ini. Saldo kamu ${tokenBalance} token.`}
+        </p>
+      ) : null}
+      {errorMessage && (
+        <p
+          id={`${examSlug}-start-error`}
+          role="alert"
+          className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-sm font-black text-red-700"
+        >
+          {errorMessage}
+        </p>
+      )}
+      <TokenUsageConfirmModal
+        isOpen={showTokenConfirm}
+        heading="Gunakan token untuk sesi ini?"
+        title={`Mulai ${examTitle}`}
+        description={`Gunakan ${tokenCost} token TKA untuk memulai sesi ini. Sesi yang masih berjalan bisa dilanjutkan tanpa token tambahan.`}
+        details={[
+          { label: 'Jenis sesi', value: practiceType },
+          { label: 'Biaya sesi baru', value: `${tokenCost} token` },
+        ]}
+        quota={tokenBalance}
+        tokenCost={tokenCost}
+        confirmLabel={`Gunakan ${tokenCost} Token TKA`}
+        isLoading={loading}
+        onConfirm={() => {
+          setShowTokenConfirm(false)
+          void start()
+        }}
+        onCancel={() => setShowTokenConfirm(false)}
+      />
+    </div>
+  )
 }

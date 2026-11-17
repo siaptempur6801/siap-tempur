@@ -22,7 +22,8 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: 'Persiapan SKD CPNS | SiapTempur',
-    description: 'Latihan TWK, TIU, TKP, Drill, Tryout, pembahasan, dan remedial dalam satu alur belajar CPNS yang lebih terarah.',
+    description:
+      'Latihan TWK, TIU, TKP, Drill, Tryout, pembahasan, dan remedial dalam satu alur belajar CPNS yang lebih terarah.',
     url: '/cpns',
     type: 'website',
   },
@@ -43,7 +44,9 @@ export default async function Home() {
     <CpnsProductLandingV12
       user={userId ? { id: userId } : null}
       activeEvents={[]}
-      latestArticles={(latestArticles || []) as Parameters<typeof CpnsProductLandingV12>[0]['latestArticles']}
+      latestArticles={
+        (latestArticles || []) as Parameters<typeof CpnsProductLandingV12>[0]['latestArticles']
+      }
     />
   )
 }

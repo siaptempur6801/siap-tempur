@@ -51,181 +51,163 @@
 --   Diverifikasi dengan menjalankan migration ini dua kali di staging tanpa
 --   perubahan hasil.
 -- =============================================================================
-
-create table if not exists app_private.cpns_legacy_mapping_reviews (
-  source_question_id uuid primary key,
-  source_question_code text not null unique,
-  subject_code text not null,
+CREATE TABLE IF NOT EXISTS app_private.cpns_legacy_mapping_reviews (
+  source_question_id uuid PRIMARY KEY,
+  source_question_code text NOT NULL UNIQUE,
+  subject_code text NOT NULL,
   legacy_category text,
   legacy_sub_category text,
   primary_node_code text,
   secondary_node_code text,
-  review_status text not null default 'pending',
+  review_status text NOT NULL DEFAULT 'pending',
   review_method text,
   review_notes text,
-  reviewed_by uuid references public.profiles(id) on delete restrict,
+  reviewed_by uuid REFERENCES public.profiles (id) ON DELETE RESTRICT,
   reviewed_at timestamptz,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  constraint cpns_legacy_mapping_reviews_subject_check check (subject_code in ('TWK','TIU','TKP')),
-  constraint cpns_legacy_mapping_reviews_status_check check (review_status in ('pending','reviewed','needs_revision','blocked')),
-  constraint cpns_legacy_mapping_reviews_reviewed_check check (
-    review_status <> 'reviewed'
-    or (
-      primary_node_code is not null
-      and reviewed_at is not null
-      and review_method is not null
-    )
-  ),
-  constraint cpns_legacy_mapping_reviews_secondary_distinct_check check (
-    secondary_node_code is null or secondary_node_code is distinct from primary_node_code
-  )
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT cpns_legacy_mapping_reviews_subject_check CHECK (subject_code IN ('TWK', 'TIU', 'TKP')),
+  CONSTRAINT cpns_legacy_mapping_reviews_status_check CHECK (review_status IN ('pending', 'reviewed', 'needs_revision', 'blocked')),
+  CONSTRAINT cpns_legacy_mapping_reviews_reviewed_check CHECK (review_status <> 'reviewed' OR (primary_node_code IS NOT NULL AND reviewed_at IS NOT NULL AND review_method IS NOT NULL)),
+  CONSTRAINT cpns_legacy_mapping_reviews_secondary_distinct_check CHECK (secondary_node_code IS NULL OR secondary_node_code IS DISTINCT FROM primary_node_code)
 );
 
-create index if not exists idx_cpns_legacy_mapping_reviews_queue
-  on app_private.cpns_legacy_mapping_reviews(review_status, subject_code, source_question_code);
+CREATE INDEX IF NOT EXISTS idx_cpns_legacy_mapping_reviews_queue ON app_private.cpns_legacy_mapping_reviews (review_status, subject_code, source_question_code);
 
-comment on table app_private.cpns_legacy_mapping_reviews is
-  'Manual mapping review registry for legacy CPNS questions. Migration must never derive target knowledge nodes from legacy categories automatically.';
-
-comment on column app_private.cpns_legacy_mapping_reviews.primary_node_code is
-  'Explicit reviewer decision. NULL while pending. Never auto-filled from legacy_category by migration.';
-
-comment on column app_private.cpns_legacy_mapping_reviews.secondary_node_code is
-  'Optional explicit reviewer decision for cross-topic questions.';
-
-create table if not exists app_private.cpns_legacy_import_stage (
-  source_question_id uuid primary key,
-  source_question_code text not null unique,
-  payload jsonb not null,
-  staged_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+COMMENT ON TABLE app_private.cpns_legacy_mapping_reviews IS TEXTVALUE0E; COMMENT ON COLUMN app_private.cpns_legacy_mapping_reviews.primary_node_code IS TEXTVALUE1E; COMMENT ON COLUMN app_private.cpns_legacy_mapping_reviews.secondary_node_code IS TEXTVALUE2E; CREATE TABLE IF NOT EXISTS app_private.cpns_legacy_import_stage (
+  source_question_id uuid PRIMARY KEY,
+  source_question_code text NOT NULL UNIQUE,
+  payload jsonb NOT NULL,
+  staged_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
 );
 
-create index if not exists idx_cpns_legacy_import_stage_code
-  on app_private.cpns_legacy_import_stage(source_question_code);
+CREATE INDEX IF NOT EXISTS idx_cpns_legacy_import_stage_code ON app_private.cpns_legacy_import_stage (source_question_code);
 
-comment on table app_private.cpns_legacy_import_stage is
-  'Raw legacy CPNS question payload staged before canonical Schema V2 import. Knowledge mapping is intentionally absent here and must come only from cpns_legacy_mapping_reviews.';
-
-create or replace function app_private.validate_cpns_legacy_mapping_review()
-returns trigger
-language plpgsql
-set search_path = pg_catalog, public, app_private
-as $$
-declare
+COMMENT ON TABLE app_private.cpns_legacy_import_stage IS TEXTVALUE3E; CREATE OR REPLACE FUNCTION app_private.validate_cpns_legacy_mapping_review ()
+  RETURNS TRIGGER
+  LANGUAGE plpgsql
+  SET search_path = pg_catalog, public, app_private
+  AS $$
+DECLARE
   v_subject_id uuid;
   v_primary_subject_id uuid;
   v_secondary_subject_id uuid;
-begin
-  select s.id
-    into v_subject_id
-  from public.subjects s
-  join public.tracks t on t.id = s.track_id
-  join public.programs p on p.id = t.program_id
-  where p.code = 'CPNS'
-    and t.code = 'SKD'
-    and s.code = new.subject_code
-  limit 1;
+BEGIN
+  SELECT
+    s.id
+  INTO
+    v_subject_id
+  FROM
+    public.subjects s
+    JOIN public.tracks t ON t.id = s.track_id
+    JOIN public.programs p ON p.id = t.program_id
+  WHERE
+    p.code = 'CPNS'
+    AND t.code = 'SKD'
+    AND s.code = NEW.subject_code
+  LIMIT 1;
 
-  if v_subject_id is null then
-    raise exception 'Invalid CPNS SKD subject_code: %', new.subject_code;
-  end if;
+  IF v_subject_id IS NULL THEN
+    RAISE EXCEPTION 'Invalid CPNS SKD subject_code: %', NEW.subject_code;
+  END IF;
 
-  if new.review_status = 'reviewed' then
-    if new.primary_node_code is null then
-      raise exception 'Reviewed mapping requires primary_node_code for %', new.source_question_code;
-    end if;
+  IF NEW.review_status = 'reviewed' THEN
+    IF NEW.primary_node_code IS NULL THEN
+      RAISE EXCEPTION 'Reviewed mapping requires primary_node_code for %', NEW.source_question_code;
+    END IF;
 
-    select kn.subject_id
-      into v_primary_subject_id
-    from public.knowledge_nodes kn
-    where kn.code = new.primary_node_code
-    limit 1;
+    SELECT
+      kn.subject_id
+    INTO
+      v_primary_subject_id
+    FROM
+      public.knowledge_nodes kn
+    WHERE
+      kn.code = NEW.primary_node_code
+    LIMIT 1;
 
-    if v_primary_subject_id is null then
-      raise exception 'Unknown primary knowledge node % for %', new.primary_node_code, new.source_question_code;
-    end if;
+    IF v_primary_subject_id IS NULL THEN
+      RAISE EXCEPTION 'Unknown primary knowledge node % for %', NEW.primary_node_code, NEW.source_question_code;
+    END IF;
 
-    if v_primary_subject_id <> v_subject_id then
-      raise exception 'Primary node % does not belong to subject % for %', new.primary_node_code, new.subject_code, new.source_question_code;
-    end if;
+    IF v_primary_subject_id <> v_subject_id THEN
+      RAISE EXCEPTION 'Primary node % does not belong to subject % for %', NEW.primary_node_code, NEW.subject_code, NEW.source_question_code;
+    END IF;
 
-    if new.secondary_node_code is not null then
-      select kn.subject_id
-        into v_secondary_subject_id
-      from public.knowledge_nodes kn
-      where kn.code = new.secondary_node_code
-      limit 1;
+    IF NEW.secondary_node_code IS NOT NULL THEN
+      SELECT
+        kn.subject_id
+      INTO
+        v_secondary_subject_id
+      FROM
+        public.knowledge_nodes kn
+      WHERE
+        kn.code = NEW.secondary_node_code
+      LIMIT 1;
 
-      if v_secondary_subject_id is null then
-        raise exception 'Unknown secondary knowledge node % for %', new.secondary_node_code, new.source_question_code;
-      end if;
+      IF v_secondary_subject_id IS NULL THEN
+        RAISE EXCEPTION 'Unknown secondary knowledge node % for %', NEW.secondary_node_code, NEW.source_question_code;
+      END IF;
 
-      if v_secondary_subject_id <> v_subject_id then
-        raise exception 'Secondary node % does not belong to subject % for %', new.secondary_node_code, new.subject_code, new.source_question_code;
-      end if;
-    end if;
+      IF v_secondary_subject_id <> v_subject_id THEN
+        RAISE EXCEPTION 'Secondary node % does not belong to subject % for %', NEW.secondary_node_code, NEW.subject_code, NEW.source_question_code;
+      END IF;
+    END IF;
 
-    if new.review_method is null or new.reviewed_at is null then
-      raise exception 'Reviewed mapping requires review_method and reviewed_at for %', new.source_question_code;
-    end if;
-  else
-    if new.primary_node_code is not null or new.secondary_node_code is not null then
-      raise exception 'Unresolved mapping must not contain knowledge-node decisions for %', new.source_question_code;
-    end if;
+    IF NEW.review_method IS NULL OR NEW.reviewed_at IS NULL THEN
+      RAISE EXCEPTION 'Reviewed mapping requires review_method and reviewed_at for %', NEW.source_question_code;
+    END IF;
+  ELSE
+    IF NEW.primary_node_code IS NOT NULL OR NEW.secondary_node_code IS NOT NULL THEN
+      RAISE EXCEPTION 'Unresolved mapping must not contain knowledge-node decisions for %', NEW.source_question_code;
+    END IF;
 
-    if new.review_status in ('needs_revision', 'blocked')
-       and (new.review_method is null or new.reviewed_at is null) then
-      raise exception '% mapping requires review_method and reviewed_at for %', new.review_status, new.source_question_code;
-    end if;
-  end if;
+    IF NEW.review_status IN ('needs_revision', 'blocked') AND (NEW.review_method IS NULL OR NEW.reviewed_at IS NULL) THEN
+      RAISE EXCEPTION '% mapping requires review_method and reviewed_at for %', NEW.review_status, NEW.source_question_code;
+    END IF;
+  END IF;
 
-  if new.secondary_node_code is not null
-     and new.secondary_node_code = new.primary_node_code then
-    raise exception 'Primary and secondary nodes must differ for %', new.source_question_code;
-  end if;
+  IF NEW.secondary_node_code IS NOT NULL AND NEW.secondary_node_code = NEW.primary_node_code THEN
+    RAISE EXCEPTION 'Primary and secondary nodes must differ for %', NEW.source_question_code;
+  END IF;
 
-  new.updated_at := now();
-  return new;
-end;
+  NEW.updated_at := now();
+  RETURN new;
+END;
 $$;
 
-drop trigger if exists trg_validate_cpns_legacy_mapping_review
-  on app_private.cpns_legacy_mapping_reviews;
+DROP TRIGGER IF EXISTS trg_validate_cpns_legacy_mapping_review ON app_private.cpns_legacy_mapping_reviews;
 
-create trigger trg_validate_cpns_legacy_mapping_review
-before insert or update on app_private.cpns_legacy_mapping_reviews
-for each row
-execute function app_private.validate_cpns_legacy_mapping_review();
+CREATE TRIGGER trg_validate_cpns_legacy_mapping_review
+  BEFORE INSERT OR UPDATE ON app_private.cpns_legacy_mapping_reviews
+  FOR EACH ROW
+  EXECUTE FUNCTION app_private.validate_cpns_legacy_mapping_review ();
 
-do $$
-begin
-  if not exists (
-    select 1
-    from pg_constraint
-    where conrelid = 'app_private.cpns_legacy_mapping_reviews'::regclass
-      and conname = 'cpns_legacy_mapping_reviews_unresolved_has_no_nodes_check'
-  ) then
-    alter table app_private.cpns_legacy_mapping_reviews
-      add constraint cpns_legacy_mapping_reviews_unresolved_has_no_nodes_check
-      check (
-        review_status = 'reviewed'
-        or (primary_node_code is null and secondary_node_code is null)
-      ) not valid;
-  end if;
-end
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT
+      1
+    FROM
+      pg_constraint
+    WHERE
+      conrelid = 'app_private.cpns_legacy_mapping_reviews'::regclass
+      AND conname = 'cpns_legacy_mapping_reviews_unresolved_has_no_nodes_check') THEN
+  ALTER TABLE app_private.cpns_legacy_mapping_reviews
+    ADD CONSTRAINT cpns_legacy_mapping_reviews_unresolved_has_no_nodes_check CHECK (review_status = 'reviewed' OR (primary_node_code IS NULL AND secondary_node_code IS NULL)) NOT valid;
+END IF;
+END
 $$;
 
-alter table app_private.cpns_legacy_mapping_reviews
-  validate constraint cpns_legacy_mapping_reviews_unresolved_has_no_nodes_check;
+ALTER TABLE app_private.cpns_legacy_mapping_reviews validate CONSTRAINT cpns_legacy_mapping_reviews_unresolved_has_no_nodes_check;
 
-create index if not exists idx_cpns_legacy_mapping_reviews_primary_node
-  on app_private.cpns_legacy_mapping_reviews(primary_node_code)
-  where review_status = 'reviewed';
+CREATE INDEX IF NOT EXISTS idx_cpns_legacy_mapping_reviews_primary_node ON app_private.cpns_legacy_mapping_reviews (primary_node_code)
+WHERE
+  review_status = 'reviewed';
 
-create or replace view app_private.cpns_legacy_import_ready as
-select
+CREATE OR REPLACE VIEW app_private.cpns_legacy_import_ready AS
+SELECT
   st.source_question_id,
   st.source_question_code,
   st.payload,
@@ -233,178 +215,185 @@ select
   r.legacy_category,
   r.legacy_sub_category,
   r.primary_node_code,
-  pkn.id as primary_node_id,
+  pkn.id AS primary_node_id,
   r.secondary_node_code,
-  skn.id as secondary_node_id,
+  skn.id AS secondary_node_id,
   r.review_method,
   r.review_notes,
   r.reviewed_by,
   r.reviewed_at
-from app_private.cpns_legacy_import_stage st
-join app_private.cpns_legacy_mapping_reviews r
-  on r.source_question_id = st.source_question_id
- and r.source_question_code = st.source_question_code
-join public.subjects s
-  on s.code = r.subject_code
-join public.tracks t
-  on t.id = s.track_id
- and t.code = 'SKD'
-join public.programs p
-  on p.id = t.program_id
- and p.code = 'CPNS'
-join public.knowledge_nodes pkn
-  on pkn.code = r.primary_node_code
- and pkn.subject_id = s.id
-left join public.knowledge_nodes skn
-  on skn.code = r.secondary_node_code
- and skn.subject_id = s.id
-where r.review_status = 'reviewed'
-  and (r.secondary_node_code is null or skn.id is not null);
+FROM
+  app_private.cpns_legacy_import_stage st
+  JOIN app_private.cpns_legacy_mapping_reviews r ON r.source_question_id = st.source_question_id
+    AND r.source_question_code = st.source_question_code
+  JOIN public.subjects s ON s.code = r.subject_code
+  JOIN public.tracks t ON t.id = s.track_id
+    AND t.code = 'SKD'
+  JOIN public.programs p ON p.id = t.program_id
+    AND p.code = 'CPNS'
+  JOIN public.knowledge_nodes pkn ON pkn.code = r.primary_node_code
+    AND pkn.subject_id = s.id
+  LEFT JOIN public.knowledge_nodes skn ON skn.code = r.secondary_node_code
+    AND skn.subject_id = s.id
+WHERE
+  r.review_status = 'reviewed'
+  AND (r.secondary_node_code IS NULL
+    OR skn.id IS NOT NULL);
 
-comment on view app_private.cpns_legacy_import_ready is
-  'Only raw-staged CPNS legacy questions with an explicit reviewed mapping and valid same-subject knowledge nodes. Importers must consume this view rather than infer mappings from legacy categories.';
-
-create or replace view app_private.cpns_legacy_mapping_review_summary as
-select
+COMMENT ON VIEW app_private.cpns_legacy_import_ready IS TEXTVALUE4E; CREATE OR REPLACE VIEW app_private.cpns_legacy_mapping_review_summary AS
+SELECT
   subject_code,
   review_status,
-  count(*)::bigint as question_count
-from app_private.cpns_legacy_mapping_reviews
-group by subject_code, review_status;
+  count(*)::bigint AS question_count
+FROM
+  app_private.cpns_legacy_mapping_reviews
+GROUP BY
+  subject_code,
+  review_status;
 
-comment on view app_private.cpns_legacy_mapping_review_summary is
-  'Operational summary of the manual CPNS legacy mapping review registry.';
+COMMENT ON VIEW app_private.cpns_legacy_mapping_review_summary IS TEXTVALUE5E; REVOKE ALL ON FUNCTION app_private.validate_cpns_legacy_mapping_review () FROM public;
 
-revoke all on function app_private.validate_cpns_legacy_mapping_review() from public;
-revoke all on app_private.cpns_legacy_import_ready from public;
-revoke all on app_private.cpns_legacy_mapping_review_summary from public;
+REVOKE ALL ON app_private.cpns_legacy_import_ready FROM public;
 
-create or replace function app_private.validate_cpns_legacy_mapping_review()
-returns trigger
-language plpgsql
-set search_path = pg_catalog, public, app_private
-as $$
-declare
+REVOKE ALL ON app_private.cpns_legacy_mapping_review_summary FROM public;
+
+CREATE OR REPLACE FUNCTION app_private.validate_cpns_legacy_mapping_review ()
+  RETURNS TRIGGER
+  LANGUAGE plpgsql
+  SET search_path = pg_catalog, public, app_private
+  AS $$
+DECLARE
   v_subject_id uuid;
   v_primary_subject_id uuid;
   v_secondary_subject_id uuid;
-begin
-  select s.id into v_subject_id
-  from public.subjects s
-  join public.tracks t on t.id = s.track_id
-  join public.programs p on p.id = t.program_id
-  where p.code = 'CPNS' and t.code = 'SKD' and s.code = new.subject_code
-  limit 1;
+BEGIN
+  SELECT
+    s.id
+  INTO
+    v_subject_id
+  FROM
+    public.subjects s
+    JOIN public.tracks t ON t.id = s.track_id
+    JOIN public.programs p ON p.id = t.program_id
+  WHERE
+    p.code = 'CPNS'
+    AND t.code = 'SKD'
+    AND s.code = NEW.subject_code
+  LIMIT 1;
 
-  if v_subject_id is null then
-    raise exception 'Invalid CPNS SKD subject_code: %', new.subject_code;
-  end if;
+  IF v_subject_id IS NULL THEN
+    RAISE EXCEPTION 'Invalid CPNS SKD subject_code: %', NEW.subject_code;
+  END IF;
 
-  if new.review_status = 'reviewed' then
-    if new.primary_node_code is null then
-      raise exception 'Reviewed mapping requires primary_node_code for %', new.source_question_code;
-    end if;
-    if new.review_method is null or new.reviewed_at is null or new.reviewed_by is null then
-      raise exception 'Reviewed mapping requires review_method, reviewed_at, and reviewed_by for %', new.source_question_code;
-    end if;
+  IF NEW.review_status = 'reviewed' THEN
+    IF NEW.primary_node_code IS NULL THEN
+      RAISE EXCEPTION 'Reviewed mapping requires primary_node_code for %', NEW.source_question_code;
+    END IF;
+    IF NEW.review_method IS NULL OR NEW.reviewed_at IS NULL OR NEW.reviewed_by IS NULL THEN
+      RAISE EXCEPTION 'Reviewed mapping requires review_method, reviewed_at, and reviewed_by for %', NEW.source_question_code;
+    END IF;
 
-    select kn.subject_id into v_primary_subject_id
-    from public.knowledge_nodes kn where kn.code = new.primary_node_code limit 1;
-    if v_primary_subject_id is null then
-      raise exception 'Unknown primary knowledge node % for %', new.primary_node_code, new.source_question_code;
-    end if;
-    if v_primary_subject_id <> v_subject_id then
-      raise exception 'Primary node % does not belong to subject % for %', new.primary_node_code, new.subject_code, new.source_question_code;
-    end if;
+    SELECT
+      kn.subject_id
+    INTO
+      v_primary_subject_id
+    FROM
+      public.knowledge_nodes kn
+    WHERE
+      kn.code = NEW.primary_node_code
+    LIMIT 1;
+    IF v_primary_subject_id IS NULL THEN
+      RAISE EXCEPTION 'Unknown primary knowledge node % for %', NEW.primary_node_code, NEW.source_question_code;
+    END IF;
+    IF v_primary_subject_id <> v_subject_id THEN
+      RAISE EXCEPTION 'Primary node % does not belong to subject % for %', NEW.primary_node_code, NEW.subject_code, NEW.source_question_code;
+    END IF;
 
-    if new.secondary_node_code is not null then
-      select kn.subject_id into v_secondary_subject_id
-      from public.knowledge_nodes kn where kn.code = new.secondary_node_code limit 1;
-      if v_secondary_subject_id is null then
-        raise exception 'Unknown secondary knowledge node % for %', new.secondary_node_code, new.source_question_code;
-      end if;
-      if v_secondary_subject_id <> v_subject_id then
-        raise exception 'Secondary node % does not belong to subject % for %', new.secondary_node_code, new.subject_code, new.source_question_code;
-      end if;
-    end if;
-  else
-    if new.primary_node_code is not null or new.secondary_node_code is not null then
-      raise exception 'Unresolved mapping must not contain knowledge-node decisions for %', new.source_question_code;
-    end if;
-    if new.review_status in ('needs_revision', 'blocked')
-       and (new.review_method is null or new.reviewed_at is null or new.reviewed_by is null) then
-      raise exception '% mapping requires review_method, reviewed_at, and reviewed_by for %', new.review_status, new.source_question_code;
-    end if;
-  end if;
+    IF NEW.secondary_node_code IS NOT NULL THEN
+      SELECT
+        kn.subject_id
+      INTO
+        v_secondary_subject_id
+      FROM
+        public.knowledge_nodes kn
+      WHERE
+        kn.code = NEW.secondary_node_code
+      LIMIT 1;
+      IF v_secondary_subject_id IS NULL THEN
+        RAISE EXCEPTION 'Unknown secondary knowledge node % for %', NEW.secondary_node_code, NEW.source_question_code;
+      END IF;
+      IF v_secondary_subject_id <> v_subject_id THEN
+        RAISE EXCEPTION 'Secondary node % does not belong to subject % for %', NEW.secondary_node_code, NEW.subject_code, NEW.source_question_code;
+      END IF;
+    END IF;
+  ELSE
+    IF NEW.primary_node_code IS NOT NULL OR NEW.secondary_node_code IS NOT NULL THEN
+      RAISE EXCEPTION 'Unresolved mapping must not contain knowledge-node decisions for %', NEW.source_question_code;
+    END IF;
+    IF NEW.review_status IN ('needs_revision', 'blocked') AND (NEW.review_method IS NULL OR NEW.reviewed_at IS NULL OR NEW.reviewed_by IS NULL) THEN
+      RAISE EXCEPTION '% mapping requires review_method, reviewed_at, and reviewed_by for %', NEW.review_status, NEW.source_question_code;
+    END IF;
+  END IF;
 
-  if new.secondary_node_code is not null and new.secondary_node_code = new.primary_node_code then
-    raise exception 'Primary and secondary nodes must differ for %', new.source_question_code;
-  end if;
+  IF NEW.secondary_node_code IS NOT NULL AND NEW.secondary_node_code = NEW.primary_node_code THEN
+    RAISE EXCEPTION 'Primary and secondary nodes must differ for %', NEW.source_question_code;
+  END IF;
 
-  new.updated_at := now();
-  return new;
-end;
+  NEW.updated_at := now();
+  RETURN new;
+END;
 $$;
 
-create or replace function public.stage_cpns_legacy_question(
-  p_source_question_id uuid,
-  p_source_question_code text,
-  p_payload jsonb
-)
-returns void
-language plpgsql
-security definer
-set search_path = pg_catalog, public, app_private
-as $$
-declare
+CREATE OR REPLACE FUNCTION public.stage_cpns_legacy_question (p_source_question_id uuid, p_source_question_code text, p_payload jsonb)
+  RETURNS void
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path = pg_catalog, public, app_private
+  AS $$
+DECLARE
   v_payload_subject text;
-begin
-  if p_source_question_id is null or nullif(btrim(p_source_question_code), '') is null then
-    raise exception 'source_question_id and source_question_code are required';
-  end if;
-  if p_payload is null or jsonb_typeof(p_payload) <> 'object' then
-    raise exception 'payload must be a JSON object for %', p_source_question_code;
-  end if;
-  if p_payload->>'sourceQuestionId' is distinct from p_source_question_id::text then
-    raise exception 'payload sourceQuestionId mismatch for %', p_source_question_code;
-  end if;
-  if p_payload->>'questionCode' is distinct from p_source_question_code then
-    raise exception 'payload questionCode mismatch for %', p_source_question_code;
-  end if;
+BEGIN
+  IF p_source_question_id IS NULL OR nullif (btrim(p_source_question_code), '') IS NULL THEN
+    RAISE EXCEPTION 'source_question_id and source_question_code are required';
+  END IF;
+  IF p_payload IS NULL OR jsonb_typeof(p_payload) <> 'object' THEN
+    RAISE EXCEPTION 'payload must be a JSON object for %', p_source_question_code;
+  END IF;
+  IF p_payload ->> 'sourceQuestionId' IS DISTINCT FROM p_source_question_id::text THEN
+    RAISE EXCEPTION 'payload sourceQuestionId mismatch for %', p_source_question_code;
+  END IF;
+  IF p_payload ->> 'questionCode' IS DISTINCT FROM p_source_question_code THEN
+    RAISE EXCEPTION 'payload questionCode mismatch for %', p_source_question_code;
+  END IF;
 
-  v_payload_subject := p_payload->>'subject';
-  if v_payload_subject not in ('TWK','TIU','TKP') then
-    raise exception 'invalid payload subject % for %', v_payload_subject, p_source_question_code;
-  end if;
-  if nullif(btrim(p_payload->>'stem'), '') is null then
-    raise exception 'payload stem is required for %', p_source_question_code;
-  end if;
-  if jsonb_typeof(p_payload->'options') <> 'array' or jsonb_array_length(p_payload->'options') <> 5 then
-    raise exception 'payload must contain exactly 5 options for %', p_source_question_code;
-  end if;
+  v_payload_subject := p_payload ->> 'subject';
+  IF v_payload_subject NOT IN ('TWK', 'TIU', 'TKP') THEN
+    RAISE EXCEPTION 'invalid payload subject % for %', v_payload_subject, p_source_question_code;
+  END IF;
+  IF nullif (btrim(p_payload ->> 'stem'), '') IS NULL THEN
+    RAISE EXCEPTION 'payload stem is required for %', p_source_question_code;
+  END IF;
+  IF jsonb_typeof(p_payload -> 'options') <> 'array' OR jsonb_array_length(p_payload -> 'options') <> 5 THEN
+    RAISE EXCEPTION 'payload must contain exactly 5 options for %', p_source_question_code;
+  END IF;
 
-  insert into app_private.cpns_legacy_import_stage (
-    source_question_id, source_question_code, payload, staged_at, updated_at
-  ) values (
-    p_source_question_id, p_source_question_code, p_payload, now(), now()
-  )
-  on conflict (source_question_id) do update
-    set source_question_code = excluded.source_question_code,
-        payload = excluded.payload,
-        updated_at = now();
-end;
+  INSERT INTO app_private.cpns_legacy_import_stage (source_question_id, source_question_code, payload, staged_at, updated_at)
+    VALUES (p_source_question_id, p_source_question_code, p_payload, now(), now())
+  ON CONFLICT (source_question_id)
+    DO UPDATE SET
+      source_question_code = excluded.source_question_code,
+      payload = excluded.payload,
+      updated_at = now();
+END;
 $$;
 
-create or replace function public.import_reviewed_cpns_legacy_question(
-  p_source_question_id uuid,
-  p_publish boolean default false
-)
-returns uuid
-language plpgsql
-security definer
-set search_path = pg_catalog, public, app_private
-as $$
-declare
+CREATE OR REPLACE FUNCTION public.import_reviewed_cpns_legacy_question (p_source_question_id uuid, p_publish boolean DEFAULT FALSE)
+  RETURNS uuid
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path = pg_catalog, public, app_private
+  AS $$
+DECLARE
   v_ready record;
   v_program_id uuid;
   v_track_id uuid;
@@ -417,269 +406,334 @@ declare
   v_option_key text;
   v_correct_count integer;
   v_score numeric;
-begin
-  select * into v_ready
-  from app_private.cpns_legacy_import_ready
-  where source_question_id = p_source_question_id;
+BEGIN
+  SELECT
+    *
+  INTO
+    v_ready
+  FROM
+    app_private.cpns_legacy_import_ready
+  WHERE
+    source_question_id = p_source_question_id;
 
-  if not found then
-    raise exception 'Legacy question % is not import-ready: raw payload missing, mapping unresolved, or node invalid', p_source_question_id;
-  end if;
+  IF NOT found THEN
+    RAISE EXCEPTION 'Legacy question % is not import-ready: raw payload missing, mapping unresolved, or node invalid', p_source_question_id;
+  END IF;
 
-  select p.id, t.id, s.id into v_program_id, v_track_id, v_subject_id
-  from public.programs p
-  join public.tracks t on t.program_id = p.id and t.code = 'SKD'
-  join public.subjects s on s.track_id = t.id and s.code = v_ready.subject_code
-  where p.code = 'CPNS'
-  limit 1;
+  SELECT
+    p.id,
+    t.id,
+    s.id
+  INTO
+    v_program_id,
+    v_track_id,
+    v_subject_id
+  FROM
+    public.programs p
+    JOIN public.tracks t ON t.program_id = p.id
+      AND t.code = 'SKD'
+    JOIN public.subjects s ON s.track_id = t.id
+      AND s.code = v_ready.subject_code
+  WHERE
+    p.code = 'CPNS'
+  LIMIT 1;
 
-  if v_program_id is null or v_track_id is null or v_subject_id is null then
-    raise exception 'Canonical CPNS/SKD/% catalog is missing', v_ready.subject_code;
-  end if;
-  if v_ready.payload->>'subject' is distinct from v_ready.subject_code then
-    raise exception 'Raw payload subject and reviewed subject differ for %', v_ready.source_question_code;
-  end if;
+  IF v_program_id IS NULL OR v_track_id IS NULL OR v_subject_id IS NULL THEN
+    RAISE EXCEPTION 'Canonical CPNS/SKD/% catalog is missing', v_ready.subject_code;
+  END IF;
+  IF v_ready.payload ->> 'subject' IS DISTINCT FROM v_ready.subject_code THEN
+    RAISE EXCEPTION 'Raw payload subject and reviewed subject differ for %', v_ready.source_question_code;
+  END IF;
 
-  select count(*)::integer into v_correct_count
-  from jsonb_array_elements(v_ready.payload->'options') o
-  where coalesce((o->>'isCorrect')::boolean, false);
-  if v_correct_count <> 1 then
-    raise exception 'Expected exactly one isCorrect option for %, got %', v_ready.source_question_code, v_correct_count;
-  end if;
+  SELECT
+    count(*)::integer
+  INTO
+    v_correct_count
+  FROM
+    jsonb_array_elements(v_ready.payload -> 'options') o
+WHERE
+  coalesce((o ->> 'isCorrect')::boolean, FALSE);
+  IF v_correct_count <> 1 THEN
+    RAISE EXCEPTION 'Expected exactly one isCorrect option for %, got %', v_ready.source_question_code, v_correct_count;
+  END IF;
 
-  select q.id, q.source_type, q.source_reference
-    into v_question_id, v_existing_source_type, v_existing_source_reference
-  from public.questions q where q.question_code = v_ready.source_question_code;
+  SELECT
+    q.id,
+    q.source_type,
+    q.source_reference
+  INTO
+    v_question_id,
+    v_existing_source_type,
+    v_existing_source_reference
+  FROM
+    public.questions q
+  WHERE
+    q.question_code = v_ready.source_question_code;
 
-  if v_question_id is not null then
-    if v_existing_source_type <> 'legacy_migration'
-       or v_existing_source_reference is distinct from v_ready.source_question_code then
-      raise exception 'Question code % already exists but is not the same legacy import', v_ready.source_question_code;
-    end if;
-    return v_question_id;
-  end if;
+  IF v_question_id IS NOT NULL THEN
+    IF v_existing_source_type <> 'legacy_migration' OR v_existing_source_reference IS DISTINCT FROM v_ready.source_question_code THEN
+      RAISE EXCEPTION 'Question code % already exists but is not the same legacy import', v_ready.source_question_code;
+    END IF;
+    RETURN v_question_id;
+  END IF;
 
-  insert into public.questions (
-    question_code, program_id, track_id, subject_id, question_type, stem,
-    difficulty, cognitive_level, source_type, source_reference, estimated_seconds,
-    status, version, author_id, reviewer_id, published_at, stimulus_id,
-    stimulus_order, response_config, created_at, updated_at
-  ) values (
-    v_ready.source_question_code, v_program_id, v_track_id, v_subject_id,
-    'single_choice', v_ready.payload->>'stem', 'unclassified', null,
-    'legacy_migration', v_ready.source_question_code, null,
-    case when p_publish then 'published' else 'draft' end,
-    1, v_ready.reviewed_by, v_ready.reviewed_by,
-    case when p_publish then now() else null end,
-    null, 1,
-    jsonb_build_object(
-      'scoringMode','single_option',
-      'legacySourceQuestionId',v_ready.source_question_id,
-      'legacyCategory',v_ready.legacy_category,
-      'legacySubCategory',v_ready.legacy_sub_category,
-      'mappingReview',jsonb_build_object(
-        'method',v_ready.review_method,
-        'notes',v_ready.review_notes,
-        'reviewedAt',v_ready.reviewed_at,
-        'primaryNodeCode',v_ready.primary_node_code,
-        'secondaryNodeCode',v_ready.secondary_node_code
-      ),
-      'migrationBatch','CPNS-LEGACY-MANUAL-MAPPING'
-    ),
-    now(), now()
-  ) returning id into v_question_id;
+  INSERT INTO public.questions (question_code, program_id, track_id, subject_id, question_type, stem, difficulty, cognitive_level, source_type, source_reference, estimated_seconds, status, version, author_id, reviewer_id, published_at, stimulus_id, stimulus_order, response_config, created_at, updated_at)
+    VALUES (v_ready.source_question_code, v_program_id, v_track_id, v_subject_id, 'single_choice', v_ready.payload ->> 'stem', 'unclassified', NULL, 'legacy_migration', v_ready.source_question_code, NULL, CASE WHEN p_publish THEN
+        'published'
+      ELSE
+        'draft'
+      END, 1, v_ready.reviewed_by, v_ready.reviewed_by, CASE WHEN p_publish THEN
+        now()
+      ELSE
+        NULL
+      END, NULL, 1, jsonb_build_object('scoringMode', 'single_option', 'legacySourceQuestionId', v_ready.source_question_id, 'legacyCategory', v_ready.legacy_category, 'legacySubCategory', v_ready.legacy_sub_category, 'mappingReview', jsonb_build_object('method', v_ready.review_method, 'notes', v_ready.review_notes, 'reviewedAt', v_ready.reviewed_at, 'primaryNodeCode', v_ready.primary_node_code, 'secondaryNodeCode', v_ready.secondary_node_code), 'migrationBatch', 'CPNS-LEGACY-MANUAL-MAPPING'), now(), now())
+  RETURNING
+    id
+  INTO
+    v_question_id;
 
-  for v_option in select value from jsonb_array_elements(v_ready.payload->'options') loop
-    v_sort := nullif(v_option->>'sortOrder','')::integer;
-    if v_sort is null or v_sort < 1 or v_sort > 5 then
-      raise exception 'Invalid option sortOrder for %', v_ready.source_question_code;
-    end if;
-    v_option_key := chr(64 + v_sort);
-    v_score := coalesce(nullif(v_option->>'score','')::numeric,0);
-    insert into public.question_options (
-      question_id, option_key, content, is_correct, score, sort_order, metadata
-    ) values (
-      v_question_id, v_option_key, v_option->>'content',
-      coalesce((v_option->>'isCorrect')::boolean,false), v_score, v_sort,
-      jsonb_build_object(
-        'legacyOptionId',v_option->>'id',
-        'legacyImageUrl',v_option->>'imageUrl',
-        'legacyResponseGroup',v_option->>'responseGroup',
-        'legacyResponseGroupOrder',v_option->>'responseGroupOrder'
-      )
-    );
-  end loop;
+  FOR v_option IN
+  SELECT
+    value
+  FROM
+    jsonb_array_elements(v_ready.payload -> 'options')
+    LOOP
+      v_sort := nullif (v_option ->> 'sortOrder', '')::integer;
+      IF v_sort IS NULL OR v_sort < 1 OR v_sort > 5 THEN
+        RAISE EXCEPTION 'Invalid option sortOrder for %', v_ready.source_question_code;
+      END IF;
+      v_option_key := chr(64 + v_sort);
+      v_score := coalesce(nullif (v_option ->> 'score', '')::numeric, 0);
+      INSERT INTO public.question_options (question_id, option_key, content, is_correct, score, sort_order, metadata)
+        VALUES (v_question_id, v_option_key, v_option ->> 'content', coalesce((v_option ->> 'isCorrect')::boolean, FALSE), v_score, v_sort, jsonb_build_object('legacyOptionId', v_option ->> 'id', 'legacyImageUrl', v_option ->> 'imageUrl', 'legacyResponseGroup', v_option ->> 'responseGroup', 'legacyResponseGroupOrder', v_option ->> 'responseGroupOrder'));
+    END LOOP;
 
-  if nullif(btrim(v_ready.payload->>'explanation'),'') is not null then
-    insert into public.question_explanations(question_id,content,format,version)
-    values(v_question_id,v_ready.payload->>'explanation','html',1);
-  end if;
+  IF nullif (btrim(v_ready.payload ->> 'explanation'), '') IS NOT NULL THEN
+    INSERT INTO public.question_explanations (question_id, content, format, version)
+      VALUES (v_question_id, v_ready.payload ->> 'explanation', 'html', 1);
+  END IF;
 
-  insert into public.question_knowledge_nodes(question_id,knowledge_node_id,relation_type)
-  values(v_question_id,v_ready.primary_node_id,'primary');
-  if v_ready.secondary_node_id is not null then
-    insert into public.question_knowledge_nodes(question_id,knowledge_node_id,relation_type)
-    values(v_question_id,v_ready.secondary_node_id,'secondary');
-  end if;
+  INSERT INTO public.question_knowledge_nodes (question_id, knowledge_node_id, relation_type)
+    VALUES (v_question_id, v_ready.primary_node_id, 'primary');
+  IF v_ready.secondary_node_id IS NOT NULL THEN
+    INSERT INTO public.question_knowledge_nodes (question_id, knowledge_node_id, relation_type)
+      VALUES (v_question_id, v_ready.secondary_node_id, 'secondary');
+  END IF;
 
-  insert into public.audit_logs(actor_user_id,action,entity_type,entity_id,old_data,new_data)
-  values(
-    v_ready.reviewed_by,'question.legacy_import.mapping_reviewed','question',v_question_id,null,
-    jsonb_build_object(
-      'sourceQuestionId',v_ready.source_question_id,
-      'sourceQuestionCode',v_ready.source_question_code,
-      'primaryNodeCode',v_ready.primary_node_code,
-      'secondaryNodeCode',v_ready.secondary_node_code,
-      'published',p_publish,
-      'reviewMethod',v_ready.review_method
-    )
-  );
+  INSERT INTO public.audit_logs (actor_user_id, action, entity_type, entity_id, old_data, new_data)
+    VALUES (v_ready.reviewed_by, 'question.legacy_import.mapping_reviewed', 'question', v_question_id, NULL, jsonb_build_object('sourceQuestionId', v_ready.source_question_id, 'sourceQuestionCode', v_ready.source_question_code, 'primaryNodeCode', v_ready.primary_node_code, 'secondaryNodeCode', v_ready.secondary_node_code, 'published', p_publish, 'reviewMethod', v_ready.review_method));
 
-  return v_question_id;
-end;
+  RETURN v_question_id;
+END;
 $$;
 
-create or replace function public.import_reviewed_cpns_legacy_batch(
-  p_publish boolean default false,
-  p_limit integer default 500
-)
-returns table(imported_count integer, skipped_existing_count integer, remaining_ready_count integer)
-language plpgsql
-security definer
-set search_path = pg_catalog, public, app_private
-as $$
-declare
+CREATE OR REPLACE FUNCTION public.import_reviewed_cpns_legacy_batch (p_publish boolean DEFAULT FALSE, p_limit integer DEFAULT 500)
+  RETURNS TABLE (
+    imported_count integer,
+    skipped_existing_count integer,
+    remaining_ready_count integer)
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path = pg_catalog,
+  public,
+  app_private
+  AS $$
+DECLARE
   v_row record;
   v_before uuid;
   v_imported integer := 0;
   v_skipped integer := 0;
-begin
-  if p_limit < 1 or p_limit > 500 then
-    raise exception 'p_limit must be between 1 and 500';
-  end if;
+BEGIN
+  IF p_limit < 1 OR p_limit > 500 THEN
+    RAISE EXCEPTION 'p_limit must be between 1 and 500';
+  END IF;
 
-  for v_row in
-    select r.source_question_id, r.source_question_code
-    from app_private.cpns_legacy_import_ready r
-    order by r.source_question_code
-    limit p_limit
-  loop
-    select q.id into v_before from public.questions q where q.question_code = v_row.source_question_code;
-    perform public.import_reviewed_cpns_legacy_question(v_row.source_question_id,p_publish);
-    if v_before is null then v_imported := v_imported + 1; else v_skipped := v_skipped + 1; end if;
-  end loop;
+  FOR v_row IN
+  SELECT
+    r.source_question_id,
+    r.source_question_code
+  FROM
+    app_private.cpns_legacy_import_ready r
+  ORDER BY
+    r.source_question_code
+  LIMIT p_limit LOOP
+    SELECT
+      q.id
+    INTO
+      v_before
+    FROM
+      public.questions q
+    WHERE
+      q.question_code = v_row.source_question_code;
+    PERFORM
+      public.import_reviewed_cpns_legacy_question (v_row.source_question_id, p_publish);
+    IF v_before IS NULL THEN
+      v_imported := v_imported + 1;
+    ELSE
+      v_skipped := v_skipped + 1;
+    END IF;
+  END LOOP;
 
-  return query
-  select v_imported, v_skipped, count(*)::integer
-  from app_private.cpns_legacy_import_ready r
-  where not exists (select 1 from public.questions q where q.question_code = r.source_question_code);
-end;
+  RETURN QUERY
+  SELECT
+    v_imported,
+    v_skipped,
+    count(*)::integer
+  FROM
+    app_private.cpns_legacy_import_ready r
+  WHERE
+    NOT EXISTS (
+      SELECT
+        1
+      FROM
+        public.questions q
+      WHERE
+        q.question_code = r.source_question_code);
+END;
 $$;
 
-create or replace function public.get_cpns_legacy_import_summary()
-returns table(
-  registry_total bigint,
-  reviewed bigint,
-  needs_revision bigint,
-  raw_staged bigint,
-  import_ready bigint,
-  canonical_imported bigint
-)
-language sql
-security definer
-set search_path = pg_catalog, public, app_private
-as $$
-  select
-    (select count(*) from app_private.cpns_legacy_mapping_reviews),
-    (select count(*) from app_private.cpns_legacy_mapping_reviews where review_status='reviewed'),
-    (select count(*) from app_private.cpns_legacy_mapping_reviews where review_status='needs_revision'),
-    (select count(*) from app_private.cpns_legacy_import_stage),
-    (select count(*) from app_private.cpns_legacy_import_ready),
-    (select count(*) from public.questions
-      where (source_type='legacy_migration' and source_reference like 'TWK-%')
-         or (source_type='legacy_migration' and source_reference like 'TIU-%')
-         or (source_type='legacy_migration' and source_reference like 'TKP-%'));
+CREATE OR REPLACE FUNCTION public.get_cpns_legacy_import_summary ()
+  RETURNS TABLE (
+    registry_total bigint,
+    reviewed bigint,
+    needs_revision bigint,
+    raw_staged bigint,
+    import_ready bigint,
+    canonical_imported bigint)
+  LANGUAGE sql
+  SECURITY DEFINER
+  SET search_path = pg_catalog,
+  public,
+  app_private
+  AS $$
+  SELECT
+    (
+      SELECT
+        count(*)
+      FROM
+        app_private.cpns_legacy_mapping_reviews),
+    (
+      SELECT
+        count(*)
+      FROM
+        app_private.cpns_legacy_mapping_reviews
+      WHERE
+        review_status = 'reviewed'),
+    (
+      SELECT
+        count(*)
+      FROM
+        app_private.cpns_legacy_mapping_reviews
+      WHERE
+        review_status = 'needs_revision'),
+    (
+      SELECT
+        count(*)
+      FROM
+        app_private.cpns_legacy_import_stage),
+    (
+      SELECT
+        count(*)
+      FROM
+        app_private.cpns_legacy_import_ready),
+    (
+      SELECT
+        count(*)
+      FROM
+        public.questions
+      WHERE (source_type = 'legacy_migration'
+        AND source_reference LIKE 'TWK-%')
+      OR (source_type = 'legacy_migration'
+        AND source_reference LIKE 'TIU-%')
+      OR (source_type = 'legacy_migration'
+        AND source_reference LIKE 'TKP-%'));
 $$;
 
-revoke all on function public.stage_cpns_legacy_question(uuid,text,jsonb) from public, anon, authenticated;
-revoke all on function public.import_reviewed_cpns_legacy_question(uuid,boolean) from public, anon, authenticated;
-revoke all on function public.import_reviewed_cpns_legacy_batch(boolean,integer) from public, anon, authenticated;
-revoke all on function public.get_cpns_legacy_import_summary() from public, anon, authenticated;
+REVOKE ALL ON FUNCTION public.stage_cpns_legacy_question (uuid, text, jsonb) FROM public, anon, authenticated;
 
-grant execute on function public.stage_cpns_legacy_question(uuid,text,jsonb) to service_role;
-grant execute on function public.import_reviewed_cpns_legacy_question(uuid,boolean) to service_role;
-grant execute on function public.import_reviewed_cpns_legacy_batch(boolean,integer) to service_role;
-grant execute on function public.get_cpns_legacy_import_summary() to service_role;
+REVOKE ALL ON FUNCTION public.import_reviewed_cpns_legacy_question (uuid, boolean) FROM public, anon, authenticated;
 
-create or replace function public.stage_cpns_legacy_question(
-  p_source_question_id uuid,
-  p_source_question_code text,
-  p_payload jsonb
-)
-returns void
-language plpgsql
-security definer
-set search_path = pg_catalog, public, app_private
-as $$
-declare
+REVOKE ALL ON FUNCTION public.import_reviewed_cpns_legacy_batch (boolean, integer) FROM public, anon, authenticated;
+
+REVOKE ALL ON FUNCTION public.get_cpns_legacy_import_summary () FROM public, anon, authenticated;
+
+GRANT EXECUTE ON FUNCTION public.stage_cpns_legacy_question (uuid, text, jsonb) TO service_role;
+
+GRANT EXECUTE ON FUNCTION public.import_reviewed_cpns_legacy_question (uuid, boolean) TO service_role;
+
+GRANT EXECUTE ON FUNCTION public.import_reviewed_cpns_legacy_batch (boolean, integer) TO service_role;
+
+GRANT EXECUTE ON FUNCTION public.get_cpns_legacy_import_summary () TO service_role;
+
+CREATE OR REPLACE FUNCTION public.stage_cpns_legacy_question (p_source_question_id uuid, p_source_question_code text, p_payload jsonb)
+  RETURNS void
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path = pg_catalog, public, app_private
+  AS $$
+DECLARE
   v_payload_subject text;
   v_review_subject text;
   v_review_code text;
-begin
-  if p_source_question_id is null or nullif(btrim(p_source_question_code), '') is null then
-    raise exception 'source_question_id and source_question_code are required';
-  end if;
+BEGIN
+  IF p_source_question_id IS NULL OR nullif (btrim(p_source_question_code), '') IS NULL THEN
+    RAISE EXCEPTION 'source_question_id and source_question_code are required';
+  END IF;
 
-  select r.subject_code, r.source_question_code
-    into v_review_subject, v_review_code
-  from app_private.cpns_legacy_mapping_reviews r
-  where r.source_question_id = p_source_question_id;
+  SELECT
+    r.subject_code,
+    r.source_question_code
+  INTO
+    v_review_subject,
+    v_review_code
+  FROM
+    app_private.cpns_legacy_mapping_reviews r
+  WHERE
+    r.source_question_id = p_source_question_id;
 
-  if v_review_subject is null then
-    raise exception 'No mapping-review registry row exists for source question %', p_source_question_id;
-  end if;
-  if v_review_code is distinct from p_source_question_code then
-    raise exception 'Registry question code mismatch: expected %, got %', v_review_code, p_source_question_code;
-  end if;
+  IF v_review_subject IS NULL THEN
+    RAISE EXCEPTION 'No mapping-review registry row exists for source question %', p_source_question_id;
+  END IF;
+  IF v_review_code IS DISTINCT FROM p_source_question_code THEN
+    RAISE EXCEPTION 'Registry question code mismatch: expected %, got %', v_review_code, p_source_question_code;
+  END IF;
 
-  if p_payload is null or jsonb_typeof(p_payload) <> 'object' then
-    raise exception 'payload must be a JSON object for %', p_source_question_code;
-  end if;
-  if p_payload->>'sourceQuestionId' is distinct from p_source_question_id::text then
-    raise exception 'payload sourceQuestionId mismatch for %', p_source_question_code;
-  end if;
-  if p_payload->>'questionCode' is distinct from p_source_question_code then
-    raise exception 'payload questionCode mismatch for %', p_source_question_code;
-  end if;
+  IF p_payload IS NULL OR jsonb_typeof(p_payload) <> 'object' THEN
+    RAISE EXCEPTION 'payload must be a JSON object for %', p_source_question_code;
+  END IF;
+  IF p_payload ->> 'sourceQuestionId' IS DISTINCT FROM p_source_question_id::text THEN
+    RAISE EXCEPTION 'payload sourceQuestionId mismatch for %', p_source_question_code;
+  END IF;
+  IF p_payload ->> 'questionCode' IS DISTINCT FROM p_source_question_code THEN
+    RAISE EXCEPTION 'payload questionCode mismatch for %', p_source_question_code;
+  END IF;
 
-  v_payload_subject := p_payload->>'subject';
-  if v_payload_subject not in ('TWK','TIU','TKP') then
-    raise exception 'invalid payload subject % for %', v_payload_subject, p_source_question_code;
-  end if;
-  if v_payload_subject is distinct from v_review_subject then
-    raise exception 'Payload subject % does not match reviewed subject % for %', v_payload_subject, v_review_subject, p_source_question_code;
-  end if;
-  if nullif(btrim(p_payload->>'stem'), '') is null then
-    raise exception 'payload stem is required for %', p_source_question_code;
-  end if;
-  if jsonb_typeof(p_payload->'options') <> 'array' or jsonb_array_length(p_payload->'options') <> 5 then
-    raise exception 'payload must contain exactly 5 options for %', p_source_question_code;
-  end if;
+  v_payload_subject := p_payload ->> 'subject';
+  IF v_payload_subject NOT IN ('TWK', 'TIU', 'TKP') THEN
+    RAISE EXCEPTION 'invalid payload subject % for %', v_payload_subject, p_source_question_code;
+  END IF;
+  IF v_payload_subject IS DISTINCT FROM v_review_subject THEN
+    RAISE EXCEPTION 'Payload subject % does not match reviewed subject % for %', v_payload_subject, v_review_subject, p_source_question_code;
+  END IF;
+  IF nullif (btrim(p_payload ->> 'stem'), '') IS NULL THEN
+    RAISE EXCEPTION 'payload stem is required for %', p_source_question_code;
+  END IF;
+  IF jsonb_typeof(p_payload -> 'options') <> 'array' OR jsonb_array_length(p_payload -> 'options') <> 5 THEN
+    RAISE EXCEPTION 'payload must contain exactly 5 options for %', p_source_question_code;
+  END IF;
 
-  insert into app_private.cpns_legacy_import_stage (
-    source_question_id, source_question_code, payload, staged_at, updated_at
-  ) values (
-    p_source_question_id, p_source_question_code, p_payload, now(), now()
-  )
-  on conflict (source_question_id) do update
-    set source_question_code = excluded.source_question_code,
-        payload = excluded.payload,
-        updated_at = now();
-end;
+  INSERT INTO app_private.cpns_legacy_import_stage (source_question_id, source_question_code, payload, staged_at, updated_at)
+    VALUES (p_source_question_id, p_source_question_code, p_payload, now(), now())
+  ON CONFLICT (source_question_id)
+    DO UPDATE SET
+      source_question_code = excluded.source_question_code,
+      payload = excluded.payload,
+      updated_at = now();
+END;
 $$;
 
-create or replace view app_private.cpns_legacy_import_ready as
-select
+CREATE OR REPLACE VIEW app_private.cpns_legacy_import_ready AS
+SELECT
   st.source_question_id,
   st.source_question_code,
   st.payload,
@@ -687,46 +741,40 @@ select
   r.legacy_category,
   r.legacy_sub_category,
   r.primary_node_code,
-  pkn.id as primary_node_id,
+  pkn.id AS primary_node_id,
   r.secondary_node_code,
-  skn.id as secondary_node_id,
+  skn.id AS secondary_node_id,
   r.review_method,
   r.review_notes,
   r.reviewed_by,
   r.reviewed_at
-from app_private.cpns_legacy_import_stage st
-join app_private.cpns_legacy_mapping_reviews r
-  on r.source_question_id = st.source_question_id
- and r.source_question_code = st.source_question_code
-join public.subjects s on s.code = r.subject_code
-join public.tracks t on t.id = s.track_id and t.code = 'SKD'
-join public.programs p on p.id = t.program_id and p.code = 'CPNS'
-join public.knowledge_nodes pkn
-  on pkn.code = r.primary_node_code
- and pkn.subject_id = s.id
-left join public.knowledge_nodes skn
-  on skn.code = r.secondary_node_code
- and skn.subject_id = s.id
-where r.review_status = 'reviewed'
-  and (r.secondary_node_code is null or skn.id is not null)
-  and (
-    nullif(btrim(st.payload->>'imageUrl'), '') is null
-    or nullif(btrim(st.payload->>'canonicalAssetStoragePath'), '') is not null
-  );
+FROM
+  app_private.cpns_legacy_import_stage st
+  JOIN app_private.cpns_legacy_mapping_reviews r ON r.source_question_id = st.source_question_id
+    AND r.source_question_code = st.source_question_code
+  JOIN public.subjects s ON s.code = r.subject_code
+  JOIN public.tracks t ON t.id = s.track_id
+    AND t.code = 'SKD'
+  JOIN public.programs p ON p.id = t.program_id
+    AND p.code = 'CPNS'
+  JOIN public.knowledge_nodes pkn ON pkn.code = r.primary_node_code
+    AND pkn.subject_id = s.id
+  LEFT JOIN public.knowledge_nodes skn ON skn.code = r.secondary_node_code
+    AND skn.subject_id = s.id
+WHERE
+  r.review_status = 'reviewed'
+  AND (r.secondary_node_code IS NULL
+    OR skn.id IS NOT NULL)
+  AND (nullif (btrim(st.payload ->> 'imageUrl'), '') IS NULL
+    OR nullif (btrim(st.payload ->> 'canonicalAssetStoragePath'), '') IS NOT NULL);
 
-comment on view app_private.cpns_legacy_import_ready is
-  'Only raw-staged CPNS legacy questions with explicit reviewed mappings, valid same-subject nodes, and any required legacy question image already copied to canonical storage.';
-
-create or replace function public.import_reviewed_cpns_legacy_question(
-  p_source_question_id uuid,
-  p_publish boolean default false
-)
-returns uuid
-language plpgsql
-security definer
-set search_path = pg_catalog, public, app_private
-as $$
-declare
+COMMENT ON VIEW app_private.cpns_legacy_import_ready IS TEXTVALUE6E; CREATE OR REPLACE FUNCTION public.import_reviewed_cpns_legacy_question (p_source_question_id uuid, p_publish boolean DEFAULT FALSE)
+  RETURNS uuid
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path = pg_catalog, public, app_private
+  AS $$
+DECLARE
   v_ready record;
   v_program_id uuid;
   v_track_id uuid;
@@ -740,445 +788,405 @@ declare
   v_correct_count integer;
   v_score numeric;
   v_asset_path text;
-begin
-  select * into v_ready
-  from app_private.cpns_legacy_import_ready
-  where source_question_id = p_source_question_id;
+BEGIN
+  SELECT
+    *
+  INTO
+    v_ready
+  FROM
+    app_private.cpns_legacy_import_ready
+  WHERE
+    source_question_id = p_source_question_id;
 
-  if not found then
-    raise exception 'Legacy question % is not import-ready: raw payload missing, mapping unresolved, node invalid, or required asset not migrated', p_source_question_id;
-  end if;
+  IF NOT found THEN
+    RAISE EXCEPTION 'Legacy question % is not import-ready: raw payload missing, mapping unresolved, node invalid, or required asset not migrated', p_source_question_id;
+  END IF;
 
-  select p.id, t.id, s.id into v_program_id, v_track_id, v_subject_id
-  from public.programs p
-  join public.tracks t on t.program_id = p.id and t.code = 'SKD'
-  join public.subjects s on s.track_id = t.id and s.code = v_ready.subject_code
-  where p.code = 'CPNS'
-  limit 1;
-
-  if v_program_id is null or v_track_id is null or v_subject_id is null then
-    raise exception 'Canonical CPNS/SKD/% catalog is missing', v_ready.subject_code;
-  end if;
-  if v_ready.payload->>'subject' is distinct from v_ready.subject_code then
-    raise exception 'Raw payload subject and reviewed subject differ for %', v_ready.source_question_code;
-  end if;
-
-  select count(*)::integer into v_correct_count
-  from jsonb_array_elements(v_ready.payload->'options') o
-  where coalesce((o->>'isCorrect')::boolean, false);
-  if v_correct_count <> 1 then
-    raise exception 'Expected exactly one isCorrect option for %, got %', v_ready.source_question_code, v_correct_count;
-  end if;
-
-  select q.id, q.source_type, q.source_reference
-    into v_question_id, v_existing_source_type, v_existing_source_reference
-  from public.questions q
-  where q.question_code = v_ready.source_question_code;
-
-  if v_question_id is not null then
-    if v_existing_source_type <> 'legacy_migration'
-       or v_existing_source_reference is distinct from v_ready.source_question_code then
-      raise exception 'Question code % already exists but is not the same legacy import', v_ready.source_question_code;
-    end if;
-    return v_question_id;
-  end if;
-
-  insert into public.questions (
-    question_code, program_id, track_id, subject_id, question_type, stem,
-    difficulty, cognitive_level, source_type, source_reference, estimated_seconds,
-    status, version, author_id, reviewer_id, published_at, stimulus_id,
-    stimulus_order, response_config, created_at, updated_at
-  ) values (
-    v_ready.source_question_code,
+  SELECT
+    p.id,
+    t.id,
+    s.id
+  INTO
     v_program_id,
     v_track_id,
-    v_subject_id,
-    'single_choice',
-    v_ready.payload->>'stem',
-    'unclassified',
-    null,
-    'legacy_migration',
-    v_ready.source_question_code,
-    null,
-    case when p_publish then 'published' else 'draft' end,
-    1,
-    v_ready.reviewed_by,
-    v_ready.reviewed_by,
-    case when p_publish then now() else null end,
-    null,
-    1,
-    jsonb_build_object(
-      'scoringMode','single_option',
-      'legacySourceQuestionId',v_ready.source_question_id,
-      'legacyCategory',v_ready.legacy_category,
-      'legacySubCategory',v_ready.legacy_sub_category,
-      'legacyImageUrl',nullif(v_ready.payload->>'imageUrl',''),
-      'mappingReview',jsonb_build_object(
-        'method',v_ready.review_method,
-        'notes',v_ready.review_notes,
-        'reviewedAt',v_ready.reviewed_at,
-        'primaryNodeCode',v_ready.primary_node_code,
-        'secondaryNodeCode',v_ready.secondary_node_code
-      ),
-      'migrationBatch','CPNS-LEGACY-MANUAL-MAPPING'
-    ),
-    now(),
-    now()
-  ) returning id into v_question_id;
+    v_subject_id
+  FROM
+    public.programs p
+    JOIN public.tracks t ON t.program_id = p.id
+      AND t.code = 'SKD'
+    JOIN public.subjects s ON s.track_id = t.id
+      AND s.code = v_ready.subject_code
+  WHERE
+    p.code = 'CPNS'
+  LIMIT 1;
 
-  for v_option in select value from jsonb_array_elements(v_ready.payload->'options') loop
-    v_sort := nullif(v_option->>'sortOrder','')::integer;
-    if v_sort is null or v_sort < 1 or v_sort > 5 then
-      raise exception 'Invalid option sortOrder for %', v_ready.source_question_code;
-    end if;
-    v_option_key := chr(64 + v_sort);
-    v_score := coalesce(nullif(v_option->>'score','')::numeric,0);
+  IF v_program_id IS NULL OR v_track_id IS NULL OR v_subject_id IS NULL THEN
+    RAISE EXCEPTION 'Canonical CPNS/SKD/% catalog is missing', v_ready.subject_code;
+  END IF;
+  IF v_ready.payload ->> 'subject' IS DISTINCT FROM v_ready.subject_code THEN
+    RAISE EXCEPTION 'Raw payload subject and reviewed subject differ for %', v_ready.source_question_code;
+  END IF;
 
-    insert into public.question_options(
-      question_id,option_key,content,is_correct,score,sort_order,metadata
-    ) values (
-      v_question_id,v_option_key,v_option->>'content',
-      coalesce((v_option->>'isCorrect')::boolean,false),v_score,v_sort,
-      jsonb_build_object(
-        'legacyOptionId',v_option->>'id',
-        'legacyImageUrl',v_option->>'imageUrl',
-        'legacyResponseGroup',v_option->>'responseGroup',
-        'legacyResponseGroupOrder',v_option->>'responseGroupOrder'
-      )
-    );
-  end loop;
+  SELECT
+    count(*)::integer
+  INTO
+    v_correct_count
+  FROM
+    jsonb_array_elements(v_ready.payload -> 'options') o
+  WHERE
+    coalesce((o ->> 'isCorrect')::boolean, FALSE);
+  IF v_correct_count <> 1 THEN
+    RAISE EXCEPTION 'Expected exactly one isCorrect option for %, got %', v_ready.source_question_code, v_correct_count;
+  END IF;
 
-  if nullif(btrim(v_ready.payload->>'explanation'),'') is not null then
-    insert into public.question_explanations(question_id,content,format,version)
-    values(v_question_id,v_ready.payload->>'explanation','html',1);
-  end if;
-
-  insert into public.question_knowledge_nodes(question_id,knowledge_node_id,relation_type)
-  values(v_question_id,v_ready.primary_node_id,'primary');
-  if v_ready.secondary_node_id is not null then
-    insert into public.question_knowledge_nodes(question_id,knowledge_node_id,relation_type)
-    values(v_question_id,v_ready.secondary_node_id,'secondary');
-  end if;
-
-  v_asset_path := nullif(btrim(v_ready.payload->>'canonicalAssetStoragePath'),'');
-  if v_asset_path is not null then
-    insert into public.question_assets(question_id,asset_type,storage_path,alt_text,sort_order)
-    values(
-      v_question_id,
-      'image',
-      v_asset_path,
-      'Legacy CPNS question image for ' || v_ready.source_question_code,
-      0
-    );
-  end if;
-
-  insert into public.audit_logs(actor_user_id,action,entity_type,entity_id,old_data,new_data)
-  values(
-    v_ready.reviewed_by,
-    'question.legacy_import.mapping_reviewed',
-    'question',
+  SELECT
+    q.id,
+    q.source_type,
+    q.source_reference
+  INTO
     v_question_id,
-    null,
-    jsonb_build_object(
-      'sourceQuestionId',v_ready.source_question_id,
-      'sourceQuestionCode',v_ready.source_question_code,
-      'primaryNodeCode',v_ready.primary_node_code,
-      'secondaryNodeCode',v_ready.secondary_node_code,
-      'canonicalAssetStoragePath',v_asset_path,
-      'published',p_publish,
-      'reviewMethod',v_ready.review_method
-    )
-  );
+    v_existing_source_type,
+    v_existing_source_reference
+  FROM
+    public.questions q
+  WHERE
+    q.question_code = v_ready.source_question_code;
 
-  return v_question_id;
-end;
+  IF v_question_id IS NOT NULL THEN
+    IF v_existing_source_type <> 'legacy_migration' OR v_existing_source_reference IS DISTINCT FROM v_ready.source_question_code THEN
+      RAISE EXCEPTION 'Question code % already exists but is not the same legacy import', v_ready.source_question_code;
+    END IF;
+    RETURN v_question_id;
+  END IF;
+
+  INSERT INTO public.questions (question_code, program_id, track_id, subject_id, question_type, stem, difficulty, cognitive_level, source_type, source_reference, estimated_seconds, status, version, author_id, reviewer_id, published_at, stimulus_id, stimulus_order, response_config, created_at, updated_at)
+    VALUES (v_ready.source_question_code, v_program_id, v_track_id, v_subject_id, 'single_choice', v_ready.payload ->> 'stem', 'unclassified', NULL, 'legacy_migration', v_ready.source_question_code, NULL, CASE WHEN p_publish THEN
+        'published'
+      ELSE
+        'draft'
+      END, 1, v_ready.reviewed_by, v_ready.reviewed_by, CASE WHEN p_publish THEN
+        now()
+      ELSE
+        NULL
+      END, NULL, 1, jsonb_build_object('scoringMode', 'single_option', 'legacySourceQuestionId', v_ready.source_question_id, 'legacyCategory', v_ready.legacy_category, 'legacySubCategory', v_ready.legacy_sub_category, 'legacyImageUrl', nullif (v_ready.payload ->> 'imageUrl', ''), 'mappingReview', jsonb_build_object('method', v_ready.review_method, 'notes', v_ready.review_notes, 'reviewedAt', v_ready.reviewed_at, 'primaryNodeCode', v_ready.primary_node_code, 'secondaryNodeCode', v_ready.secondary_node_code), 'migrationBatch', 'CPNS-LEGACY-MANUAL-MAPPING'), now(), now())
+  RETURNING
+    id
+  INTO
+    v_question_id;
+
+  FOR v_option IN
+  SELECT
+    value
+  FROM
+    jsonb_array_elements(v_ready.payload -> 'options')
+    LOOP
+      v_sort := nullif (v_option ->> 'sortOrder', '')::integer;
+      IF v_sort IS NULL OR v_sort < 1 OR v_sort > 5 THEN
+        RAISE EXCEPTION 'Invalid option sortOrder for %', v_ready.source_question_code;
+      END IF;
+      v_option_key := chr(64 + v_sort);
+      v_score := coalesce(nullif (v_option ->> 'score', '')::numeric, 0);
+
+      INSERT INTO public.question_options (question_id, option_key, content, is_correct, score, sort_order, metadata)
+        VALUES (v_question_id, v_option_key, v_option ->> 'content', coalesce((v_option ->> 'isCorrect')::boolean, FALSE), v_score, v_sort, jsonb_build_object('legacyOptionId', v_option ->> 'id', 'legacyImageUrl', v_option ->> 'imageUrl', 'legacyResponseGroup', v_option ->> 'responseGroup', 'legacyResponseGroupOrder', v_option ->> 'responseGroupOrder'));
+    END LOOP;
+
+  IF nullif (btrim(v_ready.payload ->> 'explanation'), '') IS NOT NULL THEN
+    INSERT INTO public.question_explanations (question_id, content, format, version)
+      VALUES (v_question_id, v_ready.payload ->> 'explanation', 'html', 1);
+  END IF;
+
+  INSERT INTO public.question_knowledge_nodes (question_id, knowledge_node_id, relation_type)
+    VALUES (v_question_id, v_ready.primary_node_id, 'primary');
+  IF v_ready.secondary_node_id IS NOT NULL THEN
+    INSERT INTO public.question_knowledge_nodes (question_id, knowledge_node_id, relation_type)
+      VALUES (v_question_id, v_ready.secondary_node_id, 'secondary');
+  END IF;
+
+  v_asset_path := nullif (btrim(v_ready.payload ->> 'canonicalAssetStoragePath'), '');
+  IF v_asset_path IS NOT NULL THEN
+    INSERT INTO public.question_assets (question_id, asset_type, storage_path, alt_text, sort_order)
+      VALUES (v_question_id, 'image', v_asset_path, 'Legacy CPNS question image for ' || v_ready.source_question_code, 0);
+  END IF;
+
+  INSERT INTO public.audit_logs (actor_user_id, action, entity_type, entity_id, old_data, new_data)
+    VALUES (v_ready.reviewed_by, 'question.legacy_import.mapping_reviewed', 'question', v_question_id, NULL, jsonb_build_object('sourceQuestionId', v_ready.source_question_id, 'sourceQuestionCode', v_ready.source_question_code, 'primaryNodeCode', v_ready.primary_node_code, 'secondaryNodeCode', v_ready.secondary_node_code, 'canonicalAssetStoragePath', v_asset_path, 'published', p_publish, 'reviewMethod', v_ready.review_method));
+
+  RETURN v_question_id;
+END;
 $$;
 
-revoke all on function public.stage_cpns_legacy_question(uuid,text,jsonb) from public, anon, authenticated;
-revoke all on function public.import_reviewed_cpns_legacy_question(uuid,boolean) from public, anon, authenticated;
-grant execute on function public.stage_cpns_legacy_question(uuid,text,jsonb) to service_role;
-grant execute on function public.import_reviewed_cpns_legacy_question(uuid,boolean) to service_role;
+REVOKE ALL ON FUNCTION public.stage_cpns_legacy_question (uuid, text, jsonb) FROM public, anon, authenticated;
 
-create or replace function public.upsert_cpns_legacy_mapping_review(
-  p_source_question_id uuid,
-  p_source_question_code text,
-  p_subject_code text,
-  p_legacy_category text,
-  p_legacy_sub_category text,
-  p_primary_node_code text,
-  p_secondary_node_code text,
-  p_review_status text,
-  p_review_method text,
-  p_review_notes text,
-  p_reviewed_by uuid
-)
-returns void
-language plpgsql
-security definer
-set search_path = pg_catalog, public, app_private
-as $$
-begin
-  if p_source_question_id is null
-     or nullif(btrim(p_source_question_code), '') is null
-     or p_subject_code not in ('TWK','TIU','TKP') then
-    raise exception 'source id/code and a valid CPNS subject are required';
-  end if;
+REVOKE ALL ON FUNCTION public.import_reviewed_cpns_legacy_question (uuid, boolean) FROM public, anon, authenticated;
 
-  if p_review_status not in ('reviewed','needs_revision','blocked') then
-    raise exception 'registry sync only accepts an explicit reviewed/needs_revision/blocked decision for %', p_source_question_code;
-  end if;
+GRANT EXECUTE ON FUNCTION public.stage_cpns_legacy_question (uuid, text, jsonb) TO service_role;
 
-  if p_reviewed_by is null then
-    raise exception 'reviewed_by is required for explicit mapping decisions';
-  end if;
+GRANT EXECUTE ON FUNCTION public.import_reviewed_cpns_legacy_question (uuid, boolean) TO service_role;
 
-  insert into app_private.cpns_legacy_mapping_reviews (
-    source_question_id,
-    source_question_code,
-    subject_code,
-    legacy_category,
-    legacy_sub_category,
-    primary_node_code,
-    secondary_node_code,
-    review_status,
-    review_method,
-    review_notes,
-    reviewed_by,
-    reviewed_at,
-    created_at,
-    updated_at
-  ) values (
-    p_source_question_id,
-    p_source_question_code,
-    p_subject_code,
-    p_legacy_category,
-    p_legacy_sub_category,
-    p_primary_node_code,
-    p_secondary_node_code,
-    p_review_status,
-    coalesce(nullif(btrim(p_review_method), ''), 'manual_semantic_review'),
-    p_review_notes,
-    p_reviewed_by,
-    now(),
-    now(),
-    now()
-  )
-  on conflict (source_question_id) do update
-    set source_question_code = excluded.source_question_code,
-        subject_code = excluded.subject_code,
-        legacy_category = excluded.legacy_category,
-        legacy_sub_category = excluded.legacy_sub_category,
-        primary_node_code = excluded.primary_node_code,
-        secondary_node_code = excluded.secondary_node_code,
-        review_status = excluded.review_status,
-        review_method = excluded.review_method,
-        review_notes = excluded.review_notes,
-        reviewed_by = excluded.reviewed_by,
-        reviewed_at = excluded.reviewed_at,
-        updated_at = now();
-end;
+CREATE OR REPLACE FUNCTION public.upsert_cpns_legacy_mapping_review (p_source_question_id uuid, p_source_question_code text, p_subject_code text, p_legacy_category text, p_legacy_sub_category text, p_primary_node_code text, p_secondary_node_code text, p_review_status text, p_review_method text, p_review_notes text, p_reviewed_by uuid)
+  RETURNS void
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path = pg_catalog, public, app_private
+  AS $$
+BEGIN
+  IF p_source_question_id IS NULL OR nullif (btrim(p_source_question_code), '') IS NULL OR p_subject_code NOT IN ('TWK', 'TIU', 'TKP') THEN
+    RAISE EXCEPTION 'source id/code and a valid CPNS subject are required';
+  END IF;
+
+  IF p_review_status NOT IN ('reviewed', 'needs_revision', 'blocked') THEN
+    RAISE EXCEPTION 'registry sync only accepts an explicit reviewed/needs_revision/blocked decision for %', p_source_question_code;
+  END IF;
+
+  IF p_reviewed_by IS NULL THEN
+    RAISE EXCEPTION 'reviewed_by is required for explicit mapping decisions';
+  END IF;
+
+  INSERT INTO app_private.cpns_legacy_mapping_reviews (source_question_id, source_question_code, subject_code, legacy_category, legacy_sub_category, primary_node_code, secondary_node_code, review_status, review_method, review_notes, reviewed_by, reviewed_at, created_at, updated_at)
+    VALUES (p_source_question_id, p_source_question_code, p_subject_code, p_legacy_category, p_legacy_sub_category, p_primary_node_code, p_secondary_node_code, p_review_status, coalesce(nullif (btrim(p_review_method), ''), 'manual_semantic_review'), p_review_notes, p_reviewed_by, now(), now(), now())
+  ON CONFLICT (source_question_id)
+    DO UPDATE SET
+      source_question_code = excluded.source_question_code,
+      subject_code = excluded.subject_code,
+      legacy_category = excluded.legacy_category,
+      legacy_sub_category = excluded.legacy_sub_category,
+      primary_node_code = excluded.primary_node_code,
+      secondary_node_code = excluded.secondary_node_code,
+      review_status = excluded.review_status,
+      review_method = excluded.review_method,
+      review_notes = excluded.review_notes,
+      reviewed_by = excluded.reviewed_by,
+      reviewed_at = excluded.reviewed_at,
+      updated_at = now();
+END;
 $$;
 
-revoke all on function public.upsert_cpns_legacy_mapping_review(uuid,text,text,text,text,text,text,text,text,text,uuid)
-  from public, anon, authenticated;
-grant execute on function public.upsert_cpns_legacy_mapping_review(uuid,text,text,text,text,text,text,text,text,text,uuid)
-  to service_role;
+REVOKE ALL ON FUNCTION public.upsert_cpns_legacy_mapping_review (uuid, text, text, text, text, text, text, text, text, text, uuid) FROM public, anon, authenticated;
+
+GRANT EXECUTE ON FUNCTION public.upsert_cpns_legacy_mapping_review (uuid, text, text, text, text, text, text, text, text, text, uuid) TO service_role;
 
 -- TKA SMP Learning Hierarchy V1
 -- Materialize safe 10-question drills for sufficiently populated lower-level
 -- knowledge nodes and expose one authenticated, read-only hierarchy projection.
-
-do $migration$
-declare
+DO $migration$
+DECLARE
   v_created_by uuid;
   v_feature_id uuid;
   v_exam_id uuid;
   v_exam_slug text;
   v_payload jsonb;
   r record;
-begin
-  select e.created_by
-    into v_created_by
-  from public.exams e
-  where e.slug = 'tka-smp-diagnostic-awal'
-  limit 1;
+BEGIN
+  SELECT
+    e.created_by
+  INTO
+    v_created_by
+  FROM
+    public.exams e
+  WHERE
+    e.slug = 'tka-smp-diagnostic-awal'
+  LIMIT 1;
 
-  if v_created_by is null then
-    raise exception 'TKA SMP diagnostic creator not found';
-  end if;
+  IF v_created_by IS NULL THEN
+    RAISE EXCEPTION 'TKA SMP diagnostic creator not found';
+  END IF;
 
-  select f.id
-    into v_feature_id
-  from public.features f
-  where f.code = 'tka.smp.drill.unlimited'
-  limit 1;
+  SELECT
+    f.id
+  INTO
+    v_feature_id
+  FROM
+    public.features f
+  WHERE
+    f.code = 'tka.smp.drill.unlimited'
+  LIMIT 1;
 
-  if v_feature_id is null then
-    raise exception 'TKA SMP drill feature not found';
-  end if;
+  IF v_feature_id IS NULL THEN
+    RAISE EXCEPTION 'TKA SMP drill feature not found';
+  END IF;
 
-  for r in
-    with candidates as (
-      select
-        kn.id as knowledge_node_id,
-        kn.name as knowledge_node_name,
-        kn.slug as knowledge_node_slug,
-        kn.depth,
-        kn.sort_order,
-        s.code as subject_code,
-        count(distinct q.id)::integer as published_question_count
-      from public.knowledge_nodes kn
-      join public.subjects s on s.id = kn.subject_id
-      join public.tracks t on t.id = s.track_id
-      join public.programs p on p.id = t.program_id
-      left join public.knowledge_node_paths knp on knp.ancestor_id = kn.id
-      left join public.question_knowledge_nodes qkn
-        on qkn.knowledge_node_id = knp.descendant_id
-       and lower(qkn.relation_type) = 'primary'
-      left join public.questions q
-        on q.id = qkn.question_id
-       and q.track_id = t.id
-       and lower(q.status) = 'published'
-      where upper(p.code) = 'TKA'
-        and upper(t.code) = 'SMP'
-        and lower(kn.status) = 'active'
-        and (
-          (upper(s.code) = 'BIN' and lower(kn.node_type) = 'subcompetency')
-          or
-          (upper(s.code) = 'MAT' and lower(kn.node_type) in ('subelement', 'topic'))
-        )
-      group by kn.id, kn.name, kn.slug, kn.depth, kn.sort_order, s.code
-    )
-    select *
-    from candidates
-    where published_question_count >= 10
-    order by subject_code, depth, sort_order, knowledge_node_name
-  loop
+  FOR r IN WITH candidates AS (
+    SELECT
+      kn.id AS knowledge_node_id,
+      kn.name AS knowledge_node_name,
+      kn.slug AS knowledge_node_slug,
+      kn.depth,
+      kn.sort_order,
+      s.code AS subject_code,
+      count(DISTINCT q.id)::integer AS published_question_count
+    FROM
+      public.knowledge_nodes kn
+      JOIN public.subjects s ON s.id = kn.subject_id
+      JOIN public.tracks t ON t.id = s.track_id
+      JOIN public.programs p ON p.id = t.program_id
+      LEFT JOIN public.knowledge_node_paths knp ON knp.ancestor_id = kn.id
+      LEFT JOIN public.question_knowledge_nodes qkn ON qkn.knowledge_node_id = knp.descendant_id
+        AND lower(qkn.relation_type) = 'primary'
+    LEFT JOIN public.questions q ON q.id = qkn.question_id
+      AND q.track_id = t.id
+      AND lower(q.status) = 'published'
+  WHERE
+    upper(p.code) = 'TKA'
+    AND upper(t.code) = 'SMP'
+    AND lower(kn.status) = 'active'
+    AND ((upper(s.code) = 'BIN'
+        AND lower(kn.node_type) = 'subcompetency')
+      OR (upper(s.code) = 'MAT'
+        AND lower(kn.node_type) IN ('subelement', 'topic')))
+  GROUP BY
+    kn.id,
+    kn.name,
+    kn.slug,
+    kn.depth,
+    kn.sort_order,
+    s.code
+)
+SELECT
+  *
+FROM
+  candidates
+WHERE
+  published_question_count >= 10
+ORDER BY
+  subject_code,
+  depth,
+  sort_order,
+  knowledge_node_name LOOP
     v_exam_slug := 'tka-smp-drill-' || lower(r.subject_code) || '-' || r.knowledge_node_slug;
 
-    select e.id
-      into v_exam_id
-    from public.exams e
-    where e.slug = v_exam_slug
-    limit 1;
+    SELECT
+      e.id
+    INTO
+      v_exam_id
+    FROM
+      public.exams e
+    WHERE
+      e.slug = v_exam_slug
+    LIMIT 1;
 
-    v_payload := public.admin_upsert_drill_exam_v1(
-      v_exam_id,
-      'TKA',
-      'SMP',
-      r.subject_code,
-      r.knowledge_node_id,
-      'Latihan Fokus ' || r.knowledge_node_name || ' TKA SMP',
-      v_exam_slug,
-      900,
-      1,
-      10,
-      'random',
-      'instant',
-      'FREEMIUM',
-      'active',
-      0,
-      v_created_by
-    );
+    v_payload := public.admin_upsert_drill_exam_v1 (v_exam_id, 'TKA', 'SMP', r.subject_code, r.knowledge_node_id, 'Latihan Fokus ' || r.knowledge_node_name || ' TKA SMP', v_exam_slug, 900, 1, 10, 'random', 'instant', 'FREEMIUM', 'active', 0, v_created_by);
 
-    v_exam_id := nullif(v_payload ->> 'exam_id', '')::uuid;
-    if v_exam_id is null then
-      raise exception 'TKA SMP hierarchy drill materialization failed for %', r.knowledge_node_name;
-    end if;
+    v_exam_id := nullif (v_payload ->> 'exam_id', '')::uuid;
+    IF v_exam_id IS NULL THEN
+      RAISE EXCEPTION 'TKA SMP hierarchy drill materialization failed for %', r.knowledge_node_name;
+    END IF;
 
-    update public.exams
-       set required_feature_id = v_feature_id,
-           attempt_limit = null,
-           description = 'Drill 10 soal untuk ' || r.knowledge_node_name || '. Satu percobaan awal gratis; Tempur Pass membuka latihan lanjutan.',
-           updated_at = now()
-     where id = v_exam_id;
-  end loop;
+    UPDATE
+      public.exams
+    SET
+      required_feature_id = v_feature_id,
+      attempt_limit = NULL,
+      description = 'Drill 10 soal untuk ' || r.knowledge_node_name || '. Satu percobaan awal gratis; Tempur Pass membuka latihan lanjutan.',
+      updated_at = now()
+    WHERE
+      id = v_exam_id;
+  END LOOP;
 
-  if exists (
-    with candidates as (
-      select kn.id, kn.slug, s.code as subject_code
-      from public.knowledge_nodes kn
-      join public.subjects s on s.id = kn.subject_id
-      join public.tracks t on t.id = s.track_id
-      join public.programs p on p.id = t.program_id
-      join public.knowledge_node_paths knp on knp.ancestor_id = kn.id
-      join public.question_knowledge_nodes qkn
-        on qkn.knowledge_node_id = knp.descendant_id
-       and lower(qkn.relation_type) = 'primary'
-      join public.questions q
-        on q.id = qkn.question_id
-       and q.track_id = t.id
-       and lower(q.status) = 'published'
-      where upper(p.code) = 'TKA'
-        and upper(t.code) = 'SMP'
-        and lower(kn.status) = 'active'
-        and (
-          (upper(s.code) = 'BIN' and lower(kn.node_type) = 'subcompetency')
-          or
-          (upper(s.code) = 'MAT' and lower(kn.node_type) in ('subelement', 'topic'))
-        )
-      group by kn.id, kn.slug, s.code
-      having count(distinct q.id) >= 10
-    )
-    select 1
-    from candidates c
-    left join public.exams e
-      on e.slug = 'tka-smp-drill-' || lower(c.subject_code) || '-' || c.slug
-     and lower(e.status) = 'active'
-    left join public.exam_sections es on es.exam_id = e.id
-    left join public.exam_question_items eqi
-      on eqi.exam_id = e.id
-     and eqi.section_id = es.id
-    group by c.id, e.id, es.id, es.question_count
-    having e.id is null or es.question_count <> 10 or count(eqi.id) <> 10
-  ) then
-    raise exception 'TKA SMP learning hierarchy frozen Drill gate failed';
-  end if;
-end;
+  IF EXISTS ( WITH candidates AS (
+      SELECT
+        kn.id,
+        kn.slug,
+        s.code AS subject_code
+      FROM
+        public.knowledge_nodes kn
+        JOIN public.subjects s ON s.id = kn.subject_id
+        JOIN public.tracks t ON t.id = s.track_id
+        JOIN public.programs p ON p.id = t.program_id
+        JOIN public.knowledge_node_paths knp ON knp.ancestor_id = kn.id
+        JOIN public.question_knowledge_nodes qkn ON qkn.knowledge_node_id = knp.descendant_id
+          AND lower(qkn.relation_type) = 'primary'
+        JOIN public.questions q ON q.id = qkn.question_id
+          AND q.track_id = t.id
+          AND lower(q.status) = 'published'
+      WHERE
+        upper(p.code) = 'TKA'
+        AND upper(t.code) = 'SMP'
+        AND lower(kn.status) = 'active'
+        AND ((upper(s.code) = 'BIN'
+            AND lower(kn.node_type) = 'subcompetency')
+          OR (upper(s.code) = 'MAT'
+            AND lower(kn.node_type) IN ('subelement', 'topic')))
+      GROUP BY
+        kn.id,
+        kn.slug,
+        s.code
+      HAVING
+        count(DISTINCT q.id) >= 10
+)
+      SELECT
+        1
+      FROM
+        candidates c
+      LEFT JOIN public.exams e ON e.slug = 'tka-smp-drill-' || lower(c.subject_code) || '-' || c.slug
+        AND lower(e.status) = 'active'
+    LEFT JOIN public.exam_sections es ON es.exam_id = e.id
+    LEFT JOIN public.exam_question_items eqi ON eqi.exam_id = e.id
+      AND eqi.section_id = es.id
+  GROUP BY
+    c.id,
+    e.id,
+    es.id,
+    es.question_count
+  HAVING
+    e.id IS NULL
+    OR es.question_count <> 10
+    OR count(eqi.id) <> 10) THEN
+RAISE EXCEPTION 'TKA SMP learning hierarchy frozen Drill gate failed';
+END IF;
+END;
 $migration$;
 
-create or replace function public.get_tka_smp_learning_hierarchy()
-returns jsonb
-language plpgsql
-security definer
-set search_path = ''
-as $function$
-declare
-  v_user uuid := auth.uid();
+CREATE OR REPLACE FUNCTION public.get_tka_smp_learning_hierarchy ()
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path = ''
+  AS $function$
+DECLARE
+  v_user uuid := auth.uid ();
   v_track_id uuid;
   v_user_track_id uuid;
   v_items jsonb := '[]'::jsonb;
-begin
-  if v_user is null then
-    raise exception 'AUTHENTICATION_REQUIRED';
-  end if;
+BEGIN
+  IF v_user IS NULL THEN
+    RAISE EXCEPTION 'AUTHENTICATION_REQUIRED';
+  END IF;
 
-  select t.id
-    into v_track_id
-  from public.programs p
-  join public.tracks t on t.program_id = p.id
-  where upper(p.code) = 'TKA'
-    and upper(t.code) = 'SMP'
-  limit 1;
+  SELECT
+    t.id
+  INTO
+    v_track_id
+  FROM
+    public.programs p
+    JOIN public.tracks t ON t.program_id = p.id
+  WHERE
+    upper(p.code) = 'TKA'
+    AND upper(t.code) = 'SMP'
+  LIMIT 1;
 
-  if v_track_id is null then
-    raise exception 'TKA_SMP_TRACK_NOT_FOUND';
-  end if;
+  IF v_track_id IS NULL THEN
+    RAISE EXCEPTION 'TKA_SMP_TRACK_NOT_FOUND';
+  END IF;
 
-  select ut.id
-    into v_user_track_id
-  from public.user_tracks ut
-  where ut.user_id = v_user
-    and ut.track_id = v_track_id
-    and lower(ut.status) = 'active'
-  limit 1;
+  SELECT
+    ut.id
+  INTO
+    v_user_track_id
+  FROM
+    public.user_tracks ut
+  WHERE
+    ut.user_id = v_user
+    AND ut.track_id = v_track_id
+    AND lower(ut.status) = 'active'
+  LIMIT 1;
 
-  if v_user_track_id is null then
-    raise exception 'ACTIVE_USER_TRACK_REQUIRED';
-  end if;
+  IF v_user_track_id IS NULL THEN
+    RAISE EXCEPTION 'ACTIVE_USER_TRACK_REQUIRED';
+  END IF;
 
-  with nodes as (
-    select
+  WITH nodes AS (
+    SELECT
       kn.id,
       kn.subject_id,
       kn.parent_id,
@@ -1188,147 +1196,118 @@ begin
       kn.node_type,
       kn.depth,
       kn.sort_order,
-      s.code as subject_code,
-      s.name as subject_name,
-      s.sort_order as subject_sort_order
-    from public.knowledge_nodes kn
-    join public.subjects s on s.id = kn.subject_id
-    where s.track_id = v_track_id
-      and lower(kn.status) = 'active'
-  ), question_counts as (
-    select
-      n.id,
-      count(distinct q.id)::integer as question_count
-    from nodes n
-    left join public.knowledge_node_paths knp on knp.ancestor_id = n.id
-    left join public.question_knowledge_nodes qkn
-      on qkn.knowledge_node_id = knp.descendant_id
-     and lower(qkn.relation_type) = 'primary'
-    left join public.questions q
-      on q.id = qkn.question_id
-     and q.track_id = v_track_id
-     and lower(q.status) = 'published'
-    group by n.id
-  ), hierarchy_rows as (
-    select
-      n.*,
-      qc.question_count,
-      coalesce(ukp.attempted_questions, 0)::integer as attempted_questions,
-      coalesce(ukp.correct_questions, 0)::integer as correct_questions,
-      coalesce(ukp.accuracy, 0)::numeric as accuracy,
-      coalesce(ukp.mastery_score, 0)::numeric as mastery_score,
-      coalesce(ukp.mastery_level, 'not_started') as mastery_level,
-      exact_drill.exam_slug as exact_drill_slug,
-      nearest_drill.knowledge_node_id as drill_knowledge_node_id,
-      nearest_drill.knowledge_node_code as drill_knowledge_node_code,
-      nearest_drill.knowledge_node_name as drill_knowledge_node_name,
-      nearest_drill.exam_slug as drill_exam_slug,
-      nearest_drill.distance as drill_distance,
-      path_nodes.path as path
-    from nodes n
-    join question_counts qc on qc.id = n.id
-    left join public.user_knowledge_progress ukp
-      on ukp.user_id = v_user
-     and ukp.user_track_id = v_user_track_id
-     and ukp.knowledge_node_id = n.id
-    left join lateral (
-      select e.slug as exam_slug
-      from public.exams e
-      join public.exam_types et on et.id = e.exam_type_id
-      where upper(et.code) = 'DRILL'
-        and lower(e.status) = 'active'
-        and e.slug = 'tka-smp-drill-' || lower(n.subject_code) || '-' || n.slug
-      limit 1
-    ) exact_drill on true
-    left join lateral (
-      select
-        anc.id as knowledge_node_id,
-        anc.code as knowledge_node_code,
-        anc.name as knowledge_node_name,
-        e.slug as exam_slug,
-        knp.depth::integer as distance
-      from public.knowledge_node_paths knp
-      join public.knowledge_nodes anc on anc.id = knp.ancestor_id
-      join public.exams e
-        on e.slug = 'tka-smp-drill-' || lower(n.subject_code) || '-' || anc.slug
-       and lower(e.status) = 'active'
-      join public.exam_types et on et.id = e.exam_type_id and upper(et.code) = 'DRILL'
-      where knp.descendant_id = n.id
-        and anc.subject_id = n.subject_id
-        and lower(anc.status) = 'active'
-      order by knp.depth asc, anc.depth desc, anc.sort_order, anc.id
-      limit 1
-    ) nearest_drill on true
-    left join lateral (
-      select coalesce(
-        jsonb_agg(
-          jsonb_build_object(
-            'id', anc.id,
-            'code', anc.code,
-            'name', anc.name,
-            'node_type', anc.node_type,
-            'depth', anc.depth
-          ) order by knp.depth desc
-        ),
-        '[]'::jsonb
-      ) as path
-      from public.knowledge_node_paths knp
-      join public.knowledge_nodes anc on anc.id = knp.ancestor_id
-      where knp.descendant_id = n.id
-        and anc.subject_id = n.subject_id
-        and lower(anc.status) = 'active'
-    ) path_nodes on true
-  )
-  select coalesce(
-    jsonb_agg(
-      jsonb_build_object(
-        'knowledge_node_id', hr.id,
-        'knowledge_node_code', hr.code,
-        'name', hr.name,
-        'node_type', hr.node_type,
-        'depth', hr.depth,
-        'parent_id', hr.parent_id,
-        'sort_order', hr.sort_order,
-        'subject_id', hr.subject_id,
-        'subject_code', hr.subject_code,
-        'subject_name', hr.subject_name,
-        'subject_sort_order', hr.subject_sort_order,
-        'published_question_count', hr.question_count,
-        'attempted_questions', hr.attempted_questions,
-        'correct_questions', hr.correct_questions,
-        'accuracy', hr.accuracy,
-        'mastery_score', hr.mastery_score,
-        'mastery_level', hr.mastery_level,
-        'path', hr.path,
-        'drill', case
-          when hr.drill_exam_slug is null then null
-          else jsonb_build_object(
-            'available', true,
-            'exact', hr.drill_distance = 0,
-            'distance', hr.drill_distance,
-            'knowledge_node_id', hr.drill_knowledge_node_id,
-            'knowledge_node_code', hr.drill_knowledge_node_code,
-            'knowledge_node_name', hr.drill_knowledge_node_name,
-            'exam_slug', hr.drill_exam_slug,
-            'question_count', 10,
-            'duration_seconds', 900
-          )
-        end
-      ) order by hr.subject_sort_order, hr.subject_code, hr.depth, hr.sort_order, hr.code
-    ),
-    '[]'::jsonb
-  )
-  into v_items
-  from hierarchy_rows hr;
+      s.code AS subject_code,
+      s.name AS subject_name,
+      s.sort_order AS subject_sort_order
+    FROM
+      public.knowledge_nodes kn
+      JOIN public.subjects s ON s.id = kn.subject_id
+    WHERE
+      s.track_id = v_track_id
+      AND lower(kn.status) = 'active'
+),
+question_counts AS (
+  SELECT
+    n.id,
+    count(DISTINCT q.id)::integer AS question_count
+  FROM
+    nodes n
+    LEFT JOIN public.knowledge_node_paths knp ON knp.ancestor_id = n.id
+    LEFT JOIN public.question_knowledge_nodes qkn ON qkn.knowledge_node_id = knp.descendant_id
+      AND lower(qkn.relation_type) = 'primary'
+    LEFT JOIN public.questions q ON q.id = qkn.question_id
+      AND q.track_id = v_track_id
+      AND lower(q.status) = 'published'
+  GROUP BY
+    n.id
+),
+hierarchy_rows AS (
+  SELECT
+    n.*,
+    qc.question_count,
+    coalesce(ukp.attempted_questions, 0)::integer AS attempted_questions,
+    coalesce(ukp.correct_questions, 0)::integer AS correct_questions,
+    coalesce(ukp.accuracy, 0)::numeric AS accuracy,
+    coalesce(ukp.mastery_score, 0)::numeric AS mastery_score,
+    coalesce(ukp.mastery_level, 'not_started') AS mastery_level,
+    exact_drill.exam_slug AS exact_drill_slug,
+    nearest_drill.knowledge_node_id AS drill_knowledge_node_id,
+    nearest_drill.knowledge_node_code AS drill_knowledge_node_code,
+    nearest_drill.knowledge_node_name AS drill_knowledge_node_name,
+    nearest_drill.exam_slug AS drill_exam_slug,
+    nearest_drill.distance AS drill_distance,
+    path_nodes.path AS path
+  FROM
+    nodes n
+    JOIN question_counts qc ON qc.id = n.id
+    LEFT JOIN public.user_knowledge_progress ukp ON ukp.user_id = v_user
+      AND ukp.user_track_id = v_user_track_id
+      AND ukp.knowledge_node_id = n.id
+    LEFT JOIN LATERAL (
+      SELECT
+        e.slug AS exam_slug
+      FROM
+        public.exams e
+        JOIN public.exam_types et ON et.id = e.exam_type_id
+      WHERE
+        upper(et.code) = 'DRILL'
+        AND lower(e.status) = 'active'
+        AND e.slug = 'tka-smp-drill-' || lower(n.subject_code) || '-' || n.slug
+      LIMIT 1) exact_drill ON TRUE
+    LEFT JOIN LATERAL (
+      SELECT
+        anc.id AS knowledge_node_id,
+        anc.code AS knowledge_node_code,
+        anc.name AS knowledge_node_name,
+        e.slug AS exam_slug,
+        knp.depth::integer AS distance
+      FROM
+        public.knowledge_node_paths knp
+        JOIN public.knowledge_nodes anc ON anc.id = knp.ancestor_id
+        JOIN public.exams e ON e.slug = 'tka-smp-drill-' || lower(n.subject_code) || '-' || anc.slug
+          AND lower(e.status) = 'active'
+        JOIN public.exam_types et ON et.id = e.exam_type_id
+          AND upper(et.code) = 'DRILL'
+      WHERE
+        knp.descendant_id = n.id
+        AND anc.subject_id = n.subject_id
+        AND lower(anc.status) = 'active'
+      ORDER BY
+        knp.depth ASC,
+        anc.depth DESC,
+        anc.sort_order,
+        anc.id
+      LIMIT 1) nearest_drill ON TRUE
+    LEFT JOIN LATERAL (
+      SELECT
+        coalesce(jsonb_agg(jsonb_build_object('id', anc.id, 'code', anc.code, 'name', anc.name, 'node_type', anc.node_type, 'depth', anc.depth)
+          ORDER BY knp.depth DESC), '[]'::jsonb) AS path
+      FROM
+        public.knowledge_node_paths knp
+        JOIN public.knowledge_nodes anc ON anc.id = knp.ancestor_id
+      WHERE
+        knp.descendant_id = n.id
+        AND anc.subject_id = n.subject_id
+        AND lower(anc.status) = 'active') path_nodes ON TRUE
+)
+  SELECT
+    coalesce(jsonb_agg(jsonb_build_object('knowledge_node_id', hr.id, 'knowledge_node_code', hr.code, 'name', hr.name, 'node_type', hr.node_type, 'depth', hr.depth, 'parent_id', hr.parent_id, 'sort_order', hr.sort_order, 'subject_id', hr.subject_id, 'subject_code', hr.subject_code, 'subject_name', hr.subject_name, 'subject_sort_order', hr.subject_sort_order, 'published_question_count', hr.question_count, 'attempted_questions', hr.attempted_questions, 'correct_questions', hr.correct_questions, 'accuracy', hr.accuracy, 'mastery_score', hr.mastery_score, 'mastery_level', hr.mastery_level, 'path', hr.path, 'drill', CASE WHEN hr.drill_exam_slug IS NULL THEN
+            NULL
+          ELSE
+            jsonb_build_object('available', TRUE, 'exact', hr.drill_distance = 0, 'distance', hr.drill_distance, 'knowledge_node_id', hr.drill_knowledge_node_id, 'knowledge_node_code', hr.drill_knowledge_node_code, 'knowledge_node_name', hr.drill_knowledge_node_name, 'exam_slug', hr.drill_exam_slug, 'question_count', 10, 'duration_seconds', 900)
+          END)
+      ORDER BY hr.subject_sort_order, hr.subject_code, hr.depth, hr.sort_order, hr.code), '[]'::jsonb)
+  INTO
+    v_items
+  FROM
+    hierarchy_rows hr;
 
-  return jsonb_build_object(
-    'version', 'tka_smp_learning_hierarchy_v1',
-    'items', v_items,
-    'count', jsonb_array_length(v_items)
-  );
-end;
+    RETURN jsonb_build_object('version', 'tka_smp_learning_hierarchy_v1', 'items', v_items, 'count', jsonb_array_length(v_items));
+END;
 $function$;
 
-revoke all on function public.get_tka_smp_learning_hierarchy() from public;
-revoke all on function public.get_tka_smp_learning_hierarchy() from anon;
-grant execute on function public.get_tka_smp_learning_hierarchy() to authenticated;
+REVOKE ALL ON FUNCTION public.get_tka_smp_learning_hierarchy () FROM public;
+
+REVOKE ALL ON FUNCTION public.get_tka_smp_learning_hierarchy () FROM anon;
+
+GRANT EXECUTE ON FUNCTION public.get_tka_smp_learning_hierarchy () TO authenticated;

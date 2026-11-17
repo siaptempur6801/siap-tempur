@@ -1,17 +1,23 @@
-import Link from '@/components/admin/navigation/AdminLink';
+import Link from '@/components/admin/navigation/AdminLink'
+import { cn } from '@/lib/utils'
 
 /** Navigation links deliberately keep URL state and native browser history. */
 export function AdminTabs({
   tabs,
   active,
-  label = 'Bagian workspace'
+  label = 'Bagian workspace',
+  className,
 }: {
   tabs: { id: string; label: string; href: string }[]
   active: string
   label?: string
+  className?: string
 }) {
   return (
-    <nav aria-label={label} className="flex min-h-10 gap-1 overflow-x-auto border-b border-border">
+    <nav
+      aria-label={label}
+      className={cn('flex min-h-10 gap-1 overflow-x-auto border-b border-border', className)}
+    >
       {tabs.map((tab) => (
         <Link
           key={tab.id}

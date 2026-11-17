@@ -1,6 +1,7 @@
 -- Schema V2 uses permission-based, owner-folder policies for event flyer writes.
 -- Remove the legacy role-column policies to avoid duplicate permissive checks.
+DROP POLICY IF EXISTS event_flyers_admin_insert ON storage.objects;
 
-drop policy if exists event_flyers_admin_insert on storage.objects;
-drop policy if exists event_flyers_admin_update on storage.objects;
-drop policy if exists event_flyers_admin_delete on storage.objects;
+DROP POLICY IF EXISTS event_flyers_admin_update ON storage.objects;
+
+DROP POLICY IF EXISTS event_flyers_admin_delete ON storage.objects;

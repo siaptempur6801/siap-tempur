@@ -6,7 +6,7 @@
  * pengguna yang sudah login tidak dilempar ke halaman login lagi.
  */
 export function protectedHref(href: string, isLoggedIn: boolean) {
-    return isLoggedIn ? href : `/login?returnTo=${href}`
+  return isLoggedIn ? href : `/login?returnTo=${href}`
 }
 
 /**
@@ -17,5 +17,5 @@ export function protectedHref(href: string, isLoggedIn: boolean) {
  * Contoh: `appHref('/cpns/mini-tryout', '/cpns/dashboard/mini-tryout', authed)`.
  */
 export function appHref(publicHref: string, appRouteHref: string, isLoggedIn: boolean) {
-    return isLoggedIn ? appRouteHref : publicHref
+  return isLoggedIn ? appRouteHref : publicHref
 }

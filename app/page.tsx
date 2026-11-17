@@ -2,25 +2,26 @@ import type { Metadata } from 'next'
 import ReadingProgress from '@/components/blog/ReadingProgress'
 import { getAuthUserIdVerified } from '@/lib/utils/supabase/server'
 import {
-    LandingAccount,
-    LandingAudience,
-    LandingBenefits,
-    LandingCompare,
-    LandingCta,
-    LandingFaq,
-    LandingFeatures,
-    LandingFooter,
-    LandingHeader,
-    LandingHero,
-    LandingPrograms,
-    LandingQuickStart,
-    LandingSteps,
+  LandingAccount,
+  LandingAudience,
+  LandingBenefits,
+  LandingCompare,
+  LandingCta,
+  LandingFaq,
+  LandingFeatures,
+  LandingFooter,
+  LandingHeader,
+  LandingHero,
+  LandingPrograms,
+  LandingQuickStart,
+  LandingSteps,
 } from '@/components/home/landing/sections'
 
 export const metadata: Metadata = {
-    title: 'SiapTempur - Persiapan CPNS & TKA SD, SMP, SMA',
-    description: 'Satu akun untuk persiapan CPNS/SKD dan TKA jenjang SD, SMP, hingga SMA dengan latihan, tryout, pembahasan, analisis hasil, drill, dan remedial yang lebih terarah.',
-    alternates: { canonical: '/' },
+  title: 'SiapTempur - Persiapan CPNS & TKA SD, SMP, SMA',
+  description:
+    'Satu akun untuk persiapan CPNS/SKD dan TKA jenjang SD, SMP, hingga SMA dengan latihan, tryout, pembahasan, analisis hasil, drill, dan remedial yang lebih terarah.',
+  alternates: { canonical: '/' },
 }
 
 export const dynamic = 'force-dynamic'
@@ -35,47 +36,47 @@ export const revalidate = 0
  * satu akun → tanya jawab → CTA → footer.
  */
 export default async function Index() {
-    // Hanya butuh "sudah login atau belum" untuk memilih label CTA.
-    // `getAuthUserIdVerified` memverifikasi JWT secara lokal (proyek ini memakai
-    // ES256 + JWKS), sehingga tidak ada round trip ke Auth server hanya demi
-    // satu label — sebelumnya `getUser()` menembak `/auth/v1/user` di sini.
-    const userId = await getAuthUserIdVerified()
-    const loggedIn = Boolean(userId)
+  // Hanya butuh "sudah login atau belum" untuk memilih label CTA.
+  // `getAuthUserIdVerified` memverifikasi JWT secara lokal (proyek ini memakai
+  // ES256 + JWKS), sehingga tidak ada round trip ke Auth server hanya demi
+  // satu label — sebelumnya `getUser()` menembak `/auth/v1/user` di sini.
+  const userId = await getAuthUserIdVerified()
+  const loggedIn = Boolean(userId)
 
-    /**
-     * Tombol utama landing.
-     *
-     * Yang sudah login diantar ke `/onboarding` — halaman "Pilih ruang belajar"
-     * tempat ia benar-benar memilih CPNS atau TKA. Sebelumnya tombol ini hanya
-     * menggulir ke seksi `#produk`, sehingga label "Pilih program" menjanjikan
-     * sesuatu yang tidak terjadi: pengguna tetap harus memilih sendiri dari kartu
-     * di bawah.
-     *
-     * Yang belum login tetap ke pendaftaran. `returnTo=%2F` sengaja dipakai:
-     * `resolvePostLoginRedirect` memetakan `/` ke `/onboarding`, jadi keduanya
-     * berakhir di tempat yang sama.
-     */
-    const cta = {
-        primaryHref: loggedIn ? '/onboarding' : '/register?returnTo=%2F',
-        primaryLabel: loggedIn ? 'Pilih program' : 'Mulai belajar gratis',
-    }
+  /**
+   * Tombol utama landing.
+   *
+   * Yang sudah login diantar ke `/onboarding` — halaman "Pilih ruang belajar"
+   * tempat ia benar-benar memilih CPNS atau TKA. Sebelumnya tombol ini hanya
+   * menggulir ke seksi `#produk`, sehingga label "Pilih program" menjanjikan
+   * sesuatu yang tidak terjadi: pengguna tetap harus memilih sendiri dari kartu
+   * di bawah.
+   *
+   * Yang belum login tetap ke pendaftaran. `returnTo=%2F` sengaja dipakai:
+   * `resolvePostLoginRedirect` memetakan `/` ke `/onboarding`, jadi keduanya
+   * berakhir di tempat yang sama.
+   */
+  const cta = {
+    primaryHref: loggedIn ? '/onboarding' : '/register?returnTo=%2F',
+    primaryLabel: loggedIn ? 'Pilih program' : 'Mulai belajar gratis',
+  }
 
-    return (
-        <main className="st-product min-h-screen overflow-x-clip bg-[var(--st-paper)] font-body text-[var(--st-ink)]">
-            <ReadingProgress />
-            <LandingHeader user={loggedIn} {...cta} />
-            <LandingHero {...cta} />
-            <LandingBenefits />
-            <LandingQuickStart {...cta} />
-            <LandingPrograms />
-            <LandingCompare />
-            <LandingAudience />
-            <LandingSteps {...cta} />
-            <LandingFeatures />
-            <LandingAccount />
-            <LandingFaq {...cta} />
-            <LandingCta {...cta} />
-            <LandingFooter />
-        </main>
-    )
+  return (
+    <main className="st-product min-h-screen overflow-x-clip bg-[var(--st-paper)] font-body text-[var(--st-ink)]">
+      <ReadingProgress />
+      <LandingHeader user={loggedIn} {...cta} />
+      <LandingHero {...cta} />
+      <LandingBenefits />
+      <LandingQuickStart {...cta} />
+      <LandingPrograms />
+      <LandingCompare />
+      <LandingAudience />
+      <LandingSteps {...cta} />
+      <LandingFeatures />
+      <LandingAccount />
+      <LandingFaq {...cta} />
+      <LandingCta {...cta} />
+      <LandingFooter />
+    </main>
+  )
 }

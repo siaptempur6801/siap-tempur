@@ -1,5 +1,5 @@
-import type { NextConfig } from "next";
-import { LEGACY_ADMIN_REDIRECTS } from './lib/admin-redirects';
+import type { NextConfig } from 'next'
+import { LEGACY_ADMIN_REDIRECTS } from './lib/admin-redirects'
 
 const nextConfig: NextConfig = {
   /* config options here */
@@ -62,7 +62,7 @@ const nextConfig: NextConfig = {
           // menyulitkan audit.
         ],
       },
-    ];
+    ]
   },
   // Cache revalidation: Next.js defaults to no-store in prod, but setting
   // explicit revalidate on layout pages or using fetch cache/revalidate is
@@ -73,6 +73,6 @@ const nextConfig: NextConfig = {
   //     static: 180,
   //   },
   // },
-};
+}
 
-export default nextConfig;
+export default nextConfig

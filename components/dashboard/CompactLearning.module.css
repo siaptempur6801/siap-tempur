@@ -1,90 +1,90 @@
 .compact {
-  --st-radius-sm: 0.625rem;
-  --st-radius-md: 0.875rem;
-  --st-radius-lg: 1rem;
+  --st-radius-sm: var(--px-radius-sm);
+  --st-radius-md: var(--px-radius-md);
+  --st-radius-lg: var(--px-radius-md);
 }
 
 .compact :global(.st-kicker) {
-  gap: 0.4rem;
-  padding: 0.28rem 0.58rem;
-  font-size: 0.6875rem;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
 }
 
 .compact :global(.st-pill) {
-  gap: 0.3rem;
-  padding: 0.2rem 0.45rem;
-  font-size: 0.65rem;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
 }
 
 .compact :global(.st-input) {
-  min-height: 2.5rem;
-  padding: 0.55rem 0.7rem;
-  font-size: 0.875rem;
+  min-height: var(--touch-target);
+  padding: 0.75rem;
+  font-size: 1rem;
 }
 
 .compact :global(h1) {
-  line-height: 1.08;
+  line-height: 1.25;
 }
 
 .compact :global(h1.st-heading-display) {
-  font-size: clamp(2rem, 3vw, 2.75rem) !important;
+  font-size: clamp(1.25rem, 2vw, 1.5rem) !important;
 }
 
 .compact :global(h2.st-heading-display) {
-  font-size: clamp(1.5rem, 2.1vw, 2rem) !important;
+  font-size: clamp(1.125rem, 1.7vw, 1.25rem) !important;
 }
 
 .compact :global(h2.st-heading) {
-  font-size: clamp(1.25rem, 1.8vw, 1.6rem) !important;
+  font-size: clamp(1.125rem, 1.7vw, 1.25rem) !important;
 }
 
-.compact :global([data-experience-mode="learning"] h1:not(.st-heading-display)) {
-  font-size: clamp(1.75rem, 2.6vw, 2.25rem) !important;
+.compact :global([data-experience-mode='learning'] h1:not(.st-heading-display)) {
+  font-size: clamp(1.25rem, 2vw, 1.5rem) !important;
 }
 
-.compact :global([data-experience-mode="learning"] h2:not(.st-heading-display):not(.st-heading)) {
-  font-size: clamp(1.125rem, 1.7vw, 1.5rem) !important;
+.compact :global([data-experience-mode='learning'] h2:not(.st-heading-display):not(.st-heading)) {
+  font-size: clamp(1.125rem, 1.7vw, 1.25rem) !important;
 }
 
-.compact :global(.st-card[class~="p-8"]),
-.compact :global(.st-card-md[class~="p-8"]),
-.compact :global(.st-card-lg[class~="p-8"]),
-.compact :global(article[class~="p-8"]) {
+.compact :global(.st-card[class~='p-8']),
+.compact :global(.st-card-md[class~='p-8']),
+.compact :global(.st-card-lg[class~='p-8']),
+.compact :global(article[class~='p-8']) {
   padding: 1.25rem !important;
 }
 
-.compact :global(.st-card[class~="p-6"]),
-.compact :global(.st-card-md[class~="p-6"]),
-.compact :global(.st-card-lg[class~="p-6"]),
-.compact :global(article[class~="p-6"]) {
-  padding: 1.125rem !important;
+.compact :global(.st-card[class~='p-6']),
+.compact :global(.st-card-md[class~='p-6']),
+.compact :global(.st-card-lg[class~='p-6']),
+.compact :global(article[class~='p-6']) {
+  padding: 1.25rem !important;
 }
 
-.compact :global(.st-card[class~="p-5"]),
-.compact :global(.st-card-md[class~="p-5"]),
-.compact :global(.st-card-lg[class~="p-5"]),
-.compact :global(article[class~="p-5"]) {
+.compact :global(.st-card[class~='p-5']),
+.compact :global(.st-card-md[class~='p-5']),
+.compact :global(.st-card-lg[class~='p-5']),
+.compact :global(article[class~='p-5']) {
   padding: 1rem !important;
 }
 
-.compact :global([class~="gap-5"]) {
+.compact :global([class~='gap-5']) {
   gap: 1rem !important;
 }
 
-.compact :global([class~="gap-4"]) {
-  gap: 0.875rem !important;
+.compact :global([class~='gap-4']) {
+  gap: 1rem !important;
 }
 
-.compact :global([class~="mt-6"]) {
+.compact :global([class~='mt-6']) {
   margin-top: 1.25rem !important;
 }
 
-.compact :global([class~="mt-5"]) {
+.compact :global([class~='mt-5']) {
   margin-top: 1rem !important;
 }
 
 .compact :global(.space-y-10 > :not(:last-child)) {
-  margin-block-end: 1.75rem !important;
+  margin-block-end: 2rem !important;
 }
 
 .compact :global(.space-y-8 > :not(:last-child)),
@@ -98,6 +98,6 @@
 
 @media (min-width: 768px) {
   .compact :global(.st-button) {
-    min-height: 2.5rem !important;
+    min-height: 2.75rem !important;
   }
 }

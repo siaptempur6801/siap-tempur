@@ -23,49 +23,49 @@ import { getIp } from '@/lib/api-utils'
  * `auditEntityId` untuk menormalkannya.
  */
 export async function logAuditEvent(params: {
-    action: string
-    actor_id: string
-    target_type: string
-    target_id?: string | null
-    /** Keadaan sebelum perubahan; hanya diisi bila benar-benar informatif. */
-    before?: Record<string, unknown> | null
-    /** Keadaan sesudah perubahan / konteks tindakan. */
-    after?: Record<string, unknown> | null
-    /** Bentuk lama: dipetakan ke `after` supaya pemanggil lama tetap jalan. */
-    details?: Record<string, unknown>
+  action: string
+  actor_id: string
+  target_type: string
+  target_id?: string | null
+  /** Keadaan sebelum perubahan; hanya diisi bila benar-benar informatif. */
+  before?: Record<string, unknown> | null
+  /** Keadaan sesudah perubahan / konteks tindakan. */
+  after?: Record<string, unknown> | null
+  /** Bentuk lama: dipetakan ke `after` supaya pemanggil lama tetap jalan. */
+  details?: Record<string, unknown>
 }) {
-    try {
-        const headerStore = await headers()
-        const req = new Request('https://dummy.com', { headers: headerStore })
-        const ipAddress = getIp(req)
+  try {
+    const headerStore = await headers()
+    const req = new Request('https://dummy.com', { headers: headerStore })
+    const ipAddress = getIp(req)
 
-        const admin = await createAdminClient()
-        const { error } = await admin.from('audit_logs').insert({
-            action: params.action,
-            actor_user_id: params.actor_id,
-            entity_type: params.target_type,
-            entity_id: auditEntityId(params.target_id),
-            old_data: params.before ?? null,
-            new_data: params.after ?? params.details ?? null,
-            ip_address: ipAddress,
-            user_agent: headerStore.get('user-agent'),
-        })
+    const admin = await createAdminClient()
+    const { error } = await admin.from('audit_logs').insert({
+      action: params.action,
+      actor_user_id: params.actor_id,
+      entity_type: params.target_type,
+      entity_id: auditEntityId(params.target_id),
+      old_data: params.before ?? null,
+      new_data: params.after ?? params.details ?? null,
+      ip_address: ipAddress,
+      user_agent: headerStore.get('user-agent'),
+    })
 
-        if (error) {
-            // Dicatat sebagai error, bukan warn: kegagalan audit adalah masalah
-            // keamanan/kepatuhan, bukan gangguan kosmetik. Sebelumnya kegagalan
-            // ini tidak terlihat sama sekali.
-            logger.error('Gagal menulis audit log', error, {
-                action: params.action,
-                actorId: params.actor_id,
-            })
-            return { success: false as const, error: error.message }
-        }
-        return { success: true as const }
-    } catch (e) {
-        logger.error('Gagal menyusun audit log', e, { action: params.action })
-        return { success: false as const, error: e instanceof Error ? e.message : String(e) }
+    if (error) {
+      // Dicatat sebagai error, bukan warn: kegagalan audit adalah masalah
+      // keamanan/kepatuhan, bukan gangguan kosmetik. Sebelumnya kegagalan
+      // ini tidak terlihat sama sekali.
+      logger.error('Gagal menulis audit log', error, {
+        action: params.action,
+        actorId: params.actor_id,
+      })
+      return { success: false as const, error: error.message }
     }
+    return { success: true as const }
+  } catch (e) {
+    logger.error('Gagal menyusun audit log', e, { action: params.action })
+    return { success: false as const, error: e instanceof Error ? e.message : String(e) }
+  }
 }
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -79,8 +79,8 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
  * `new_data` sehingga tidak ada informasi yang benar-benar hilang.
  */
 export function auditEntityId(value: string | null | undefined): string | null {
-    const candidate = (value ?? '').trim()
-    return UUID_PATTERN.test(candidate) ? candidate : null
+  const candidate = (value ?? '').trim()
+  return UUID_PATTERN.test(candidate) ? candidate : null
 }
 
 /**
@@ -89,15 +89,26 @@ export function auditEntityId(value: string | null | undefined): string | null {
  * Jejak audit dibaca manusia (dan bisa diekspor), jadi kolom rahasia tidak
  * pernah ditulis — sekalipun pemanggilnya tidak sengaja memasukkannya.
  */
-const REDACTED_KEYS = ['password', 'token', 'secret', 'invite_token', 'access_token', 'refresh_token']
+const REDACTED_KEYS = [
+  'password',
+  'token',
+  'secret',
+  'invite_token',
+  'access_token',
+  'refresh_token',
+]
 
-export function redactAuditPayload(payload: Record<string, unknown> | null | undefined): Record<string, unknown> | null {
-    if (!payload) return null
-    const safe: Record<string, unknown> = {}
-    for (const [key, value] of Object.entries(payload)) {
-        safe[key] = REDACTED_KEYS.some((secret) => key.toLowerCase().includes(secret)) ? '[disunting]' : value
-    }
-    return safe
+export function redactAuditPayload(
+  payload: Record<string, unknown> | null | undefined,
+): Record<string, unknown> | null {
+  if (!payload) return null
+  const safe: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(payload)) {
+    safe[key] = REDACTED_KEYS.some((secret) => key.toLowerCase().includes(secret))
+      ? '[disunting]'
+      : value
+  }
+  return safe
 }
 
 /**
@@ -112,22 +123,22 @@ export function redactAuditPayload(payload: Record<string, unknown> | null | und
  * "apa" yang disentuh, bukan hanya UUID yang tidak berarti bagi pembaca.
  */
 export async function auditAdminAction(params: {
-    action: string
-    actorId: string
-    entityType: string
-    entityId?: string | null
-    label?: string | null
-    before?: Record<string, unknown> | null
-    after?: Record<string, unknown> | null
+  action: string
+  actorId: string
+  entityType: string
+  entityId?: string | null
+  label?: string | null
+  before?: Record<string, unknown> | null
+  after?: Record<string, unknown> | null
 }) {
-    const after = redactAuditPayload(params.after) ?? {}
-    const label = (params.label ?? '').trim()
-    return logAuditEvent({
-        action: params.action,
-        actor_id: params.actorId,
-        target_type: params.entityType,
-        target_id: params.entityId ?? null,
-        before: redactAuditPayload(params.before),
-        after: label ? { ...after, label } : after,
-    })
+  const after = redactAuditPayload(params.after) ?? {}
+  const label = (params.label ?? '').trim()
+  return logAuditEvent({
+    action: params.action,
+    actor_id: params.actorId,
+    target_type: params.entityType,
+    target_id: params.entityId ?? null,
+    before: redactAuditPayload(params.before),
+    after: label ? { ...after, label } : after,
+  })
 }

@@ -1,5 +1,5 @@
-import { ChevronRight } from 'lucide-react';
-import Link from '@/components/admin/navigation/AdminLink';
+import { ChevronRight } from 'lucide-react'
+import Link from '@/components/admin/navigation/AdminLink'
 
 export function AdminBreadcrumbs({ items }: { items: { label: string; href?: string }[] }) {
   return (

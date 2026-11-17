@@ -23,11 +23,17 @@ validate_remote_url() {
   local url="$2"
   local expected_ref="$3"
   case "$url" in
-    postgresql://*|postgres://*) ;;
-    *) echo "ERROR: ${label} URL is not a PostgreSQL URI." >&2; exit 1 ;;
+    postgresql://* | postgres://*) ;;
+    *)
+      echo "ERROR: ${label} URL is not a PostgreSQL URI." >&2
+      exit 1
+      ;;
   esac
   case "$url" in
-    *127.0.0.1*|*localhost*) echo "ERROR: ${label} URL unexpectedly points to localhost." >&2; exit 1 ;;
+    *127.0.0.1* | *localhost*)
+      echo "ERROR: ${label} URL unexpectedly points to localhost." >&2
+      exit 1
+      ;;
   esac
   if [[ "$url" != *"${expected_ref}"* ]]; then
     echo "ERROR: ${label} URL does not contain expected project ref ${expected_ref}." >&2
@@ -97,19 +103,19 @@ if [[ "$SEED_GATE" != "$EXPECTED_SEED_GATE" ]]; then
   echo "Reconcile/re-freeze staging before cutover rehearsal." >&2
   exit 1
 fi
-printf '%s\n' "$SEED_GATE" > "${OUT_DIR}/canonical_seed_gate.txt"
+printf '%s\n' "$SEED_GATE" >"${OUT_DIR}/canonical_seed_gate.txt"
 
 # 1) Complete legacy production public DDL. pg_dump is a read-only client; PGOPTIONS adds a
 # second guard so accidental statements in the session cannot mutate production.
 echo "[1/3] Export production public schema (read-only) ..."
 PGOPTIONS="-c default_transaction_read_only=on -c statement_timeout=120000" \
   pg_dump "$PROD_DB_URL" \
-    --schema-only \
-    --schema=public \
-    --no-owner \
-    --no-privileges \
-    --format=plain \
-    --file="${OUT_DIR}/production_public_schema.sql"
+  --schema-only \
+  --schema=public \
+  --no-owner \
+  --no-privileges \
+  --format=plain \
+  --file="${OUT_DIR}/production_public_schema.sql"
 
 # 2) Existing production raw exporter already forces every source read into BEGIN READ ONLY.
 echo "[2/3] Export production raw snapshot (read-only) ..."
@@ -139,13 +145,13 @@ done
 echo "[3/3] Export canonical staging V1 seed (read-only) ..."
 PGOPTIONS="-c default_transaction_read_only=on -c statement_timeout=120000" \
   pg_dump "$STAGING_DB_URL" \
-    --data-only \
-    --no-owner \
-    --no-privileges \
-    --format=plain \
-    --serializable-deferrable \
-    "${PG_DUMP_TABLE_ARGS[@]}" \
-    --file="${OUT_DIR}/canonical_v1_seed.sql"
+  --data-only \
+  --no-owner \
+  --no-privileges \
+  --format=plain \
+  --serializable-deferrable \
+  "${PG_DUMP_TABLE_ARGS[@]}" \
+  --file="${OUT_DIR}/canonical_v1_seed.sql"
 
 hash_file() {
   if command -v shasum >/dev/null 2>&1; then
@@ -155,7 +161,7 @@ hash_file() {
   fi
 }
 
-cat > "${OUT_DIR}/manifest.txt" <<EOF
+cat >"${OUT_DIR}/manifest.txt" <<EOF
 created_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 production_ref=${EXPECTED_PROD_REF}
 staging_ref=${EXPECTED_STAGING_REF}

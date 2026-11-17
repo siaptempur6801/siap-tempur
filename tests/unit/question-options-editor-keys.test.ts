@@ -20,34 +20,36 @@ import { newRowId } from '@/components/admin/QuestionOptionsEditor'
  */
 
 const SOURCE = readFileSync(
-    resolve(__dirname, '../../components/admin/QuestionOptionsEditor.tsx'),
-    'utf8',
+  resolve(__dirname, '../../components/admin/QuestionOptionsEditor.tsx'),
+  'utf8',
 )
 
 describe('QuestionOptionsEditor — identitas baris opsi', () => {
-    it('newRowId menghasilkan nilai unik yang tidak dapat diprediksi', () => {
-        const ids = new Set(Array.from({ length: 500 }, () => newRowId()))
-        expect(ids.size).toBe(500)
-    })
+  it('newRowId menghasilkan nilai unik yang tidak dapat diprediksi', () => {
+    const ids = new Set(Array.from({ length: 500 }, () => newRowId()))
+    expect(ids.size).toBe(500)
+  })
 
-    it('identitas baris tidak diturunkan dari kode opsi', () => {
-        // Nilai ini tidak boleh mengandung pola "KODE-indeks" yang dipakai versi lama.
-        for (let index = 0; index < 20; index += 1) {
-            expect(newRowId()).not.toMatch(/^[A-Z]-\d+$/)
-        }
-    })
+  it('identitas baris tidak diturunkan dari kode opsi', () => {
+    // Nilai ini tidak boleh mengandung pola "KODE-indeks" yang dipakai versi lama.
+    for (let index = 0; index < 20; index += 1) {
+      expect(newRowId()).not.toMatch(/^[A-Z]-\d+$/)
+    }
+  })
 
-    it('JSX tidak memakai row.key sebagai React key', () => {
-        const keyExpressions = [...SOURCE.matchAll(/\bkey=\{([^}]+)\}/g)].map((match) => match[1].trim())
+  it('JSX tidak memakai row.key sebagai React key', () => {
+    const keyExpressions = [...SOURCE.matchAll(/\bkey=\{([^}]+)\}/g)].map((match) =>
+      match[1].trim(),
+    )
 
-        expect(keyExpressions.length).toBeGreaterThan(0)
-        for (const expression of keyExpressions) {
-            expect(expression).not.toContain('row.key')
-            expect(expression).not.toContain('index')
-        }
-    })
+    expect(keyExpressions.length).toBeGreaterThan(0)
+    for (const expression of keyExpressions) {
+      expect(expression).not.toContain('row.key')
+      expect(expression).not.toContain('index')
+    }
+  })
 
-    it('baris opsi memakai identitas stabil sebagai key', () => {
-        expect(SOURCE).toContain('key={row.id}')
-    })
+  it('baris opsi memakai identitas stabil sebagai key', () => {
+    expect(SOURCE).toContain('key={row.id}')
+  })
 })
