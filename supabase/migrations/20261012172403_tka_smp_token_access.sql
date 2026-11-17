@@ -2,18 +2,22 @@
 -- attempts remain covered by their distribution context and are not charged.
 -- Reuse the current section-engine implementation, adding an atomic debit after
 -- the attempt and question snapshot are created.
-
 -- One token per newly created direct Full Tryout, Mini Tryout, and Focus Drill.
 -- Existing active sessions can still be resumed without a second debit.
-UPDATE public.exams e
+UPDATE
+  public.exams e
 SET
   access_type = 'FREE',
   required_feature_id = NULL,
   token_cost = 1,
   attempt_limit = NULL,
   updated_at = now()
-FROM public.programs p, public.tracks t, public.exam_types et
-WHERE e.program_id = p.id
+FROM
+  public.programs p,
+  public.tracks t,
+  public.exam_types et
+WHERE
+  e.program_id = p.id
   AND e.track_id = t.id
   AND e.exam_type_id = et.id
   AND t.program_id = p.id
@@ -21,19 +25,35 @@ WHERE e.program_id = p.id
   AND upper(t.code) = 'SMP'
   AND upper(et.code) IN ('FULL_TRYOUT', 'MINI_TRYOUT', 'DRILL')
   AND lower(e.status) IN ('active', 'scheduled', 'published', 'ready')
-  AND (
-    e.access_type IS DISTINCT FROM 'FREE'
+  AND (e.access_type IS DISTINCT FROM 'FREE'
     OR e.required_feature_id IS NOT NULL
     OR e.token_cost IS DISTINCT FROM 1
-    OR e.attempt_limit IS NOT NULL
-  );
+    OR e.attempt_limit IS NOT NULL);
 
 -- Remove retired Pass-only definitions when no other live record still uses them.
 DELETE FROM public.features f
 WHERE f.code IN ('tka.smp.mini_tryout.unlimited', 'tka.smp.drill.unlimited')
-  AND NOT EXISTS (SELECT 1 FROM public.exams e WHERE e.required_feature_id = f.id)
-  AND NOT EXISTS (SELECT 1 FROM public.entitlements en WHERE en.feature_id = f.id)
-  AND NOT EXISTS (SELECT 1 FROM public.product_features pf WHERE pf.feature_id = f.id);
+  AND NOT EXISTS (
+    SELECT
+      1
+    FROM
+      public.exams e
+    WHERE
+      e.required_feature_id = f.id)
+  AND NOT EXISTS (
+    SELECT
+      1
+    FROM
+      public.entitlements en
+    WHERE
+      en.feature_id = f.id)
+  AND NOT EXISTS (
+    SELECT
+      1
+    FROM
+      public.product_features pf
+    WHERE
+      pf.feature_id = f.id);
 
 CREATE OR REPLACE FUNCTION app_private.start_exam_attempt_for_context (p_exam_id uuid, p_user_id uuid, p_context jsonb)
   RETURNS jsonb
@@ -505,7 +525,11 @@ INSERT INTO public.exam_attempts (id, exam_id, user_id, attempt_number, status, 
         'drill'
       ELSE
         'full_tryout'
-      END, 'monetizationEnforced', v_monetization_enforced, 'entitlementBypass', v_bypass_attempt_limit, 'tokenCost', CASE WHEN v_context_type = 'DIRECT' THEN coalesce(v_token_cost, 0) ELSE 0 END) || jsonb_strip_nulls (jsonb_build_object('accessContext', lower(v_context_type), 'eventId', v_event_id, 'eventSessionId', v_event_session_id, 'eventRegistrationId', v_event_registration_id, 'assignmentId', v_assignment_id, 'organizationId', v_organization_id, 'batchId', v_batch_id, 'participantId', v_participant_id)), now(), now());
+      END, 'monetizationEnforced', v_monetization_enforced, 'entitlementBypass', v_bypass_attempt_limit, 'tokenCost', CASE WHEN v_context_type = 'DIRECT' THEN
+        coalesce(v_token_cost, 0)
+      ELSE
+        0
+      END) || jsonb_strip_nulls (jsonb_build_object('accessContext', lower(v_context_type), 'eventId', v_event_id, 'eventSessionId', v_event_session_id, 'eventRegistrationId', v_event_registration_id, 'assignmentId', v_assignment_id, 'organizationId', v_organization_id, 'batchId', v_batch_id, 'participantId', v_participant_id)), now(), now());
 
   WITH s AS (
     SELECT
@@ -595,12 +619,16 @@ FROM
   enhanced;
 
 INSERT INTO public.attempt_events (attempt_id, event_type, metadata)
-  VALUES (v_attempt_id, 'attempt_started', jsonb_build_object('attemptNumber', v_attempt_number, 'activeSectionId', v_first_section, 'questionCount', v_expected_count, 'monetizationEnforced', v_monetization_enforced, 'entitlementBypass', v_bypass_attempt_limit, 'tokenCost', CASE WHEN v_context_type = 'DIRECT' THEN coalesce(v_token_cost, 0) ELSE 0 END));
-
+  VALUES (v_attempt_id, 'attempt_started', jsonb_build_object('attemptNumber', v_attempt_number, 'activeSectionId', v_first_section, 'questionCount', v_expected_count, 'monetizationEnforced', v_monetization_enforced, 'entitlementBypass', v_bypass_attempt_limit, 'tokenCost', CASE WHEN v_context_type = 'DIRECT' THEN
+        coalesce(v_token_cost, 0)
+      ELSE
+        0
+      END));
   -- Charge the program-scoped wallet inside this transaction. If the balance is
   -- insufficient, the exception rolls back the attempt and its frozen questions.
   IF v_context_type = 'DIRECT' AND coalesce(v_token_cost, 0) > 0 THEN
-    PERFORM public.debit_exam_token_once (p_user_id, v_attempt_id);
+    PERFORM
+      public.debit_exam_token_once (p_user_id, v_attempt_id);
   END IF;
 
   RETURN jsonb_build_object('attempt_id', v_attempt_id, 'attempt_number', v_attempt_number, 'status', 'in_progress', 'active_section_id', v_first_section, 'resumed', FALSE);
