@@ -21,15 +21,41 @@ import { getAdminOrderDetail } from '@/src/services/admin-context-details.servic
 import { authorizationService } from '@/src/services/authorization.service'
 import Link from '@/components/admin/navigation/AdminLink'
 import { notFound } from 'next/navigation'
+import { syncAdminOrderAction } from '@/app/actions/admin-order-sync'
+
+const SYNC_MESSAGES: Record<string, { tone: 'success' | 'warning' | 'danger'; text: string }> = {
+  synced: {
+    tone: 'success',
+    text: 'Pembayaran terkonfirmasi Midtrans dan pesanan sudah dipenuhi.',
+  },
+  reversed: {
+    tone: 'warning',
+    text: 'Midtrans mencatat refund/chargeback. Akses dan token dari pesanan ini sudah ditarik.',
+  },
+  unchanged: { tone: 'success', text: 'Status sudah sesuai dengan Midtrans. Tidak ada perubahan.' },
+  owner_deleted: {
+    tone: 'warning',
+    text: 'Pemilik pesanan sudah menghapus akun, jadi pesanan tidak dapat dipenuhi.',
+  },
+  not_syncable: { tone: 'warning', text: 'Status pesanan ini tidak perlu disinkronkan.' },
+  failed: {
+    tone: 'danger',
+    text: 'Sinkronisasi gagal. Cek log server (cari nomor pesanan) atau coba lagi sebentar lagi.',
+  },
+}
 export const dynamic = 'force-dynamic'
 export default async function OrderDetailPage({
   params,
   searchParams,
 }: {
   params: Promise<{ orderId: string }>
-  searchParams: Promise<{ returnTo?: string }>
+  searchParams: Promise<{ returnTo?: string; sync?: string; sync_status?: string }>
 }) {
-  const [{ orderId }, { returnTo }] = await Promise.all([params, searchParams])
+  const [{ orderId }, { returnTo, sync, sync_status: syncStatus }] = await Promise.all([
+    params,
+    searchParams,
+  ])
+  const syncMessage = sync ? SYNC_MESSAGES[sync] : undefined
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId)) notFound()
   const actor = await authorizationService.requireAuthenticated()
   if (
@@ -67,7 +93,33 @@ export default async function OrderDetailPage({
       <AdminPageHeader
         title="Detail pesanan"
         description="Pengguna, produk, pembayaran, dan akses dalam satu konteks."
+        action={
+          actor.permissions.includes(PERMISSIONS.PAYMENT_MANAGE) ? (
+            <form action={syncAdminOrderAction}>
+              <input type="hidden" name="order_id" value={orderId} />
+              <button type="submit" className={adminSecondaryButtonClass}>
+                Sinkronkan dengan Midtrans
+              </button>
+            </form>
+          ) : undefined
+        }
       />
+      {syncMessage ? (
+        <AdminCard
+          className={`p-4 text-sm ${
+            syncMessage.tone === 'success'
+              ? 'border-success-border bg-success-muted text-success'
+              : syncMessage.tone === 'warning'
+                ? 'border-warning-border bg-warning-muted text-warning'
+                : 'border-danger-border bg-danger-muted text-danger'
+          }`}
+        >
+          <p role="status">
+            {syncMessage.text}
+            {syncStatus ? ` Status Midtrans: ${syncStatus}.` : ''}
+          </p>
+        </AdminCard>
+      ) : null}
       <AdminCard className="p-5">
         <dl className="grid gap-5 sm:grid-cols-4">
           <div>
