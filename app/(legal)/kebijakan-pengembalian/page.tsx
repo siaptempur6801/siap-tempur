@@ -42,8 +42,8 @@ export default function KebijakanPengembalianPage() {
 
       <h3>4. Hubungi Kami</h3>
       <p>
-        Jika Anda memiliki pertanyaan lebih lanjut mengenai kebijakan ini, silakan hubungi tim
-        dukungan kami sebelum melakukan pembelian.
+        Jika Anda memiliki pertanyaan lebih lanjut mengenai kebijakan ini, silakan hubungi kami di{' '}
+        <a href="mailto:halo@siaptempur.id">halo@siaptempur.id</a> sebelum melakukan pembelian.
       </p>
     </>
   )
