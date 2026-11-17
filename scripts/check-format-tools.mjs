@@ -21,7 +21,8 @@ const failures = []
 for (const tool of tools) {
   try {
     const output = execFileSync(tool.name, tool.args, { encoding: 'utf8' }).trim()
-    const actual = output.match(tool.match)?.[1]
+    // `shfmt --version` prints `v3.14.1`; the pinned versions omit the `v` prefix.
+    const actual = output.match(tool.match)?.[1]?.replace(/^v/, '')
     if (actual !== tool.version) {
       failures.push(`${tool.name}: expected ${tool.version}, found ${actual ?? output}`)
     }
