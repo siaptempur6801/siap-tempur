@@ -95,7 +95,7 @@ export const AUTH_RATE_LIMITS: Record<AuthRateLimitAction, { ip: RateWindow; ema
   }
 
 /** Action auth yang jatuh ke limiter memori (bukan ditolak) saat store bersama gagal. */
-export const AUTH_ACTIONS_WITH_MEMORY_FALLBACK: ReadonlySet<AuthRateLimitAction> = new Set([
+const AUTH_ACTIONS_WITH_MEMORY_FALLBACK: ReadonlySet<AuthRateLimitAction> = new Set([
   'login',
   'signup',
 ])
