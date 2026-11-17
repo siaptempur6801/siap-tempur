@@ -8,9 +8,9 @@ import { describe, expect, it, vi } from 'vitest'
  * tagihan pending tidak dipakai ulang (order ganda / bayar dobel) dan UI event
  * kehilangan status pembayaran.
  *
- * Test ini memodelkan semantik query apa adanya. Ditandai `it.fails` sampai
- * perbaikan disetujui (logika pembayaran tidak diubah dalam audit); setelah query
- * di-scope ke pengguna, ubah menjadi `it` biasa.
+ * Diperbaiki (persetujuan pemilik 2026-11-17): query kini menyaring `orders` per
+ * pengguna dengan join `order_items!inner` sebelum `limit`. Mock di bawah memodelkan
+ * semantik PostgREST untuk kedua filter itu.
  */
 
 type OrderItem = { order_id: string; product_id: string; id: string }
@@ -24,40 +24,30 @@ const db = vi.hoisted(() => ({
 vi.mock('@/lib/utils/supabase/server', () => {
   const client = {
     from(table: string) {
-      if (table === 'order_items') {
-        return {
-          select: () => ({
-            eq: (_column: string, productId: string) => ({
-              order: () => ({
-                limit: async (count: number) => ({
-                  data: db.orderItems
-                    .filter((item) => item.product_id === productId)
-                    .sort((a, b) => (a.id < b.id ? 1 : -1))
-                    .slice(0, count),
-                  error: null,
-                }),
-              }),
-            }),
-          }),
-        }
-      }
       if (table === 'orders') {
-        return {
-          select: () => ({
-            eq: (_column: string, userId: string) => ({
-              in: (_idColumn: string, ids: string[]) => ({
-                order: () => ({
-                  limit: async () => ({
-                    data: db.orders
-                      .filter((order) => order.user_id === userId && ids.includes(order.id))
-                      .map((order) => ({ ...order, total_amount: 50000, created_at: null })),
-                    error: null,
-                  }),
-                }),
-              }),
-            }),
+        const filters: { userId?: string; productId?: string } = {}
+        const query = {
+          select: () => query,
+          eq: (column: string, value: string) => {
+            if (column === 'user_id') filters.userId = value
+            if (column === 'order_items.product_id') filters.productId = value
+            return query
+          },
+          order: () => query,
+          limit: async (count: number) => ({
+            data: db.orders
+              .filter((order) => order.user_id === filters.userId)
+              .filter((order) =>
+                db.orderItems.some(
+                  (item) => item.order_id === order.id && item.product_id === filters.productId,
+                ),
+              )
+              .slice(0, count)
+              .map((order) => ({ ...order, total_amount: 50000, created_at: null })),
+            error: null,
           }),
         }
+        return query
       }
       if (table === 'payments') {
         return {
@@ -112,6 +102,13 @@ function seed(otherOrders: number) {
 }
 
 describe('commerceService.getLatestOrderForProduct — cakupan pengguna (A-03)', () => {
+  it('tidak mengembalikan order milik peserta lain', async () => {
+    seed(5)
+    expect(await commerceService.getLatestOrderForProduct('user-1', 'other-product')).toBeNull()
+    const order = await commerceService.getLatestOrderForProduct('user-1', 'ticket')
+    expect(order?.id).toBe('order-other-1')
+  })
+
   it('menemukan order pending peserta bila produk punya sedikit order', async () => {
     seed(10)
     const order = await commerceService.getLatestOrderForProduct('me', 'ticket')
@@ -119,7 +116,7 @@ describe('commerceService.getLatestOrderForProduct — cakupan pengguna (A-03)',
     expect(order?.snapToken).toBe('snap-1')
   })
 
-  it.fails('tetap menemukan order pending peserta setelah >100 order peserta lain', async () => {
+  it('tetap menemukan order pending peserta setelah >100 order peserta lain', async () => {
     seed(150)
     const order = await commerceService.getLatestOrderForProduct('me', 'ticket')
     expect(order?.id).toBe('order-mine')
