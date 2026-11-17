@@ -37,10 +37,9 @@ menunjukkan `rateLimitStore: "redis"`.
 
 Masih menunggu tindakan pemilik:
 
-- **Deploy otomatis Vercel**: tim Vercel (paket Hobby) hanya punya satu anggota tanpa koneksi GitHub,
-  sehingga push ke `main` repo `8shagrid/siap-tempur` diblokir ("Git author … must have access").
-  Hubungkan akun GitHub yang dipakai untuk commit di Vercel → Account Settings → Authentication.
-  Sampai itu selesai, deploy production lewat `vercel deploy --prod` dari ekspor `git archive`.
+- ~~Deploy otomatis Vercel~~ **beres 2026-11-17**: akun GitHub `siaptempur6801` tersambung ke akun
+  Vercel pemilik; push ke `main` repo `8shagrid/siap-tempur` kembali memicu deploy production
+  (terverifikasi commit `3ea3a65`). Commit harus ditulis oleh akun GitHub yang tersambung itu.
 - Pastikan kotak surat `halo@siaptempur.id` ada di Hostinger (MX/SPF domain sudah benar).
 - Hapus `SUPABASE_DB_PASSWORD` dan `DATABASE_URL` dari env Vercel Production bila tidak dipakai
   (kode aplikasi tidak membacanya); rotasi bila pernah terpapar.
