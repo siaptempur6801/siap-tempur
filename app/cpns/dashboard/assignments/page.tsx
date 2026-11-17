@@ -47,6 +47,7 @@ const ERROR_TEXT: Record<string, string> = {
   upcoming: 'Assignment belum dibuka.',
   closed: 'Periode assignment sudah berakhir.',
   failed: 'Assignment belum bisa dimulai. Coba muat ulang halaman.',
+  'rate-limited': 'Terlalu banyak permintaan. Tunggu sebentar lalu coba lagi.',
 }
 
 export default async function OrganizationAssignmentsPage({

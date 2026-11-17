@@ -6,6 +6,7 @@ import { getMiniTryoutProduct, isMiniTryoutType, type MiniTryoutType } from '@/l
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { validateCsrf } from '@/lib/csrf'
+import { EXAM_ACTION_RATE_LIMITED_MESSAGE, isExamActionRateLimited } from '@/lib/server-rate-limit'
 import { logger } from '@/lib/logger'
 import {
   examAttemptService,
@@ -109,6 +110,9 @@ export async function startPractice(type: MiniTryoutType) {
   if (!product) return { error: 'Tipe mini tryout tidak valid' }
 
   const userId = await getCurrentUserId()
+  if (await isExamActionRateLimited(userId, 'attempt_start')) {
+    return { error: EXAM_ACTION_RATE_LIMITED_MESSAGE }
+  }
 
   try {
     const result = await runStartWithExpiredAttemptRecovery(userId, () =>
@@ -148,6 +152,9 @@ export async function startDrillingMateri(type: MiniTryoutType, subCategory: str
   if (!normalizedSubCategory) return { error: 'Materi drilling tidak valid' }
 
   const userId = await getCurrentUserId()
+  if (await isExamActionRateLimited(userId, 'attempt_start')) {
+    return { error: EXAM_ACTION_RATE_LIMITED_MESSAGE }
+  }
 
   try {
     const result = await runStartWithExpiredAttemptRecovery(userId, () =>
@@ -180,6 +187,9 @@ export async function startTryout() {
   }
 
   const userId = await getCurrentUserId()
+  if (await isExamActionRateLimited(userId, 'attempt_start')) {
+    return { error: EXAM_ACTION_RATE_LIMITED_MESSAGE }
+  }
   try {
     const result = await runStartWithExpiredAttemptRecovery(userId, () =>
       examAttemptService.startFullTryout({ userId }),
@@ -208,6 +218,9 @@ export async function submitAnswer(sessionId: string, questionId: string, option
   }
 
   const userId = await getCurrentUserId()
+  if (await isExamActionRateLimited(userId, 'answer_save')) {
+    return { error: EXAM_ACTION_RATE_LIMITED_MESSAGE }
+  }
   try {
     await attemptAnswerService.saveAnswer({
       userId,
@@ -248,6 +261,9 @@ export async function submitAnswerOptions(
   }
 
   const userId = await getCurrentUserId()
+  if (await isExamActionRateLimited(userId, 'answer_save')) {
+    return { error: EXAM_ACTION_RATE_LIMITED_MESSAGE }
+  }
   try {
     await attemptAnswerService.saveAnswerOptions({
       userId,
@@ -279,6 +295,9 @@ export async function finishPractice(sessionId: string) {
   if (!isUuid(sessionId)) return { error: 'Invalid session payload' }
 
   const userId = await getCurrentUserId()
+  if (await isExamActionRateLimited(userId, 'attempt_finish')) {
+    return { error: EXAM_ACTION_RATE_LIMITED_MESSAGE }
+  }
   try {
     await examCompletionService.completeAttempt(userId, sessionId)
     revalidatePracticeFinish(sessionId)

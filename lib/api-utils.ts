@@ -73,9 +73,24 @@ if count == 1 or redis.call('PTTL', KEYS[1]) < 0 then
 end
 return count`
 
-function rateLimitFallback(identifier: string, limit: number, windowMs: number) {
+type RateLimitOptions = {
+  /**
+   * Production default: `true` — a missing or failing shared store blocks the
+   * request (auth and payment must not degrade to per-instance counters).
+   * Exam flows pass `false`: a Redis outage must not stop answer saves, so they
+   * fall back to per-instance counters instead.
+   */
+  failClosed?: boolean
+}
+
+function rateLimitFallback(
+  identifier: string,
+  limit: number,
+  windowMs: number,
+  failClosed: boolean,
+) {
   // Never silently turn a shared security boundary into per-instance counters.
-  if (env.appEnvironment() === 'production') return true
+  if (failClosed) return true
   return isRateLimited(identifier, limit, windowMs)
 }
 
@@ -83,13 +98,16 @@ export async function checkRateLimit(
   identifier: string,
   limit: number,
   windowMs: number,
+  options: RateLimitOptions = {},
 ): Promise<boolean> {
+  const failClosed = options.failClosed ?? env.appEnvironment() === 'production'
+
   const redisUrl = env.upstashRedisRestUrl()
   const redisToken = env.upstashRedisRestToken()
   if (!redisUrl || !redisToken) {
     if (env.appEnvironment() === 'production')
       logger.warn('Shared production rate limiter is not configured')
-    return rateLimitFallback(identifier, limit, windowMs)
+    return rateLimitFallback(identifier, limit, windowMs, failClosed)
   }
   try {
     const response = await fetch(redisUrl, {
@@ -118,10 +136,8 @@ export async function checkRateLimit(
     return payload.result > limit
   } catch {
     // Avoid logging response bodies, credentials, URLs, or user identifiers.
-    logger.warn('Shared rate limit unavailable', {
-      failClosed: env.appEnvironment() === 'production',
-    })
-    return rateLimitFallback(identifier, limit, windowMs)
+    logger.warn('Shared rate limit unavailable', { failClosed })
+    return rateLimitFallback(identifier, limit, windowMs, failClosed)
   }
 }
 

@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { validateCsrf } from '@/lib/csrf'
 import { logger } from '@/lib/logger'
+import { EXAM_ACTION_RATE_LIMITED_MESSAGE, isExamActionRateLimited } from '@/lib/server-rate-limit'
 import { createClient, createV2Client } from '@/lib/utils/supabase/server'
 import { tkaFullExamRpcService } from '@/src/services/tka-full-exam-rpc.service'
 import { isTkaLevelAvailable, parseTkaLevel, tkaContext, tkaLevelPath } from '@/src/tka/context'
@@ -133,6 +134,9 @@ export async function startTkaDrill(
 
   const path = tkaLevelPath(level)
   const { supabase, userId } = await getCurrentUserContext(path)
+  if (await isExamActionRateLimited(userId, 'attempt_start')) {
+    return { error: EXAM_ACTION_RATE_LIMITED_MESSAGE }
+  }
   const context = tkaContext(level)
   if (!(await hasActiveTrack(supabase, userId, context))) {
     return { error: 'Aktifkan jalur TKA SMP terlebih dahulu.' }
@@ -194,6 +198,9 @@ export async function startTkaExam(levelValue: string, examSlugValue: string) {
 
   const path = tkaLevelPath(level)
   const { supabase, userId } = await getCurrentUserContext(path)
+  if (await isExamActionRateLimited(userId, 'attempt_start')) {
+    return { error: EXAM_ACTION_RATE_LIMITED_MESSAGE }
+  }
   const context = tkaContext(level)
 
   if (!(await hasActiveTrack(supabase, userId, context))) {

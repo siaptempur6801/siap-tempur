@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { validateCsrf } from '@/lib/csrf'
 import { logger } from '@/lib/logger'
+import { EXAM_ACTION_RATE_LIMITED_MESSAGE, isExamActionRateLimited } from '@/lib/server-rate-limit'
 import { createAdminClient, createV2AdminClient, createV2Client } from '@/lib/utils/supabase/server'
 import {
   buildCertificateNumber,
@@ -45,6 +46,9 @@ export async function claimEventCertificate(
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) redirect('/login?next=/cpns/dashboard/event')
+  if (await isExamActionRateLimited(user.id, 'certificate_claim')) {
+    return { success: false, message: EXAM_ACTION_RATE_LIMITED_MESSAGE }
+  }
 
   const admin = await createV2AdminClient()
   const { data: existingCertificate, error: existingError } = await admin

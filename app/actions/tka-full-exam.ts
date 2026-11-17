@@ -2,7 +2,8 @@
 
 import { validateCsrf } from '@/lib/csrf'
 import { logger } from '@/lib/logger'
-import { createV2Client } from '@/lib/utils/supabase/server'
+import { EXAM_ACTION_RATE_LIMITED_MESSAGE, isExamActionRateLimited } from '@/lib/server-rate-limit'
+import { createV2Client, getAuthUserIdVerified } from '@/lib/utils/supabase/server'
 import { activityService } from '@/src/services/activity.service'
 import { streakService } from '@/src/services/streak.service'
 import { tkaFullExamRpcService } from '@/src/services/tka-full-exam-rpc.service'
@@ -39,6 +40,10 @@ export async function saveTkaFullExamAnswer(input: {
   if (!isUuid(input.attemptQuestionId) || optionIds.some((id) => !isUuid(id))) {
     return { error: 'Payload jawaban tidak valid.' }
   }
+  const rateLimitUserId = await getAuthUserIdVerified()
+  if (rateLimitUserId && (await isExamActionRateLimited(rateLimitUserId, 'answer_save'))) {
+    return { error: EXAM_ACTION_RATE_LIMITED_MESSAGE }
+  }
 
   try {
     await tkaFullExamRpcService.saveAnswer({
@@ -64,6 +69,10 @@ export async function completeTkaFullExamSection(attemptId: string) {
     return { error: 'Invalid request' }
   }
   if (!isUuid(attemptId)) return { error: 'Attempt tidak valid.' }
+  const rateLimitUserId = await getAuthUserIdVerified()
+  if (rateLimitUserId && (await isExamActionRateLimited(rateLimitUserId, 'attempt_finish'))) {
+    return { error: EXAM_ACTION_RATE_LIMITED_MESSAGE }
+  }
 
   try {
     const result = await tkaFullExamRpcService.completeSection(attemptId)
@@ -89,6 +98,10 @@ export async function submitTkaFullExamAttempt(attemptId: string) {
     return { error: 'Invalid request' }
   }
   if (!isUuid(attemptId)) return { error: 'Attempt tidak valid.' }
+  const rateLimitUserId = await getAuthUserIdVerified()
+  if (rateLimitUserId && (await isExamActionRateLimited(rateLimitUserId, 'attempt_finish'))) {
+    return { error: EXAM_ACTION_RATE_LIMITED_MESSAGE }
+  }
 
   try {
     const result = await tkaFullExamRpcService.submitAttempt(attemptId)

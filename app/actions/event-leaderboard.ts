@@ -5,6 +5,7 @@ import { authorizationRepository } from '@/src/repositories/authorization.reposi
 import { eventRepository } from '@/src/repositories/event.repository'
 import { PERMISSIONS } from '@/src/auth/permissions'
 import type { Json } from '@/types/database.types'
+import { isExamActionRateLimited } from '@/lib/server-rate-limit'
 
 const POSTGREST_PAGE_SIZE = 1000
 const POSTGREST_FILTER_BATCH_SIZE = 200
@@ -260,13 +261,17 @@ export async function getLiveLeaderboardAction(eventId: string) {
 
   let finalRankByUser = new Map<string, number>()
   if (finished) {
-    // The generated type snapshot predates this staging RPC. Keep this
-    // invocation on the server-only admin client until types are regenerated.
-    const rpcAdmin = await createAdminClient()
-    const { error: recalcError } = await rpcAdmin.rpc('recalculate_event_rankings', {
-      p_event_id: eventId,
-    })
-    if (recalcError) throw recalcError
+    // Hitung ulang penuh dibatasi per pengguna (N-05). Saat kuota habis, ranking
+    // yang sudah tersimpan tetap dibaca — hasil event yang selesai tidak berubah.
+    if (!(await isExamActionRateLimited(user.id, 'ranking_recalculate'))) {
+      // The generated type snapshot predates this staging RPC. Keep this
+      // invocation on the server-only admin client until types are regenerated.
+      const rpcAdmin = await createAdminClient()
+      const { error: recalcError } = await rpcAdmin.rpc('recalculate_event_rankings', {
+        p_event_id: eventId,
+      })
+      if (recalcError) throw recalcError
+    }
     const rankingData = await fetchAllPages<{ user_id: string; rank: number }>(async (from, to) => {
       const { data, error } = await admin
         .from('event_rankings')

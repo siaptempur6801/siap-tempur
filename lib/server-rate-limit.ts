@@ -26,6 +26,45 @@ export async function isServerActionRateLimited(
 
 type RateWindow = { limit: number; windowMs: number }
 
+/**
+ * Batas per pengguna untuk action ujian/event (audit 2026-11-17, N-05).
+ *
+ * Nilainya sengaja longgar: tujuannya membatasi amplifikasi tulis dan pemicu
+ * hitung ulang ranking, bukan menghambat peserta. Antrean autosave
+ * (`lib/answer-save-queue.ts`) menahan jawaban yang gagal disimpan dan
+ * mengirimnya ulang, jadi penolakan tidak menghilangkan jawaban.
+ * Satu kategori berbagi satu kuota lintas action agar tidak bisa dihindari
+ * dengan berganti endpoint.
+ */
+export const EXAM_ACTION_RATE_LIMITS = {
+  answer_save: { limit: 300, windowMs: 60_000 },
+  attempt_start: { limit: 15, windowMs: 60_000 },
+  attempt_finish: { limit: 15, windowMs: 60_000 },
+  event_register: { limit: 10, windowMs: 60_000 },
+  certificate_claim: { limit: 5, windowMs: 60_000 },
+  ranking_recalculate: { limit: 12, windowMs: 60_000 },
+} as const satisfies Record<string, RateWindow>
+
+export type ExamActionRateLimitKey = keyof typeof EXAM_ACTION_RATE_LIMITS
+
+export const EXAM_ACTION_RATE_LIMITED_MESSAGE =
+  'Terlalu banyak permintaan. Tunggu sebentar lalu coba lagi.'
+
+/**
+ * Rate limit action ujian/event per pengguna.
+ *
+ * Fail-OPEN: bila Upstash tidak tersedia, jatuh ke penghitung per-instance alih-alih
+ * menolak semua permintaan — gangguan Redis tidak boleh menghentikan ujian yang
+ * sedang berjalan. Auth/payment tetap fail-closed lewat `isServerActionRateLimited`.
+ */
+export async function isExamActionRateLimited(
+  userId: string,
+  key: ExamActionRateLimitKey,
+): Promise<boolean> {
+  const { limit, windowMs } = EXAM_ACTION_RATE_LIMITS[key]
+  return checkRateLimit(`exam_action_${key}_${userId}`, limit, windowMs, { failClosed: false })
+}
+
 type AuthRateLimitAction = 'login' | 'signup' | 'forgotPassword' | 'resendVerification'
 
 /**

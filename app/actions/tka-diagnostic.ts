@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { validateCsrf } from '@/lib/csrf'
 import { logger } from '@/lib/logger'
+import { EXAM_ACTION_RATE_LIMITED_MESSAGE, isExamActionRateLimited } from '@/lib/server-rate-limit'
 import { createClient } from '@/lib/utils/supabase/server'
 
 const DIAGNOSTIC_SLUG = 'tka-smp-diagnostic-awal'
@@ -42,6 +43,9 @@ export async function startTkaSmpDiagnostic() {
     error: authError,
   } = await supabase.auth.getUser()
   if (authError || !user) return { error: 'Silakan masuk kembali untuk memulai tes diagnostik.' }
+  if (await isExamActionRateLimited(user.id, 'attempt_start')) {
+    return { error: EXAM_ACTION_RATE_LIMITED_MESSAGE }
+  }
 
   try {
     const { data: program, error: programError } = await supabase

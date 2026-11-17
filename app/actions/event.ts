@@ -4,6 +4,7 @@ import { createV2AdminClient, createV2Client } from '@/lib/utils/supabase/server
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { validateCsrf } from '@/lib/csrf'
+import { EXAM_ACTION_RATE_LIMITED_MESSAGE, isExamActionRateLimited } from '@/lib/server-rate-limit'
 import { eventService, EventDomainError } from '@/src/services/event.service'
 import { commerceService } from '@/src/services/commerce.service'
 
@@ -29,6 +30,9 @@ export async function registerTryoutEvent(eventId: string, _eventCode?: string) 
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) redirect('/login?next=/cpns/dashboard/event')
+  if (await isExamActionRateLimited(user.id, 'event_register')) {
+    return { success: false, message: EXAM_ACTION_RATE_LIMITED_MESSAGE }
+  }
 
   try {
     const paidOffer = await commerceService.getEventOffer(eventId)
@@ -73,6 +77,9 @@ export async function startTryoutEvent(eventId: string) {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) redirect('/login?next=/cpns/dashboard/event')
+  if (await isExamActionRateLimited(user.id, 'attempt_start')) {
+    return { success: false, message: EXAM_ACTION_RATE_LIMITED_MESSAGE }
+  }
 
   try {
     const result = await eventService.start(user.id, eventId)

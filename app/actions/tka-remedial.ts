@@ -3,6 +3,8 @@
 import { validateCsrf } from '@/lib/csrf'
 import { env } from '@/lib/env'
 import { logger } from '@/lib/logger'
+import { EXAM_ACTION_RATE_LIMITED_MESSAGE, isExamActionRateLimited } from '@/lib/server-rate-limit'
+import { getAuthUserIdVerified } from '@/lib/utils/supabase/server'
 import { tkaRemedialService } from '@/src/services/tka-remedial.service'
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -50,6 +52,10 @@ export async function reviewTkaRemedialItem(input: {
     optionIds.some((id) => !isUuid(id))
   ) {
     return { error: 'Payload jawaban tidak valid.' }
+  }
+  const rateLimitUserId = await getAuthUserIdVerified()
+  if (rateLimitUserId && (await isExamActionRateLimited(rateLimitUserId, 'answer_save'))) {
+    return { error: EXAM_ACTION_RATE_LIMITED_MESSAGE }
   }
 
   try {

@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { validateCsrf } from '@/lib/csrf'
+import { isExamActionRateLimited } from '@/lib/server-rate-limit'
 import { createV2Client } from '@/lib/utils/supabase/server'
 import { organizationParticipantAssignmentService } from '@/src/services/organization-participant-assignment.service'
 
@@ -18,6 +19,9 @@ export async function startOrganizationAssignment(form: FormData) {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) redirect(`/login?returnTo=${encodeURIComponent('/cpns/dashboard/assignments')}`)
+  if (await isExamActionRateLimited(user.id, 'attempt_start')) {
+    redirect('/cpns/dashboard/assignments?error=rate-limited')
+  }
 
   try {
     const started = await organizationParticipantAssignmentService.start(user.id, assignmentId)
