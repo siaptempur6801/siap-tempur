@@ -59,38 +59,51 @@ export function sanitizeHtmlAllowlist(
       '',
     )
 
-  return withoutDangerousBlocks.replace(
-    /<\/?([a-zA-Z][a-zA-Z0-9-]*)([^>]*)>/g,
-    (rawTag, rawName: string, rawAttrs: string) => {
-      const tagName = rawName.toLowerCase()
-      if (!allowedTags.has(tagName)) return ''
+  // Teks di antara tag dikeluarkan apa adanya, kecuali `<`. Tanpa escape ini,
+  // tag yang tidak ditutup (`<img src=x onerror=…` tanpa `>`) tidak cocok dengan
+  // pola tag, lolos sebagai teks, lalu dibentuk menjadi elemen oleh parser HTML
+  // browser saat digabung dengan markup sesudahnya. `&lt;` dirender identik.
+  const escapeStrayAngles = (text: string) => text.replace(/</g, '&lt;')
+  const tagPattern = /<\/?([a-zA-Z][a-zA-Z0-9-]*)([^>]*)>/g
+  let output = ''
+  let lastIndex = 0
+  for (const match of withoutDangerousBlocks.matchAll(tagPattern)) {
+    const index = match.index ?? 0
+    output += escapeStrayAngles(withoutDangerousBlocks.slice(lastIndex, index))
+    output += sanitizeTag(match[0], match[1], match[2])
+    lastIndex = index + match[0].length
+  }
+  return output + escapeStrayAngles(withoutDangerousBlocks.slice(lastIndex))
 
-      if (rawTag.startsWith('</')) {
-        return `</${tagName}>`
-      }
+  function sanitizeTag(rawTag: string, rawName: string, rawAttrs: string) {
+    const tagName = rawName.toLowerCase()
+    if (!allowedTags.has(tagName)) return ''
 
-      const attrs: string[] = []
-      const attrPattern =
-        /([a-zA-Z_:][-a-zA-Z0-9_:.]*)\s*(?:=\s*("([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g
-      for (const match of rawAttrs.matchAll(attrPattern)) {
-        const attrName = match[1].toLowerCase()
-        const attrValue = match[3] ?? match[4] ?? match[5] ?? ''
+    if (rawTag.startsWith('</')) {
+      return `</${tagName}>`
+    }
 
-        if (attrName.startsWith('on')) continue
-        if (!allowedAttrs.has(attrName)) continue
-        if ((attrName === 'href' || attrName === 'src') && !isSafeHtmlUrl(attrValue)) continue
-        if (
-          attrName === 'style' &&
-          (!options.allowStyle || /url\s*\(|expression\s*\(/i.test(attrValue))
-        )
-          continue
+    const attrs: string[] = []
+    const attrPattern =
+      /([a-zA-Z_:][-a-zA-Z0-9_:.]*)\s*(?:=\s*("([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g
+    for (const match of rawAttrs.matchAll(attrPattern)) {
+      const attrName = match[1].toLowerCase()
+      const attrValue = match[3] ?? match[4] ?? match[5] ?? ''
 
-        attrs.push(`${attrName}="${escapeHtmlAttribute(attrValue)}"`)
-      }
+      if (attrName.startsWith('on')) continue
+      if (!allowedAttrs.has(attrName)) continue
+      if ((attrName === 'href' || attrName === 'src') && !isSafeHtmlUrl(attrValue)) continue
+      if (
+        attrName === 'style' &&
+        (!options.allowStyle || /url\s*\(|expression\s*\(/i.test(attrValue))
+      )
+        continue
 
-      return `<${tagName}${attrs.length ? ` ${attrs.join(' ')}` : ''}>`
-    },
-  )
+      attrs.push(`${attrName}="${escapeHtmlAttribute(attrValue)}"`)
+    }
+
+    return `<${tagName}${attrs.length ? ` ${attrs.join(' ')}` : ''}>`
+  }
 }
 
 export function sanitizeArticleHtml(content: string): string {
