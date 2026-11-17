@@ -1,12 +1,30 @@
 # STATUS — Siap Tempur
 
 > **Ini satu-satunya sumber kebenaran status project.**
-> Terakhir diperbarui: **2026-10-13**
+> Terakhir diperbarui: **2026-11-17**
 > Dokumen roadmap/checklist lama bersifat **historis** dan tidak boleh dijadikan acuan status — lihat [Peta dokumen](#peta-dokumen).
 
 ---
 
 ## 1. Produk
+
+### Status domain & audit — 2026-11-17
+
+**Keputusan pemilik (2026-11-17): domain publik `siaptempur.id` aktif dan halaman publik
+(landing, `/cpns`, `/tka`, blog, halaman legal) boleh diindeks mesin pencari.** Catatan
+"dark launch aktif / domain ditahan" di bagian lain dokumen ini bersifat historis.
+Halaman privat (dashboard, admin, `/tka/<jenjang>/**`, onboarding, persetujuan, undangan
+instansi, verifikasi sertifikat) memakai `noindex` dan diblokir `robots.txt`.
+
+Audit menyeluruh dan perbaikannya ada di [`docs/audits/AUDIT_2026-11-17.md`](audits/AUDIT_2026-11-17.md)
+(branch `audit/2026-11-17`, belum di-merge). Butir yang menunggu tindakan pemilik:
+
+- Jalankan `scripts/db-verify/audit-2026-11-17-readonly.sql` di staging lalu production.
+- Apply migration `20261117090000_scope_ranking_reads_and_drop_unused_write_policies.sql`
+  ke staging dulu; migration menggagalkan diri bila ACL live memberi hak tulis ke `authenticated`.
+- Set `HEALTH_CHECK_TOKEN` (production) dan, bila perlu, `ALLOWED_DEV_ORIGINS` di `.env.local`.
+- Pastikan kotak surat `halo@siaptempur.id` aktif — dipakai di Kebijakan Privasi dan S&K.
+- Putuskan retensi transaksi: menghapus akun saat ini ikut menghapus order (`ON DELETE CASCADE`).
 
 ### Sinkronisasi database — 2026-10-12
 
@@ -104,7 +122,7 @@ The context migration archived `TKA_SMA_PASS_30` and `TKA_SMA_PASS_90` because t
 **Schema V2 Production Cutover: SELESAI 2026-09-01** (tag `production-v1-schema-v2-2026-09-01`).
 
 - Runtime kanonik Schema V2 (98 tabel, RLS aktif di semua tabel) sudah menjadi `public` di produksi; skema lama diarsipkan ke `legacy_prod`.
-- **Yang belum: eksposur publik.** Domain sengaja ditahan.
+- ~~Yang belum: eksposur publik.~~ Domain publik aktif dan boleh diindeks (keputusan 2026-11-17).
 - Riwayat: `docs/PRODUCTION_CUTOVER_COMPLETION.md`, `docs/RELEASE_NOTES_2026-09-01_SCHEMA_V2.md`.
 
 Cakupan Production V1: **CPNS/SKD + TKA SMP + Unified Admin + Commerce/Event**.
@@ -875,7 +893,7 @@ audit terhadap staging **8/8 lolos**.
 
 ## 7. Gate membuka domain publik
 
-Domain tidak boleh diaktifkan sebelum **semua** ini hijau:
+Daftar historis; domain publik sudah aktif (lihat Bagian 1, 2026-11-17). Butir yang belum dicentang tetap utang:
 
 - [x] P0-1 & P0-2 ditutup **dan diverifikasi di staging** (2026-09-16).
 - [x] P0-1 RPC answer-key guard lulus verifikasi produksi setelah migration `20261006165617` (2026-10-06).
@@ -884,7 +902,7 @@ Domain tidak boleh diaktifkan sebelum **semua** ini hijau:
 - [x] **Keputusan flag monetisasi TKA SMP** — diputuskan tetap **ON** (2026-09-16).
 - [x] CI `main` hijau di GitHub (2026-09-16) — 35 commit di-push, seluruh job lolos.
 - [x] Riwayat migrasi remote disamakan (baseline 2026-09-16, staging & produksi).
-- [ ] Regression test kebocoran kunci jawaban berjalan di CI.
+- [x] Regression test kebocoran kunci jawaban berjalan di CI — `answer-key-access-contract` + `acl-sensitive-objects-contract` (unit, dijalankan job CI; 2026-11-17).
 - [x] Enforcement timer ujian server-side (2026-09-16).
 - [x] Critical user journey diverifikasi di browser: publik (30 test) + ber-auth (30 test: login → onboarding → dashboard, seluruh route CPNS/TKA).
 - [ ] Rate limit efektif lintas instance: env Upstash terpasang di staging & produksi.
