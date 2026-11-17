@@ -64,6 +64,7 @@ export async function GET(request: Request) {
   }
 
   const orders = await reconcilePendingPayments()
+  const refunds = await reconcileRecentPaidOrders()
 
   // Finalisasi attempt yang melewati tenggat, lalu hitung ulang ranking event yang
   // berjalan/baru selesai (audit A-07/A-11). Masing-masing terisolasi: kegagalannya
@@ -100,6 +101,7 @@ export async function GET(request: Request) {
   if (
     orders.failed > 0 ||
     orders.hasMorePending ||
+    refunds.failed > 0 ||
     eventsFailed ||
     attemptsFailed ||
     rankingsFailed
@@ -107,13 +109,14 @@ export async function GET(request: Request) {
     logger.error('Cron reconcile-payments perlu perhatian', undefined, {
       alert: 'cron_reconcile_payments_attention',
       orders,
+      refunds,
       eventsFailed,
       attempts,
       rankings,
     })
   }
 
-  return successResponse({ orders, events, attempts, rankings })
+  return successResponse({ orders, refunds, events, attempts, rankings })
 }
 
 /**
@@ -132,9 +135,10 @@ async function reconcilePendingPayments(): Promise<ReconcileSummary> {
     .select('order_id, created_at')
     .eq('provider', 'midtrans')
     .eq('status', 'pending')
-    // Proses yang paling lama lebih dulu agar transaksi lama tidak terus
-    // tersisih ketika ada lebih dari satu batch pembayaran baru.
-    .order('created_at', { ascending: true })
+    // Rotasi berdasarkan waktu terakhir dicek (audit A-12): baris yang dicek
+    // diperbarui `updated_at`-nya, sehingga baris yang terus gagal atau ordernya
+    // sudah final pindah ke belakang dan tidak memblokir antrean selamanya.
+    .order('updated_at', { ascending: true })
     // Satu baris tambahan hanya untuk mendeteksi backlog tanpa memperbesar batch.
     .limit(BATCH_SIZE + 1)
 
@@ -183,6 +187,7 @@ async function reconcilePendingPayments(): Promise<ReconcileSummary> {
     const order = orderById.get(orderId)
     if (!order || String(order.status).trim().toLowerCase() !== 'pending') {
       summary.skipped += 1
+      await markPaymentChecked(admin, orderId)
       continue
     }
 
@@ -190,6 +195,7 @@ async function reconcilePendingPayments(): Promise<ReconcileSummary> {
     if (!userId) {
       logger.warn('Payment reconcile order missing user', { orderId })
       summary.failed += 1
+      await markPaymentChecked(admin, orderId)
       continue
     }
 
@@ -209,9 +215,67 @@ async function reconcilePendingPayments(): Promise<ReconcileSummary> {
     } catch (error) {
       logger.error('Payment reconcile order check failed', error, { orderId })
       summary.failed += 1
+      await markPaymentChecked(admin, orderId)
     }
   }
 
   logger.info('Payment reconcile completed', { orders: summary })
+  return summary
+}
+
+/** Tandai baris pembayaran sudah dicek agar rotasi antrean berjalan (A-12). */
+async function markPaymentChecked(
+  admin: Awaited<ReturnType<typeof createV2AdminClient>>,
+  orderId: string,
+) {
+  const { error } = await admin
+    .from('payments')
+    .update({ updated_at: new Date().toISOString() })
+    .eq('order_id', orderId)
+    .eq('provider', 'midtrans')
+  if (error) logger.warn('Payment reconcile could not mark row checked', { orderId })
+}
+
+type RefundSummary = { checked: number; reversed: number; failed: number }
+
+const REFUND_BATCH_SIZE = 20
+const REFUND_WINDOW_MS = 30 * 24 * 60 * 60 * 1000
+
+/**
+ * Cek ulang order lunas 30 hari terakhir untuk refund/chargeback yang notifikasinya
+ * hilang (audit A-06). Rotasi memakai `payments.updated_at`, sehingga setiap jalan
+ * memeriksa batch berikutnya.
+ */
+async function reconcileRecentPaidOrders(): Promise<RefundSummary> {
+  const summary: RefundSummary = { checked: 0, reversed: 0, failed: 0 }
+  const admin = await createV2AdminClient()
+  const { data, error } = await admin
+    .from('payments')
+    .select('order_id')
+    .eq('provider', 'midtrans')
+    .in('status', ['capture', 'settlement'])
+    .gte('paid_at', new Date(Date.now() - REFUND_WINDOW_MS).toISOString())
+    .order('updated_at', { ascending: true })
+    .limit(REFUND_BATCH_SIZE)
+  if (error) {
+    logger.error('Payment refund reconcile query failed', error)
+    summary.failed += 1
+    return summary
+  }
+
+  for (const row of data ?? []) {
+    const orderId = String(row.order_id || '')
+    if (!orderId) continue
+    summary.checked += 1
+    try {
+      const result = await paymentService.refreshPaidOrder(orderId)
+      if (result.reversed) summary.reversed += 1
+      else await markPaymentChecked(admin, orderId)
+    } catch (refundError) {
+      logger.error('Payment refund reconcile order check failed', refundError, { orderId })
+      summary.failed += 1
+      await markPaymentChecked(admin, orderId)
+    }
+  }
   return summary
 }

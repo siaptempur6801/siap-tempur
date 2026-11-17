@@ -342,6 +342,19 @@ class CommerceService {
     return data
   }
 
+  async getOrderById(orderId: string) {
+    const admin = await createV2AdminClient()
+    const { data, error } = await admin
+      .from('orders')
+      .select(
+        'id, order_number, user_id, status, subtotal, total_amount, currency, paid_at, created_at',
+      )
+      .eq('id', orderId)
+      .maybeSingle()
+    if (error) throw error
+    return data
+  }
+
   async getOrderByNumber(orderNumber: string) {
     const admin = await createV2AdminClient()
     const { data, error } = await admin
@@ -376,14 +389,19 @@ class CommerceService {
     if (error) throw error
   }
 
-  async applyTkaTokenReversal(input: {
+  /**
+   * Refund/chargeback: tarik token, cabut entitlement, batalkan tiket event, dan tandai
+   * order untuk semua jenis produk (audit A-05, keputusan pemilik 2026-11-17).
+   * Idempoten; refund/chargeback sebagian hanya ditandai untuk ditinjau admin.
+   */
+  async applyOrderReversal(input: {
     orderId: string
     eventId: string
     status: string
     rawResponse: Json
   }) {
     const admin = await createAdminClient()
-    const { error } = await admin.rpc('reverse_tka_token_order', {
+    const { error } = await admin.rpc('reverse_paid_order', {
       p_order_id: input.orderId,
       p_event_id: input.eventId,
       p_status: input.status,
