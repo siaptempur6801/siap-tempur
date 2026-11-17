@@ -59,6 +59,20 @@ export async function GET(request: Request) {
   }
 
   const orders = await reconcilePendingPayments()
+
+  // Respons tetap 200 agar cron tidak diulang membabi buta, tetapi kegagalan dan
+  // backlog dinaikkan ke level error dengan pesan tetap supaya bisa dipasangi
+  // alert log (Vercel log drain / filter `level=error`). Tanpa ini, rekonsiliasi
+  // yang gagal sebagian hanya terlihat sebagai log `info`.
+  const eventsFailed = 'error' in events
+  if (orders.failed > 0 || orders.hasMorePending || eventsFailed) {
+    logger.error('Cron reconcile-payments perlu perhatian', undefined, {
+      alert: 'cron_reconcile_payments_attention',
+      orders,
+      eventsFailed,
+    })
+  }
+
   return successResponse({ orders, events })
 }
 

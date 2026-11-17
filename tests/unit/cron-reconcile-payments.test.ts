@@ -39,6 +39,7 @@ vi.mock('@/lib/logger', () => ({
 }))
 
 import { GET } from '@/app/api/cron/reconcile-payments/route'
+import { logger } from '@/lib/logger'
 
 type PendingPaymentRow = {
   order_id: string
@@ -108,6 +109,7 @@ describe('payment reconciliation cron', () => {
     syncUserOrderMock.mockReset()
     createV2AdminClientMock.mockReset()
     closeExpiredEventsMock.mockReset()
+    vi.mocked(logger.error).mockClear()
     createV2AdminClientMock.mockResolvedValue({ from: fromMock })
     closeExpiredEventsMock.mockResolvedValue({ closed: 0 })
     installCanonicalQueryMocks()
@@ -208,5 +210,49 @@ describe('payment reconciliation cron', () => {
     expect(syncUserOrderMock).not.toHaveBeenCalled()
     expect(payload.data.orders.skipped).toBe(1)
     expect(payload.data.orders.checked).toBe(0)
+  })
+  it('menaikkan log error beralert bila ada order yang gagal direkonsiliasi', async () => {
+    pendingPayments = [{ order_id: 'order-1' }]
+    orders = [{ id: 'order-1', user_id: 'user-1', status: 'pending' }]
+    syncUserOrderMock.mockRejectedValueOnce(new Error('PAYMENT_AMOUNT_MISMATCH'))
+
+    const response = await GET(authorizedRequest())
+
+    expect(response.status).toBe(200)
+    expect(logger.error).toHaveBeenCalledWith(
+      'Cron reconcile-payments perlu perhatian',
+      undefined,
+      expect.objectContaining({
+        alert: 'cron_reconcile_payments_attention',
+        orders: expect.objectContaining({ failed: 1 }),
+      }),
+    )
+  })
+
+  it('menaikkan log error beralert bila backlog pending melebihi satu batch', async () => {
+    pendingPayments = Array.from({ length: 51 }, (_, index) => ({ order_id: `order-${index}` }))
+    orders = []
+
+    await GET(authorizedRequest())
+
+    expect(logger.error).toHaveBeenCalledWith(
+      'Cron reconcile-payments perlu perhatian',
+      undefined,
+      expect.objectContaining({ orders: expect.objectContaining({ hasMorePending: true }) }),
+    )
+  })
+
+  it('tidak membuat log alert saat rekonsiliasi bersih', async () => {
+    pendingPayments = [{ order_id: 'order-1' }]
+    orders = [{ id: 'order-1', user_id: 'user-1', status: 'pending' }]
+    syncUserOrderMock.mockResolvedValueOnce({ status: 'settlement', paid: true })
+
+    await GET(authorizedRequest())
+
+    expect(logger.error).not.toHaveBeenCalledWith(
+      'Cron reconcile-payments perlu perhatian',
+      expect.anything(),
+      expect.anything(),
+    )
   })
 })
