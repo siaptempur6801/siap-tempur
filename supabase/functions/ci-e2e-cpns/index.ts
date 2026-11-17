@@ -2,8 +2,20 @@ import { createClient } from 'npm:@supabase/supabase-js@2.103.2'
 
 const EXPECTED_ISSUER = 'https://token.actions.githubusercontent.com'
 const EXPECTED_AUDIENCE = 'siap-tempur-staging-e2e'
-const EXPECTED_REPOSITORY = '8shagrid/siap-tempur'
-const EXPECTED_WORKFLOW_PREFIX = '8shagrid/siap-tempur/.github/workflows/cpns-staging-e2e.yml@'
+// Repo GitHub yang boleh memanggil fungsi ini lewat OIDC. Default: repo lama dan
+// repo `origin` saat ini (keduanya milik pemilik project). Persempit lewat secret
+// fungsi CI_E2E_ALLOWED_REPOSITORIES (dipisah koma).
+const ALLOWED_REPOSITORIES = (
+  Deno.env.get('CI_E2E_ALLOWED_REPOSITORIES') ?? '8shagrid/siap-tempur,siaptempur6801/siap-tempur'
+)
+  .split(',')
+  .map((repository) => repository.trim())
+  .filter(Boolean)
+// Fungsi ini membuat/menghapus user uji memakai service role, jadi hanya boleh
+// berjalan di project staging. Di project lain (mis. production) ia menolak semua
+// permintaan walau tidak sengaja ter-deploy (audit N-09).
+const ALLOWED_PROJECT_REF = Deno.env.get('CI_E2E_ALLOWED_PROJECT_REF') ?? 'lpgrivowdcepcxradavu'
+const EXPECTED_WORKFLOW_FILES = ['cpns-staging-e2e.yml']
 const GITHUB_JWKS_URL = 'https://token.actions.githubusercontent.com/.well-known/jwks'
 const CI_EMAIL = /^ci-cpns-[a-zA-Z0-9-]{1,96}@example\.invalid$/
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -81,12 +93,16 @@ async function verifyGithubOidc(token: string): Promise<Claims> {
   if (!audience.includes(EXPECTED_AUDIENCE)) throw new Error('OIDC_AUDIENCE_INVALID')
   if (typeof claims.exp !== 'number' || claims.exp < now - 30) throw new Error('OIDC_EXPIRED')
   if (typeof claims.nbf === 'number' && claims.nbf > now + 30) throw new Error('OIDC_NOT_YET_VALID')
-  if (claims.repository !== EXPECTED_REPOSITORY) throw new Error('OIDC_REPOSITORY_INVALID')
-  if (!claims.sub?.startsWith(`repo:${EXPECTED_REPOSITORY}:`))
-    throw new Error('OIDC_SUBJECT_INVALID')
+  const repository = String(claims.repository ?? '')
+  if (!ALLOWED_REPOSITORIES.includes(repository)) throw new Error('OIDC_REPOSITORY_INVALID')
+  if (!claims.sub?.startsWith(`repo:${repository}:`)) throw new Error('OIDC_SUBJECT_INVALID')
   if (!['pull_request', 'workflow_dispatch'].includes(String(claims.event_name ?? '')))
     throw new Error('OIDC_EVENT_INVALID')
-  if (!claims.workflow_ref?.startsWith(EXPECTED_WORKFLOW_PREFIX))
+  if (
+    !EXPECTED_WORKFLOW_FILES.some((file) =>
+      claims.workflow_ref?.startsWith(`${repository}/.github/workflows/${file}@`),
+    )
+  )
     throw new Error('OIDC_WORKFLOW_INVALID')
   return claims
 }
@@ -109,6 +125,8 @@ function adminApiKey() {
 function adminClient() {
   const url = Deno.env.get('SUPABASE_URL')
   if (!url) throw new Error('SUPABASE_URL_MISSING')
+  if (new URL(url).hostname.split('.')[0] !== ALLOWED_PROJECT_REF)
+    throw new Error('CI_E2E_PROJECT_NOT_ALLOWED')
   return createClient(url, adminApiKey(), {
     auth: { persistSession: false, autoRefreshToken: false },
   })
