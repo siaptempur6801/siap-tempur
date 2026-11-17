@@ -45,8 +45,11 @@ const nextConfig: NextConfig = {
             value: 'DENY',
           },
           {
+            // Auditor XSS browser sudah dihapus; `1; mode=block` justru pernah
+            // dipakai untuk kebocoran lintas situs. OWASP merekomendasikan `0`.
+            // Perlindungan XSS yang berlaku adalah CSP di proxy.ts.
             key: 'X-XSS-Protection',
-            value: '1; mode=block',
+            value: '0',
           },
           {
             key: 'Strict-Transport-Security',
@@ -54,7 +57,9 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
+            // `interest-cohort` (FLoC) sudah dihentikan dan memicu peringatan
+            // "Unrecognized feature" di konsol Chrome.
+            value: 'camera=(), microphone=(), geolocation=()',
           },
           // Content-Security-Policy sengaja TIDAK diatur di sini.
           // Satu-satunya sumber CSP adalah proxy.ts (nonce + strict-dynamic).
