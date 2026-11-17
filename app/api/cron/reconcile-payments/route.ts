@@ -9,6 +9,11 @@ import { createV2AdminClient } from '@/lib/utils/supabase/server'
 import { isBearerTokenValid } from '@/lib/timing-safe'
 import { paymentService } from '@/src/services/payment.service'
 import { eventService } from '@/src/services/event.service'
+import { attemptFinalizationService } from '@/src/services/attempt-finalization.service'
+
+// Satu jalan cron memanggil Midtrans dan menilai attempt satu per satu; batas 60 detik
+// berlaku di semua paket Vercel (termasuk Hobby).
+export const maxDuration = 60
 
 const BATCH_SIZE = 50
 
@@ -60,20 +65,55 @@ export async function GET(request: Request) {
 
   const orders = await reconcilePendingPayments()
 
+  // Finalisasi attempt yang melewati tenggat, lalu hitung ulang ranking event yang
+  // berjalan/baru selesai (audit A-07/A-11). Masing-masing terisolasi: kegagalannya
+  // tidak membatalkan langkah lain.
+  let attempts:
+    | Awaited<ReturnType<typeof attemptFinalizationService.finalizeExpired>>
+    | {
+        error: string
+      }
+  try {
+    attempts = await attemptFinalizationService.finalizeExpired()
+  } catch (error) {
+    logger.error('Finalisasi attempt kedaluwarsa gagal', error)
+    attempts = { error: error instanceof Error ? error.message : String(error) }
+  }
+
+  let rankings:
+    | Awaited<ReturnType<typeof attemptFinalizationService.refreshRecentEventRankings>>
+    | { error: string }
+  try {
+    rankings = await attemptFinalizationService.refreshRecentEventRankings()
+  } catch (error) {
+    logger.error('Hitung ulang ranking event terjadwal gagal', error)
+    rankings = { error: error instanceof Error ? error.message : String(error) }
+  }
+
   // Respons tetap 200 agar cron tidak diulang membabi buta, tetapi kegagalan dan
   // backlog dinaikkan ke level error dengan pesan tetap supaya bisa dipasangi
   // alert log (Vercel log drain / filter `level=error`). Tanpa ini, rekonsiliasi
   // yang gagal sebagian hanya terlihat sebagai log `info`.
   const eventsFailed = 'error' in events
-  if (orders.failed > 0 || orders.hasMorePending || eventsFailed) {
+  const attemptsFailed = 'error' in attempts || attempts.failed > 0
+  const rankingsFailed = 'error' in rankings || rankings.failed > 0
+  if (
+    orders.failed > 0 ||
+    orders.hasMorePending ||
+    eventsFailed ||
+    attemptsFailed ||
+    rankingsFailed
+  ) {
     logger.error('Cron reconcile-payments perlu perhatian', undefined, {
       alert: 'cron_reconcile_payments_attention',
       orders,
       eventsFailed,
+      attempts,
+      rankings,
     })
   }
 
-  return successResponse({ orders, events })
+  return successResponse({ orders, events, attempts, rankings })
 }
 
 /**

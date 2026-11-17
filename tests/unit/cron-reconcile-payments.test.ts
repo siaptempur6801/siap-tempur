@@ -30,6 +30,15 @@ vi.mock('@/src/services/event.service', () => ({
   },
 }))
 
+const finalizationMocks = vi.hoisted(() => ({
+  finalizeExpired: vi.fn(),
+  refreshRecentEventRankings: vi.fn(),
+}))
+
+vi.mock('@/src/services/attempt-finalization.service', () => ({
+  attemptFinalizationService: finalizationMocks,
+}))
+
 vi.mock('@/lib/logger', () => ({
   logger: {
     info: vi.fn(),
@@ -110,6 +119,15 @@ describe('payment reconciliation cron', () => {
     createV2AdminClientMock.mockReset()
     closeExpiredEventsMock.mockReset()
     vi.mocked(logger.error).mockClear()
+    finalizationMocks.finalizeExpired.mockReset()
+    finalizationMocks.refreshRecentEventRankings.mockReset()
+    finalizationMocks.finalizeExpired.mockResolvedValue({
+      checked: 0,
+      finalized: 0,
+      skipped: 0,
+      failed: 0,
+    })
+    finalizationMocks.refreshRecentEventRankings.mockResolvedValue({ events: 0, failed: 0 })
     createV2AdminClientMock.mockResolvedValue({ from: fromMock })
     closeExpiredEventsMock.mockResolvedValue({ closed: 0 })
     installCanonicalQueryMocks()
@@ -253,6 +271,40 @@ describe('payment reconciliation cron', () => {
       'Cron reconcile-payments perlu perhatian',
       expect.anything(),
       expect.anything(),
+    )
+  })
+
+  it('menjalankan finalisasi attempt dan ranking event, dan melaporkan hasilnya', async () => {
+    finalizationMocks.finalizeExpired.mockResolvedValueOnce({
+      checked: 2,
+      finalized: 2,
+      skipped: 0,
+      failed: 0,
+    })
+    finalizationMocks.refreshRecentEventRankings.mockResolvedValueOnce({ events: 1, failed: 0 })
+
+    const payload = await (await GET(authorizedRequest())).json()
+
+    expect(payload.data.attempts.finalized).toBe(2)
+    expect(payload.data.rankings.events).toBe(1)
+  })
+
+  it('kegagalan finalisasi tidak menggagalkan rekonsiliasi dan memicu log alert', async () => {
+    pendingPayments = [{ order_id: 'order-1' }]
+    orders = [{ id: 'order-1', user_id: 'user-1', status: 'pending' }]
+    syncUserOrderMock.mockResolvedValueOnce({ status: 'settlement', paid: true })
+    finalizationMocks.finalizeExpired.mockRejectedValueOnce(new Error('rpc down'))
+
+    const response = await GET(authorizedRequest())
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(payload.data.orders.settled).toBe(1)
+    expect(payload.data.attempts).toEqual({ error: 'rpc down' })
+    expect(logger.error).toHaveBeenCalledWith(
+      'Cron reconcile-payments perlu perhatian',
+      undefined,
+      expect.objectContaining({ alert: 'cron_reconcile_payments_attention' }),
     )
   })
 })
