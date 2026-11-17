@@ -24,4 +24,4 @@ ALTER TABLE questions
 CREATE INDEX IF NOT EXISTS idx_questions_type_subcategory ON questions (type, sub_category);
 
 -- 4. Update category column comment for clarity
-COMMENT ON COLUMN questions.sub_category IS TEXTVALUE0E;
+COMMENT ON COLUMN questions.sub_category IS 'Sub-category for SKD blueprint (e.g., Nasionalisme, Analogi, Pelayanan Publik)';

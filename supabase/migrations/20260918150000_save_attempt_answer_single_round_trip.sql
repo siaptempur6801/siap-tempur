@@ -178,7 +178,9 @@ BEGIN
 END;
 $$;
 
-COMMENT ON FUNCTION public.save_attempt_answer_for_user (uuid, uuid, uuid, uuid[]) IS TEXTVALUE0E; REVOKE ALL ON FUNCTION public.save_attempt_answer_for_user (uuid, uuid, uuid, uuid[]) FROM public;
+COMMENT ON FUNCTION public.save_attempt_answer_for_user (uuid, uuid, uuid, uuid[]) IS 'Simpan jawaban satu soal dalam SATU round trip: validasi kepemilikan attempt, '
+    'deadline ujian, alokasi soal, dan kepemilikan opsi — lalu upsert jawaban. '
+    'Menggantikan lima panggilan PostgREST berurutan. Hanya service_role.'; REVOKE ALL ON FUNCTION public.save_attempt_answer_for_user (uuid, uuid, uuid, uuid[]) FROM public;
 
 REVOKE ALL ON FUNCTION public.save_attempt_answer_for_user (uuid, uuid, uuid, uuid[]) FROM anon;
 

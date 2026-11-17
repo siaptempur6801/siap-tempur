@@ -285,7 +285,8 @@ INSERT INTO public.voucher_claims (voucher_id, user_id, user_email)
 END;
 $$;
 
-COMMENT ON FUNCTION public.claim_voucher (uuid, text, text) IS TEXTVALUE0E; REVOKE ALL ON FUNCTION public.claim_voucher (uuid, text, text) FROM public;
+COMMENT ON FUNCTION public.claim_voucher (uuid, text, text) IS 'Klaim kode voucher dan kredit token ke wallet program yang diminta. '
+    'Idempoten per user+voucher. Hanya boleh untuk diri sendiri (kecuali service_role).'; REVOKE ALL ON FUNCTION public.claim_voucher (uuid, text, text) FROM public;
 
 REVOKE ALL ON FUNCTION public.claim_voucher (uuid, text, text) FROM anon;
 

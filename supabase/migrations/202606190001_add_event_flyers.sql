@@ -2,7 +2,7 @@
 ALTER TABLE public.tryout_events
   ADD COLUMN IF NOT EXISTS flyer_image_url text;
 
-COMMENT ON COLUMN public.tryout_events.flyer_image_url IS TEXTVALUE0E; INSERT INTO storage.buckets (id, name, public)
+COMMENT ON COLUMN public.tryout_events.flyer_image_url IS 'Public URL for optional event flyer image shown on admin and user event pages.'; INSERT INTO storage.buckets (id, name, public)
   VALUES ('event-flyers', 'event-flyers', TRUE)
 ON CONFLICT (id)
   DO UPDATE SET

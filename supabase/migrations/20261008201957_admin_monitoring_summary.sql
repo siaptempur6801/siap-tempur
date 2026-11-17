@@ -113,6 +113,6 @@ FROM
 END;
 $$;
 
-COMMENT ON FUNCTION public.admin_monitoring_summary (uuid, uuid, uuid, uuid, uuid, boolean) IS TEXTVALUE0E; REVOKE ALL ON FUNCTION public.admin_monitoring_summary (uuid, uuid, uuid, uuid, uuid, boolean) FROM public, anon, authenticated;
+COMMENT ON FUNCTION public.admin_monitoring_summary (uuid, uuid, uuid, uuid, uuid, boolean) IS 'Returns aggregate monitoring metrics without participant rows or per-attempt progress payloads.'; REVOKE ALL ON FUNCTION public.admin_monitoring_summary (uuid, uuid, uuid, uuid, uuid, boolean) FROM public, anon, authenticated;
 
 GRANT EXECUTE ON FUNCTION public.admin_monitoring_summary (uuid, uuid, uuid, uuid, uuid, boolean) TO service_role;

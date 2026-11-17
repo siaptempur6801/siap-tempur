@@ -6,7 +6,7 @@ ALTER TABLE public.tryout_events
   ADD COLUMN IF NOT EXISTS price integer NOT NULL DEFAULT 0 CHECK (price >= 0),
   ADD COLUMN IF NOT EXISTS is_paid boolean NOT NULL DEFAULT FALSE;
 
-COMMENT ON COLUMN public.tryout_events.price IS TEXTVALUE0E; COMMENT ON COLUMN public.tryout_events.is_paid IS TEXTVALUE1E;
+COMMENT ON COLUMN public.tryout_events.price IS 'Harga tiket dalam Rupiah. 0 = gratis.'; COMMENT ON COLUMN public.tryout_events.is_paid IS 'True jika event berbayar. price > 0 tidak cukup — admin harus eksplisit set ini.';
 -- 2. Dedicated event_payments table
 CREATE TABLE IF NOT EXISTS public.event_payments (
   id uuid DEFAULT uuid_generate_v4 () PRIMARY KEY,
@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS public.event_payments (
   UNIQUE (user_id, event_id)
 );
 
-COMMENT ON TABLE public.event_payments IS TEXTVALUE2E;
+COMMENT ON TABLE public.event_payments IS 'Tracks individual event ticket purchases via Midtrans. Separate from generic transactions table.';
 -- 3. Indexes
 CREATE INDEX IF NOT EXISTS event_payments_order_idx ON public.event_payments (order_id);
 

@@ -9,7 +9,7 @@ ALTER TABLE public.tryout_events
 ALTER TABLE public.tryout_events
   ADD CONSTRAINT tryout_events_bot_count_check CHECK (bot_count BETWEEN 0 AND 100);
 
-COMMENT ON COLUMN public.tryout_events.bot_count IS TEXTVALUE0E; CREATE TABLE IF NOT EXISTS public.event_bot_names (
+COMMENT ON COLUMN public.tryout_events.bot_count IS 'Number of virtual display-only bots to show on event leaderboards. Bots are not participants or sessions.'; CREATE TABLE IF NOT EXISTS public.event_bot_names (
   id uuid DEFAULT uuid_generate_v4 () PRIMARY KEY,
   full_name text NOT NULL UNIQUE,
   is_active boolean NOT NULL DEFAULT TRUE,

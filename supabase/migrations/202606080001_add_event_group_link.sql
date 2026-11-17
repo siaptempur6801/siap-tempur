@@ -3,4 +3,4 @@
 ALTER TABLE public.tryout_events
   ADD COLUMN IF NOT EXISTS group_link text;
 
-COMMENT ON COLUMN public.tryout_events.group_link IS TEXTVALUE0E;
+COMMENT ON COLUMN public.tryout_events.group_link IS 'Optional group invite link shown only to registered/paid event participants.';

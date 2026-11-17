@@ -63,7 +63,8 @@ CREATE TABLE IF NOT EXISTS public.review_batches (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
-COMMENT ON TABLE public.review_batches IS TEXTVALUE0E; REVOKE ALL ON public.review_batches FROM anon, authenticated;
+COMMENT ON TABLE public.review_batches IS 'Penanda batch review konten. Dipakai bersama response_config.pilotBatch '
+    'agar bulk_review_pilot_stage dapat menyaring satu batch sekaligus.'; REVOKE ALL ON public.review_batches FROM anon, authenticated;
 
 INSERT INTO public.review_batches (batch_code, description)
   VALUES ('cpns-full-tryout-1', 'Soal CPNS untuk membentuk satu set Full Tryout SKD: TIU 35 + TKP 45. '

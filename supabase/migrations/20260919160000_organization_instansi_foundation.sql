@@ -64,7 +64,7 @@ ALTER TABLE public.organizations
 
 CREATE UNIQUE INDEX IF NOT EXISTS organizations_code_key ON public.organizations (upper(code));
 
-COMMENT ON COLUMN public.organizations.contact_name IS TEXTVALUE0E;
+COMMENT ON COLUMN public.organizations.contact_name IS 'Nama PIC instansi (PRD §6.1). Bukan akun pengguna — PIC tidak menjadi admin sistem pada MVP (§15).';
 -- -----------------------------------------------------------------------------
 -- 2. Batch (PRD §6.2).
 --    `invite_token` adalah kode yang dibagikan instansi untuk self-onboarding
@@ -94,7 +94,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS organization_batches_invite_token_key ON publi
 
 CREATE INDEX IF NOT EXISTS organization_batches_org_status_idx ON public.organization_batches (organization_id, status);
 
-COMMENT ON COLUMN public.organization_batches.invite_token IS TEXTVALUE1E;
+COMMENT ON COLUMN public.organization_batches.invite_token IS 'Token self-onboarding peserta (PRD §10.3). Terpisah dari `code` supaya kode batch yang mudah dibaca tidak sekaligus menjadi rahasia yang bisa ditebak.';
 -- -----------------------------------------------------------------------------
 -- 3. Peserta instansi (PRD §7.2).
 --    Snapshot nama/email/telepon disimpan agar export tetap konsisten walau
@@ -141,7 +141,7 @@ CREATE INDEX IF NOT EXISTS organization_participants_org_batch_idx ON public.org
 
 CREATE INDEX IF NOT EXISTS organization_participants_user_idx ON public.organization_participants (user_id);
 
-COMMENT ON TABLE public.organization_participants IS TEXTVALUE2E;
+COMMENT ON TABLE public.organization_participants IS 'Satu baris = satu partisipasi peserta pada SATU batch (PRD §7.2). Peserta yang mengikuti dua batch memperoleh dua baris.';
 -- -----------------------------------------------------------------------------
 -- 4. Template ujian (PRD §7.3).
 --    `organization_id` boleh NULL: NULL berarti template bersama yang dipakai
@@ -190,7 +190,7 @@ CREATE INDEX IF NOT EXISTS organization_exam_assignments_batch_idx ON public.org
 
 CREATE INDEX IF NOT EXISTS organization_exam_assignments_org_idx ON public.organization_exam_assignments (organization_id);
 
-COMMENT ON COLUMN public.organization_exam_assignments.batch_id IS TEXTVALUE3E;
+COMMENT ON COLUMN public.organization_exam_assignments.batch_id IS 'Batch yang mengerjakan assignment ini (PRD §7.4). NULL berarti assignment tingkat instansi.';
 -- -----------------------------------------------------------------------------
 -- 6. Metadata instansi pada attempt (PRD §7.5).
 --
@@ -223,7 +223,7 @@ CREATE INDEX IF NOT EXISTS exam_attempts_participant_idx ON public.exam_attempts
 WHERE
   participant_id IS NOT NULL;
 
-COMMENT ON COLUMN public.exam_attempts.source IS TEXTVALUE4E;
+COMMENT ON COLUMN public.exam_attempts.source IS 'Pemisah data B2C vs instansi (PRD §7.5, Risiko §12). Export instansi WAJIB memfilter source = ''organization''.';
 -- -----------------------------------------------------------------------------
 -- 7. RLS.
 --    Pola repo: `authenticated` hanya SELECT dan disaring RLS; seluruh

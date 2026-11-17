@@ -30,7 +30,7 @@ WHERE
   code = 'TKA'
   AND token_wallet_type IS DISTINCT FROM 'exam_token_tka';
 
-COMMENT ON COLUMN public.programs.token_wallet_type IS TEXTVALUE0E;
+COMMENT ON COLUMN public.programs.token_wallet_type IS 'Tipe wallet token untuk program ini (mis. exam_token_cpns / exam_token_tka).';
 -- 2. Migrasi saldo lama 'exam_token' → wallet program CPNS
 INSERT INTO public.wallets (user_id, wallet_type, balance, updated_at)
 SELECT

@@ -101,7 +101,7 @@ WHERE
   AND (nullif (btrim(st.payload ->> 'imageUrl'), '') IS NULL
     OR nullif (btrim(st.payload ->> 'canonicalAssetStoragePath'), '') IS NOT NULL);
 
-COMMENT ON VIEW app_private.cpns_legacy_import_ready IS TEXTVALUE0E; CREATE OR REPLACE FUNCTION public.import_reviewed_cpns_legacy_question (p_source_question_id uuid, p_publish boolean DEFAULT FALSE)
+COMMENT ON VIEW app_private.cpns_legacy_import_ready IS 'Only raw-staged CPNS legacy questions with explicit reviewed mappings, valid same-subject nodes, and any required legacy question image already copied to canonical storage.'; CREATE OR REPLACE FUNCTION public.import_reviewed_cpns_legacy_question (p_source_question_id uuid, p_publish boolean DEFAULT FALSE)
   RETURNS uuid
   LANGUAGE plpgsql
   SECURITY DEFINER
