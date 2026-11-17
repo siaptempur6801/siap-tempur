@@ -51,7 +51,8 @@ export async function listAdminOrders(
   const orders = (result.data || []) as {
       id: string
       order_number: string
-      user_id: string
+      /** NULL bila akun pemilik sudah dihapus (transaksi dianonimkan). */
+      user_id: string | null
       status: string
       total_amount: number
       currency: string
@@ -59,7 +60,7 @@ export async function listAdminOrders(
       created_at: string
     }[],
     ids = orders.map((o) => String(o.id)),
-    users = [...new Set(orders.map((o) => String(o.user_id)))]
+    users = [...new Set(orders.flatMap((o) => (o.user_id ? [String(o.user_id)] : [])))]
   const [profiles, items, payments] = await Promise.all([
     db.from('profiles').select('id,full_name,display_name').in('id', users),
     db
@@ -82,7 +83,7 @@ export async function listAdminOrders(
   return {
     rows: orders.map((o) => ({
       ...o,
-      customer_name: names.get(String(o.user_id)) || 'Pengguna',
+      customer_name: o.user_id ? names.get(String(o.user_id)) || 'Pengguna' : DELETED_ACCOUNT_LABEL,
       product_names: (items.data || [])
         .filter((i) => i.order_id === o.id)
         .map((i) => String((i.products as unknown as { name: string })?.name || 'Produk'))
@@ -93,11 +94,16 @@ export async function listAdminOrders(
     page,
   }
 }
-export async function getAdminOrderResources(orderId: string, userId: string) {
+/** Label untuk transaksi yang pemilik akunnya sudah dihapus (lihat migration 20261117100000). */
+export const DELETED_ACCOUNT_LABEL = 'Akun dihapus'
+
+export async function getAdminOrderResources(orderId: string, userId: string | null) {
   const actor = await commerceActor(),
     db = await createAdminClient()
   const [customer, items] = await Promise.all([
-    db.from('profiles').select('id,full_name,display_name').eq('id', userId).maybeSingle(),
+    userId
+      ? db.from('profiles').select('id,full_name,display_name').eq('id', userId).maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
     db
       .from('order_items')
       .select('id,quantity,unit_price,total,products(name,description)')
@@ -106,7 +112,7 @@ export async function getAdminOrderResources(orderId: string, userId: string) {
   for (const r of [customer, items]) if (r.error) throw r.error
   const ids = (items.data || []).map((i) => String(i.id))
   const grants =
-    actor.permissions.includes(PERMISSIONS.ENTITLEMENT_MANAGE) && ids.length
+    userId && actor.permissions.includes(PERMISSIONS.ENTITLEMENT_MANAGE) && ids.length
       ? await db
           .from('entitlements')
           .select('id,status,expires_at,features(name)')

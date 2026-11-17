@@ -217,7 +217,8 @@ export function SettingsTab() {
                   : 'mt-1 text-sm font-semibold leading-relaxed text-red-700'
               }
             >
-              Tindakan ini menghapus akun dan data yang terkait secara permanen.
+              Tindakan ini menghapus akun dan data belajar secara permanen. Catatan transaksi
+              disimpan tanpa data pribadi sesuai Kebijakan Privasi.
             </p>
           </button>
         </div>

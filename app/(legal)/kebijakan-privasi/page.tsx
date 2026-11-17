@@ -136,13 +136,15 @@ export default function KebijakanPrivasiPage() {
       <h3>7. Masa Penyimpanan</h3>
       <ul>
         <li>
-          Data akun, profil, data belajar, dan riwayat pesanan disimpan selama akun aktif dan
-          dihapus saat Anda menghapus akun. Salinan cadangan sistem terhapus mengikuti siklus
-          cadangan, paling lambat 30 hari.
+          Data akun, profil, dan data belajar disimpan selama akun aktif dan dihapus saat Anda
+          menghapus akun. Salinan cadangan sistem terhapus mengikuti siklus cadangan, paling lambat
+          30 hari.
         </li>
         <li>
-          Catatan pembayaran di Midtrans disimpan oleh Midtrans sesuai kebijakan dan kewajiban
-          hukumnya.
+          Catatan transaksi (nomor pesanan, produk, nominal, status, dan waktu pembayaran) disimpan
+          hingga 10 tahun untuk memenuhi kewajiban dokumen keuangan. Saat akun dihapus, catatan ini
+          dilepas dari akun Anda dan data pribadi di dalamnya (seperti nama, email, dan detail
+          kartu) dihapus.
         </li>
         <li>Log permintaan server disimpan paling lama 90 hari.</li>
         <li>Penghitung rate limit kedaluwarsa otomatis dalam hitungan menit.</li>

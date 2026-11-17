@@ -76,6 +76,29 @@ ORDER BY
   1,
   2;
 
+-- 5b. Setelah migration 20261117100000: FK pemilik transaksi harus SET NULL
+--     (confdeltype = 'n') untuk orders.user_id dan refunds.requested_by; refunds.processed_by
+--     (staf) tetap 'r'. Trigger anonimisasi harus ada dan aktif (tgenabled = 'O').
+SELECT
+  c.conrelid::regclass AS table_name,
+  c.conname,
+  c.confdeltype
+FROM
+  pg_constraint c
+WHERE
+  c.contype = 'f'
+  AND c.confrelid = 'public.profiles'::regclass
+  AND c.conrelid IN ('public.orders'::regclass, 'public.refunds'::regclass);
+
+SELECT
+  tgname,
+  tgenabled
+FROM
+  pg_trigger
+WHERE
+  tgrelid = 'public.profiles'::regclass
+  AND tgname = 'anonymize_commerce_before_profile_delete';
+
 -- 6. Skema yang diekspos Data API: legacy_prod dan app_private tidak boleh ada.
 SELECT
   current_setting('pgrst.db_schemas', TRUE) AS exposed_schemas;

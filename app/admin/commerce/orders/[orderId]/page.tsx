@@ -13,7 +13,10 @@ import { AdminBreadcrumbs } from '@/components/admin/navigation/AdminBreadcrumbs
 import { formatDateTime, formatRupiah } from '@/lib/admin-format'
 import { adminReturnUrl } from '@/lib/admin-return-url'
 import { PERMISSIONS } from '@/src/auth/permissions'
-import { getAdminOrderResources } from '@/src/services/admin-commerce-workspace.service'
+import {
+  DELETED_ACCOUNT_LABEL,
+  getAdminOrderResources,
+} from '@/src/services/admin-commerce-workspace.service'
 import { getAdminOrderDetail } from '@/src/services/admin-context-details.service'
 import { authorizationService } from '@/src/services/authorization.service'
 import Link from '@/components/admin/navigation/AdminLink'
@@ -40,7 +43,8 @@ export default async function OrderDetailPage({
     )
   const { order, payments } = await getAdminOrderDetail(orderId)
   if (!order) notFound()
-  const resources = await getAdminOrderResources(orderId, String(order.user_id)),
+  const userId = order.user_id ? String(order.user_id) : null
+  const resources = await getAdminOrderResources(orderId, userId),
     back = adminReturnUrl(returnTo, '/admin/commerce/orders')
   const canUser = actor.permissions.some(
     (p) =>
@@ -48,9 +52,9 @@ export default async function OrderDetailPage({
       p === PERMISSIONS.USER_MANAGE ||
       p === PERMISSIONS.ENTITLEMENT_MANAGE,
   )
-  const name = String(
-    resources.customer?.full_name || resources.customer?.display_name || 'Pengguna',
-  )
+  const name = userId
+    ? String(resources.customer?.full_name || resources.customer?.display_name || 'Pengguna')
+    : DELETED_ACCOUNT_LABEL
   return (
     <AdminPage>
       <AdminBreadcrumbs
@@ -69,10 +73,10 @@ export default async function OrderDetailPage({
           <div>
             <dt className="text-xs text-muted-foreground">Pengguna</dt>
             <dd className="mt-1 text-sm font-medium">
-              {canUser ? (
+              {canUser && userId ? (
                 <Link
                   className="text-info hover:underline"
-                  href={`/admin/users/${order.user_id}?${new URLSearchParams({ returnTo: `/admin/commerce/orders/${orderId}?${new URLSearchParams({ returnTo: back })}` })}`}
+                  href={`/admin/users/${userId}?${new URLSearchParams({ returnTo: `/admin/commerce/orders/${orderId}?${new URLSearchParams({ returnTo: back })}` })}`}
                 >
                   {name}
                 </Link>
@@ -112,10 +116,10 @@ export default async function OrderDetailPage({
                   : 'Sengketa sebagian tercatat. Saldo Token TKA belum berubah otomatis; tinjau kasus dan pemakaian token sebelum melakukan penyesuaian manual.'}
               </p>
             </div>
-            {actor.permissions.includes(PERMISSIONS.ENTITLEMENT_MANAGE) ? (
+            {userId && actor.permissions.includes(PERMISSIONS.ENTITLEMENT_MANAGE) ? (
               <Link
                 className={`${adminSecondaryButtonClass} shrink-0`}
-                href={`/admin/users/access?${new URLSearchParams({ user: String(order.user_id), wallet_type: 'exam_token_tka' })}`}
+                href={`/admin/users/access?${new URLSearchParams({ user: userId, wallet_type: 'exam_token_tka' })}`}
               >
                 Buka penyesuaian Token TKA
               </Link>
@@ -252,12 +256,14 @@ export default async function OrderDetailPage({
               </tbody>
             </AdminDataTable>
           </AdminCard>
-          <Link
-            className={`${adminSecondaryButtonClass} mt-3`}
-            href={`/admin/users/${order.user_id}?${new URLSearchParams({ tab: 'entitlements', returnTo: `/admin/commerce/orders/${orderId}?${new URLSearchParams({ returnTo: back })}` })}`}
-          >
-            Akses pengguna
-          </Link>
+          {userId ? (
+            <Link
+              className={`${adminSecondaryButtonClass} mt-3`}
+              href={`/admin/users/${userId}?${new URLSearchParams({ tab: 'entitlements', returnTo: `/admin/commerce/orders/${orderId}?${new URLSearchParams({ returnTo: back })}` })}`}
+            >
+              Akses pengguna
+            </Link>
+          ) : null}
         </section>
       )}
     </AdminPage>
