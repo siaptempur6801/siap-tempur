@@ -50,7 +50,12 @@ class LeaderboardService {
     if (!attempt || String(attempt.status).toLowerCase() !== 'completed') return []
 
     const metadata = attempt.metadata as Json
+    // Leaderboard nasional hanya memuat attempt Direct (audit A-08); SQL
+    // `recalculate_leaderboard` memakai predikat yang sama, ini hanya menghemat panggilan.
     if (readMetadataString(metadata, 'practiceKind') === 'event') return []
+    if (readMetadataString(metadata, 'eventId')) return []
+    const accessContext = (readMetadataString(metadata, 'accessContext') ?? 'direct').toLowerCase()
+    if (accessContext !== 'direct') return []
 
     const { data: exam, error: examError } = await admin
       .from('exams')
