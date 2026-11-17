@@ -37,7 +37,7 @@ export default defineConfig({
         /.*3-dashboard\.spec\.ts/,
         /.*6-tka-smp-full\.spec\.ts/,
         /.*8-tka-smp-mini\.spec\.ts/,
-        /.*9-tka-smp-monetization\.spec\.ts/,
+        /.*9-tka-smp-access-state\.spec\.ts/,
         /.*13-tka-diagnostic\.spec\.ts/,
         /.*(?:10-admin-workspace-authenticated|27-admin-task-flows|28-admin-canonical-routes|29-admin-performance)\.spec\.ts/,
         /.*11-cpns-rc\.spec\.ts/,
@@ -97,7 +97,7 @@ export default defineConfig({
           {
             name: 'chromium-tka-staging',
             testMatch:
-              /.*(?:6-tka-smp-full|8-tka-smp-mini|9-tka-smp-monetization|13-tka-diagnostic)\.spec\.ts/,
+              /.*(?:6-tka-smp-full|8-tka-smp-mini|9-tka-smp-access-state|13-tka-diagnostic)\.spec\.ts/,
             use: {
               ...devices['Desktop Chrome'],
               storageState: 'playwright/.auth/tka-user.json',
