@@ -99,11 +99,25 @@ export function readSnapshotOptions(snapshot: Json): FrozenOption[] {
   })
 }
 
-function durationSeconds(startedAt: string | null) {
+/**
+ * Durasi pengerjaan yang disimpan. Dibatasi ke durasi ujian (`metadata.durationSeconds`)
+ * bila ada: attempt yang dinilai setelah tenggat (ditinggal lalu diselesaikan otomatis
+ * atau saat peserta kembali) tidak boleh tercatat berhari-hari (audit A-14). Batas ini
+ * menjadi pemecah seri ranking, jadi peserta yang kehabisan waktu setara dengan yang
+ * memakai seluruh waktunya.
+ */
+export function durationSeconds(startedAt: string | null, maxSeconds: number | null = null) {
   if (!startedAt) return null
   const started = Date.parse(startedAt)
   if (!Number.isFinite(started)) return null
-  return Math.max(0, Math.floor((Date.now() - started) / 1000))
+  const elapsed = Math.max(0, Math.floor((Date.now() - started) / 1000))
+  return maxSeconds !== null && maxSeconds > 0 ? Math.min(elapsed, Math.floor(maxSeconds)) : elapsed
+}
+
+function attemptDurationLimit(metadata: Json): number | null {
+  if (!metadata || Array.isArray(metadata) || typeof metadata !== 'object') return null
+  const value = (metadata as Record<string, unknown>).durationSeconds
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : null
 }
 
 function selectionMapForAnswers(input: {
@@ -337,7 +351,10 @@ class ScoringService {
       totalScore,
       percentage,
       passed,
-      durationUsedSeconds: durationSeconds(bundle.attempt.started_at),
+      durationUsedSeconds: durationSeconds(
+        bundle.attempt.started_at,
+        attemptDurationLimit(bundle.attempt.metadata),
+      ),
     })
 
     return {
