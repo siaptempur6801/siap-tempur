@@ -12,7 +12,9 @@ test('legacy access route returns to TKA dashboard', async ({ page }) => {
   await expect(page.getByRole('main')).toBeVisible()
 })
 
-test('TKA exam page presents token access instead of premium entitlement state', async ({ page }) => {
+test('TKA exam page presents token access instead of premium entitlement state', async ({
+  page,
+}) => {
   test.setTimeout(90_000)
   const session = await freshDisposableTkaSession(page)
   try {

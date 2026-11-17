@@ -36,9 +36,7 @@
 .playwright-cli/
 .commandcode/
 supabase/.temp/
-testsprite_tests/tmp/*
-!testsprite_tests/tmp/prd_files/
-!testsprite_tests/tmp/prd_files/README.md
+testsprite_tests/
 
 # Debug logs
 npm-debug.log*

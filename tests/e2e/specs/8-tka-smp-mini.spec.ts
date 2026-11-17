@@ -281,7 +281,9 @@ test.describe.serial('TKA SMP Mini Tryout core', () => {
     await assertHistoryOpensResult(page, 'Mini Tryout Bahasa Indonesia TKA SMP')
     await page.goto('/tka/smp/mini-tryout')
     const usedCard = await examCard(page, 'Mini Tryout Bahasa Indonesia TKA SMP')
-    await expect(usedCard.getByRole('button', { name: /Mulai Mini Tryout · 1 token/ })).toBeEnabled()
+    await expect(
+      usedCard.getByRole('button', { name: /Mulai Mini Tryout · 1 token/ }),
+    ).toBeEnabled()
     await expect(page.getByRole('region', { name: 'Informasi token TKA' })).toContainText(
       'Saldo kamu 49 token',
     )
@@ -317,7 +319,9 @@ test.describe.serial('TKA SMP Mini Tryout core', () => {
     await assertHistoryOpensResult(page, 'Mini Tryout Matematika TKA SMP')
     await page.goto('/tka/smp/mini-tryout')
     const usedCard = await examCard(page, 'Mini Tryout Matematika TKA SMP')
-    await expect(usedCard.getByRole('button', { name: /Mulai Mini Tryout · 1 token/ })).toBeEnabled()
+    await expect(
+      usedCard.getByRole('button', { name: /Mulai Mini Tryout · 1 token/ }),
+    ).toBeEnabled()
     await expect(page.getByRole('region', { name: 'Informasi token TKA' })).toContainText(
       'Saldo kamu 49 token',
     )

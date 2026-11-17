@@ -354,7 +354,10 @@ export default async function AdminEntitlementsPage({
                 min={Math.max(1, editingVoucher?.claims ?? 1)}
                 step="1"
                 required
-                defaultValue={Math.max(editingVoucher?.max_uses ?? 100, editingVoucher?.claims ?? 0)}
+                defaultValue={Math.max(
+                  editingVoucher?.max_uses ?? 100,
+                  editingVoucher?.claims ?? 0,
+                )}
               />
             </label>
             <label className="space-y-1.5">

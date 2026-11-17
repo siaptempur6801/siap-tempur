@@ -218,7 +218,10 @@ class ExamAttemptService {
         )
       }
       await attemptRepository.waitForAttemptQuestions(existing.id)
-      const resumeCoveredByEntitlement = await this.isSessionCoveredByEntitlement(input.userId, exam)
+      const resumeCoveredByEntitlement = await this.isSessionCoveredByEntitlement(
+        input.userId,
+        exam,
+      )
       await this.chargeAttempt(
         input.userId,
         existing.id,

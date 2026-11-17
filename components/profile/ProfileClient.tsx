@@ -146,8 +146,8 @@ export default function ProfileClient({
             Profil & Pengaturan Akun
           </h1>
           <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600 sm:text-base">
-            Kelola identitas belajar, riwayat transaksi, dan keamanan akun SiapTempur
-            dalam satu dashboard.
+            Kelola identitas belajar, riwayat transaksi, dan keamanan akun SiapTempur dalam satu
+            dashboard.
           </p>
         </header>
       ) : (

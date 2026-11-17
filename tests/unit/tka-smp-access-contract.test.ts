@@ -33,7 +33,7 @@ describe('TKA access surface', () => {
   })
 
   it('keeps legacy access URLs as redirects to the program dashboards', () => {
-    expect(legacyTkaAccessRoute).toContain('redirect(level ? tkaLevelPath(level) : \'/tka\')')
+    expect(legacyTkaAccessRoute).toContain("redirect(level ? tkaLevelPath(level) : '/tka')")
     expect(legacyCpnsAccessRoute).toContain("redirect('/cpns/dashboard')")
     expect(tkaBuyTokenSource).toContain('<TokenPackagesPage program="TKA"')
     expect(tkaBuyTokenSource).toContain('walletService.getExamTokenBalance(user.id, program.id)')

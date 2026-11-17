@@ -1,7 +1,9 @@
 import { expect, test } from '@playwright/test'
 import { cleanupCiTkaUser, freshDisposableTkaSession } from '../tka.ci'
 
-test('TKA SMP full tryout shows its token cost and is available to an active learner', async ({ page }) => {
+test('TKA SMP full tryout shows its token cost and is available to an active learner', async ({
+  page,
+}) => {
   test.setTimeout(90_000)
   const session = await freshDisposableTkaSession(page)
   try {
