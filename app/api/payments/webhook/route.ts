@@ -19,9 +19,16 @@ function signaturesMatch(expected: string, provided: string) {
   return crypto.timingSafeEqual(expectedBuffer, providedBuffer)
 }
 
+/** Nomor order dari payload yang sudah diparse, hanya untuk log; bukan data rahasia. */
+function safeOrderNumber(body: unknown) {
+  if (!body || typeof body !== 'object') return null
+  const value = (body as Record<string, unknown>).order_id
+  return typeof value === 'string' ? value.slice(0, 120) : null
+}
+
 export async function POST(req: Request) {
+  let body: unknown
   try {
-    let body: unknown
     try {
       body = await req.json()
     } catch {
@@ -111,8 +118,21 @@ export async function POST(req: Request) {
     })
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    if (message === 'ORDER_NOT_FOUND') return errorResponse('not_found', 'Order not found', 404)
+    // Kedua kasus di bawah lolos verifikasi signature, jadi Midtrans benar-benar
+    // mengirimnya. Keduanya harus terlihat di log supaya operator dapat menelusuri
+    // "sudah bayar tapi token tidak masuk" — sebelumnya dijawab tanpa jejak.
+    if (message === 'ORDER_NOT_FOUND') {
+      logger.warn('Midtrans webhook untuk order yang tidak dikenal', {
+        orderNumber: safeOrderNumber(body),
+        reason: 'ORDER_NOT_FOUND',
+      })
+      return errorResponse('not_found', 'Order not found', 404)
+    }
     if (message === 'PAYMENT_AMOUNT_MISMATCH') {
+      logger.error('Midtrans webhook ditolak karena nominal tidak cocok', undefined, {
+        orderNumber: safeOrderNumber(body),
+        reason: 'PAYMENT_AMOUNT_MISMATCH',
+      })
       return errorResponse('validation_error', 'Gross amount mismatch', 400)
     }
     logger.error('Payment webhook failed', error)

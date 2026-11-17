@@ -116,6 +116,34 @@ describe('payments webhook route', () => {
     expect(response.status).toBe(400)
   })
 
+  it('logs a signed amount mismatch at error level with the order number', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    processWebhook.mockRejectedValueOnce(new Error('PAYMENT_AMOUNT_MISMATCH'))
+    const payload = signedMidtransPayload()
+
+    await POST(requestFor(payload))
+
+    const logged = errorSpy.mock.calls.map((call) => String(call[0])).join('\n')
+    expect(logged).toContain('nominal tidak cocok')
+    expect(logged).toContain(payload.order_id)
+    expect(logged).not.toContain(payload.signature_key)
+    errorSpy.mockRestore()
+  })
+
+  it('logs a signed notification for an unknown order', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    processWebhook.mockRejectedValueOnce(new Error('ORDER_NOT_FOUND'))
+    const payload = signedMidtransPayload({ order_id: 'ORD-UNKNOWN-1' })
+
+    const response = await POST(requestFor(payload))
+
+    expect(response.status).toBe(404)
+    const logged = warnSpy.mock.calls.map((call) => String(call[0])).join('\n')
+    expect(logged).toContain('ORD-UNKNOWN-1')
+    expect(logged).toContain('ORDER_NOT_FOUND')
+    warnSpy.mockRestore()
+  })
+
   it('maps a missing order from the payment service to 404', async () => {
     processWebhook.mockRejectedValueOnce(new Error('ORDER_NOT_FOUND'))
 
