@@ -10,14 +10,14 @@ type ExpiredAttempt = {
   deadline: string
 }
 
-export type FinalizationSummary = {
+type FinalizationSummary = {
   checked: number
   finalized: number
   skipped: number
   failed: number
 }
 
-export type EventRankingRefreshSummary = {
+type EventRankingRefreshSummary = {
   events: number
   failed: number
 }
