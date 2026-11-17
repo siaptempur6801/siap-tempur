@@ -5,7 +5,7 @@ import { subjectProgressService } from '@/src/services/subject-progress.service'
 import { walletService, WalletDomainError } from '@/src/services/wallet.service'
 import { eventRankingService } from '@/src/services/event-ranking.service'
 import { leaderboardService } from '@/src/services/leaderboard.service'
-import { PracticeDomainError } from '@/src/services/exam-attempt.service'
+import { hasEntitlementMarker, PracticeDomainError } from '@/src/services/exam-attempt.service'
 import { attemptRepository } from '@/src/repositories/attempt.repository'
 import { logger } from '@/lib/logger'
 
@@ -51,7 +51,8 @@ class ExamCompletionService {
 
     // A distribution grants access to this attempt. Its completion must not
     // depend on the participant having a personal token balance.
-    if (!organizationContext && !eventContext) {
+    // Attempt yang ditanggung entitlement tidak dipotong token (audit A-16).
+    if (!organizationContext && !eventContext && !hasEntitlementMarker(metadata)) {
       try {
         wallet = await walletService.debitForAttempt(userId, attemptId)
       } catch (error) {

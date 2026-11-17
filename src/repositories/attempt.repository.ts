@@ -518,6 +518,24 @@ class AttemptRepository {
     }
   }
 
+  /**
+   * Pakai satu jatah entitlement untuk attempt ini secara atomik (audit A-09/A-16).
+   * Idempoten per attempt; menandai `metadata.entitlementId`. `false` bila tidak ada
+   * entitlement yang masih berlaku dan berkuota.
+   */
+  async consumeEntitlementForAttempt(userId: string, attemptId: string, featureId: string) {
+    // RPC baru belum ada di snapshot tipe; pakai klien admin tanpa tipe seperti RPC
+    // server-only lain di repositori ini.
+    const admin = await createAdminClient()
+    const { data, error } = await admin.rpc('consume_entitlement_for_attempt', {
+      p_user_id: userId,
+      p_attempt_id: attemptId,
+      p_feature_id: featureId,
+    })
+    if (error) throw error
+    return data === true
+  }
+
   async getAttemptMetadata(userId: string, attemptId: string): Promise<Json | null> {
     const admin = await createV2AdminClient()
     const { data, error } = await admin

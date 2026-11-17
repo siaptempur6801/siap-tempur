@@ -96,6 +96,13 @@ function isEntitlementUsable(entitlement: EntitlementRow) {
   return withinWindow && withinUsage
 }
 
+/** Attempt yang sudah ditanggung entitlement (ditandai `consume_entitlement_for_attempt`). */
+export function hasEntitlementMarker(metadata: Json | null | undefined) {
+  if (!metadata || Array.isArray(metadata) || typeof metadata !== 'object') return false
+  const value = (metadata as Record<string, Json>).entitlementId
+  return typeof value === 'string' && value.length > 0
+}
+
 function practiceKindForConfiguredExam(examType: CanonicalExamType): StartInput['kind'] {
   if (examType === 'MINI_TRYOUT') return 'mini_tryout'
   if (examType === 'FULL_TRYOUT') return 'full_tryout'
@@ -218,10 +225,16 @@ class ExamAttemptService {
         )
       }
       await attemptRepository.waitForAttemptQuestions(existing.id)
-      const resumeCoveredByEntitlement = await this.isSessionCoveredByEntitlement(
-        input.userId,
-        exam,
-      )
+      // Attempt yang sudah ditanggung entitlement tidak pernah dipotong token. Attempt
+      // lama tanpa penanda memakai satu jatah entitlement bila masih ada (A-09/A-16).
+      const resumeCoveredByEntitlement =
+        hasEntitlementMarker(existing.metadata) ||
+        ((await this.isSessionCoveredByEntitlement(input.userId, exam)) &&
+          (await attemptRepository.consumeEntitlementForAttempt(
+            input.userId,
+            existing.id,
+            exam.requiredFeatureId!,
+          )))
       await this.chargeAttempt(
         input.userId,
         existing.id,
@@ -289,13 +302,36 @@ class ExamAttemptService {
     }
 
     try {
-      await this.chargeAttempt(
-        input.userId,
-        attempt.id,
-        access.coveredByEntitlement ? 0 : exam.tokenCost,
-      )
+      let coveredByEntitlement = false
+      if (access.coveredByEntitlement && exam.requiredFeatureId) {
+        // Kuota entitlement dipakai atomik di database (A-09). Bila jatahnya habis
+        // di antara pengecekan dan pembuatan attempt, terapkan kebijakan tanpa
+        // entitlement: bayar token, kuota gratis FREEMIUM, atau ditolak.
+        coveredByEntitlement = await attemptRepository.consumeEntitlementForAttempt(
+          input.userId,
+          attempt.id,
+          exam.requiredFeatureId,
+        )
+        if (!coveredByEntitlement) {
+          const fallback = decideExamAccess({
+            accessType: accessType(exam),
+            requiredFeatureId: exam.requiredFeatureId,
+            tokenCost: exam.tokenCost,
+            attemptLimit: exam.attemptLimit,
+            usedAttempts,
+            hasActiveEntitlement: false,
+          })
+          if (!fallback.allow) {
+            throw new PracticeDomainError(fallback.code, fallback.message, fallback.details)
+          }
+        }
+      }
+      await this.chargeAttempt(input.userId, attempt.id, coveredByEntitlement ? 0 : exam.tokenCost)
     } catch (error) {
-      if (error instanceof PracticeDomainError && error.code === 'INSUFFICIENT_TOKEN_BALANCE') {
+      if (
+        error instanceof PracticeDomainError &&
+        ['INSUFFICIENT_TOKEN_BALANCE', 'ENTITLEMENT_REQUIRED'].includes(error.code)
+      ) {
         await attemptRepository.deleteAttempt(attempt.id).catch(() => undefined)
       }
       throw error
