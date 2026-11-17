@@ -9,35 +9,68 @@ interface NavItemProps {
     icon: React.ReactNode
     label: string
     badge?: string
+    exact?: boolean
+    active?: boolean
+    variant?: 'brand' | 'soft'
 }
 
-export function NavItem({ href, icon, label, badge }: NavItemProps) {
-    const pathname = usePathname()
+function matchesPath(pathname: string, href: string, exact = false) {
+    const pathOnly = href.split('#')[0] || href
+    if (exact || pathOnly.endsWith('/dashboard')) return pathname === pathOnly
+    return pathname.startsWith(pathOnly)
+}
 
-    // Check if active - handle dashboard root as exact match, others as prefix
-    const isActive = href.endsWith('/dashboard')
-        ? pathname === href
-        : pathname.startsWith(href)
+export function NavItem({ href, icon, label, badge, exact = false, variant = 'brand', active }: NavItemProps) {
+    const pathname = usePathname()
+    const isActive = active ?? matchesPath(pathname, href, exact)
+    const soft = variant === 'soft'
 
     return (
         <Link
             href={href}
+            aria-current={isActive ? 'page' : undefined}
             className={cn(
-                "flex items-center justify-between px-3 py-2.5 rounded-md transition-all duration-200 group font-handwriting text-xl border-2",
-                isActive
-                    ? "bg-yellow-200 text-gray-900 border-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] -translate-y-1 translate-x-1 font-bold"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-100 border-transparent hover:border-gray-200"
+                'group flex min-h-10 items-center justify-between px-3 py-2 text-[13px] font-bold transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2',
+                soft ? (
+                    isActive
+                        ? 'rounded-xl border border-indigo-200/80 bg-indigo-50/80 text-indigo-700 shadow-2xs'
+                        : 'rounded-xl border border-transparent text-slate-600 hover:bg-slate-100/70 hover:text-slate-950'
+                ) : (
+                    isActive
+                        ? 'border-2 border-slate-900 bg-blue-600 text-white st-shadow-sm'
+                        : 'border-2 border-transparent text-slate-700 hover:border-slate-900 hover:bg-white hover:text-slate-950'
+                )
             )}
         >
-            <div className="flex items-center gap-3">
-                <span className={cn("transition-transform group-hover:rotate-12", isActive && "text-gray-900")}>
+            <div className="flex min-w-0 items-center gap-2.5">
+                <span className={cn(
+                    'flex shrink-0 items-center justify-center transition-all',
+                    soft ? (
+                        isActive
+                            ? 'h-7 w-7 rounded-lg bg-indigo-600 text-white shadow-2xs'
+                            : 'h-7 w-7 rounded-lg bg-slate-100/80 text-slate-500 group-hover:bg-indigo-50 group-hover:text-indigo-600'
+                    ) : (
+                        isActive
+                            ? 'h-7 w-7 border-2 border-white/70 bg-white text-blue-700'
+                            : 'h-7 w-7 border-2 border-transparent text-slate-500 group-hover:border-slate-900 group-hover:bg-yellow-100 group-hover:text-slate-900'
+                    )
+                )}>
                     {icon}
                 </span>
-                <span>{label}</span>
+                <span className="truncate">{label}</span>
             </div>
             {badge && (
-                <span className={cn("text-xs font-bold px-1.5 py-0.5 rounded-sm border-2",
-                    isActive ? "bg-white border-gray-900 text-gray-900" : "bg-blue-100 border-blue-200 text-blue-600"
+                <span className={cn(
+                    'ml-2 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide',
+                    soft ? (
+                        isActive
+                            ? 'rounded-full bg-white/90 text-indigo-700 shadow-2xs'
+                            : 'rounded-full bg-slate-100 text-slate-600'
+                    ) : (
+                        isActive
+                            ? 'border border-white/70 bg-white text-blue-700'
+                            : 'border border-slate-900 bg-yellow-100 text-slate-900'
+                    )
                 )}>
                     {badge}
                 </span>
@@ -46,31 +79,39 @@ export function NavItem({ href, icon, label, badge }: NavItemProps) {
     )
 }
 
-export function MobileNavItem({ href, icon, label }: NavItemProps) {
+export function MobileNavItem({ href, icon, label, exact = false, variant = 'brand', active }: NavItemProps) {
     const pathname = usePathname()
-
-    // Check if active
-    const isActive = href.endsWith('/dashboard')
-        ? pathname === href
-        : pathname.startsWith(href)
+    const isActive = active ?? matchesPath(pathname, href, exact)
+    const soft = variant === 'soft'
 
     return (
         <Link
             href={href}
+            aria-current={isActive ? 'page' : undefined}
             className={cn(
-                "flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-md transition-all active:scale-95",
-                isActive
-                    ? "text-blue-600 font-bold"
-                    : "text-gray-500 hover:text-gray-900"
+                'flex min-h-14 flex-col items-center justify-center gap-0.5 px-1 py-1 text-[10px] font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-inset',
+                soft ? (
+                    isActive ? 'text-indigo-600 rounded-xl' : 'text-slate-500 hover:text-slate-900'
+                ) : (
+                    isActive ? 'text-blue-700' : 'text-slate-500 hover:text-slate-900'
+                )
             )}
         >
-            <div className={cn("p-1 rounded-md transition-all", isActive ? "bg-yellow-200 border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]" : "")}>
-                {icon}
-            </div>
             <span className={cn(
-                "text-[10px] font-handwriting text-lg leading-none mt-1",
-                isActive && "font-bold text-gray-900"
-            )}>{label}</span>
+                'flex h-7 w-9 items-center justify-center transition-all',
+                soft ? (
+                    isActive
+                        ? 'rounded-xl bg-indigo-50 text-indigo-600 ring-1 ring-indigo-200/60 shadow-2xs'
+                        : 'rounded-xl bg-transparent text-slate-500'
+                ) : (
+                    isActive
+                        ? 'border-2 border-slate-900 bg-yellow-100 text-blue-700 st-shadow-sm'
+                        : 'border-2 border-transparent text-slate-500'
+                )
+            )}>
+                {icon}
+            </span>
+            <span className="leading-none">{label}</span>
         </Link>
     )
 }

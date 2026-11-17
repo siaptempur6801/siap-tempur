@@ -1,8 +1,9 @@
 'use client'
 
 import { AnimatePresence, motion } from 'framer-motion'
-import { AlertTriangle, Loader2, Ticket } from 'lucide-react'
+import { AlertTriangle, Ticket } from 'lucide-react'
 import { TRYOUT_TOKEN_COST } from '@/lib/constants'
+import { LoadingSpinner } from '@/components/ui/LoadingState'
 
 type TokenUsageConfirmModalProps = {
     isOpen: boolean
@@ -32,7 +33,7 @@ export default function TokenUsageConfirmModal({
     return (
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm font-handwriting">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm font-display">
                     <motion.div
                         initial={{ scale: 0.92, opacity: 0, y: 16 }}
                         animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -40,7 +41,7 @@ export default function TokenUsageConfirmModal({
                         role="dialog"
                         aria-modal="true"
                         aria-labelledby="token-confirm-title"
-                        className="w-full max-w-md border-4 border-gray-900 bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"
+                        className="w-full max-w-md border-4 border-gray-900 bg-white st-shadow-lg"
                     >
                         <div className="border-b-4 border-gray-900 bg-yellow-300 px-5 py-4">
                             <div className="flex items-center gap-3">
@@ -101,9 +102,9 @@ export default function TokenUsageConfirmModal({
                                     type="button"
                                     onClick={onConfirm}
                                     disabled={isLoading}
-                                    className="flex flex-1 items-center justify-center gap-2 border-2 border-gray-900 bg-blue-600 px-4 py-3 font-black text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition hover:translate-x-px hover:translate-y-px hover:shadow-none disabled:cursor-not-allowed disabled:opacity-60"
+                                    className="flex flex-1 items-center justify-center gap-2 border-2 border-gray-900 bg-blue-600 px-4 py-3 font-black text-white st-shadow-md transition hover:translate-x-px hover:translate-y-px hover:shadow-none disabled:cursor-not-allowed disabled:opacity-60"
                                 >
-                                    {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Ticket size={18} />}
+                                    {isLoading ? <LoadingSpinner label="Memulai sesi" /> : <Ticket size={18} />}
                                     {isLoading ? 'Memulai...' : confirmLabel}
                                 </button>
                             </div>

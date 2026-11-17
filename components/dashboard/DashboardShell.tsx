@@ -5,23 +5,24 @@ import Link from 'next/link'
 import Image from 'next/image'
 import {
     LayoutDashboard,
-    BookOpen,
     CalendarDays,
     Clock3,
+    Compass,
     Ticket,
     Target,
-    Shield,
     Library,
     ListChecks,
     Dumbbell,
-    PenLine,
+    Sparkles,
+    User,
+    Building2,
 } from 'lucide-react'
 
 import MobileProfileDropdown from '@/components/dashboard/MobileProfileDropdown'
 import SidebarSignoutButton from '@/components/dashboard/SidebarSignoutButton'
+import TempurPassIndicator from '@/components/dashboard/TempurPassIndicator'
 import { NavItem, MobileNavItem } from '@/components/dashboard/NavItem'
-
-
+import styles from '@/components/dashboard/CompactLearning.module.css'
 
 interface DashboardShellProps {
     children: React.ReactNode
@@ -36,148 +37,158 @@ interface DashboardShellProps {
     profile: {
         avatar_url?: string
         full_name?: string
-        tryout_quota?: number
     } | null
-
+    tokenBalance: number
+    hasActiveTempurPass: boolean
     signoutAction: () => Promise<{ success: boolean }>
-    isAdmin?: boolean
-    canAccessArticles?: boolean
 }
 
 export default function DashboardShell({
     children,
     user,
     profile,
+    tokenBalance,
+    hasActiveTempurPass,
     signoutAction,
-    isAdmin = false,
-    canAccessArticles = false,
 }: DashboardShellProps) {
     const pathname = usePathname()
 
-    // Check if we're on a practice session page (mengerjakan soal atau result)
     const isPracticeSession = pathname.includes('/cpns/dashboard/tryout/') ||
-                              pathname.includes('/cpns/dashboard/result/')
+        pathname.includes('/cpns/dashboard/result/')
 
-    // If on practice session, render minimal layout without sidebar
     if (isPracticeSession) {
         return (
-            <main className="min-h-screen bg-[#fdfbf7]">
+            <main data-experience-mode="exam" data-program="cpns" className="st-product min-h-screen bg-[#fbfaf7]">
                 {children}
             </main>
         )
     }
 
-    // Normal dashboard layout with sidebar
-    return (
-        <div className="h-screen overflow-hidden flex font-body bg-[#fdfbf7]">
-            {/* Sidebar */}
-            <aside className="w-64 min-h-0 bg-[#fdfbf7] border-r-2 border-gray-900 hidden md:flex flex-col z-20 relative shadow-[4px_0px_0px_0px_rgba(0,0,0,0.1)]">
-                {/* Sidebar Pattern Grid */}
-                <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: "radial-gradient(#000 1px, transparent 1px)", backgroundSize: "10px 10px" }}></div>
+    const displayName = profile?.full_name ||
+        user.user_metadata?.full_name ||
+        user.user_metadata?.name ||
+        'Pejuang SiapTempur'
 
-                <div className="p-6 relative z-10 shrink-0 flex items-center justify-center">
-                    <Link href="/cpns" className="flex items-center group">
-                        <span className="text-3xl font-handwriting font-bold text-gray-800 -rotate-1 group-hover:rotate-0 transition-transform leading-tight">
-                            Siap<span className="text-blue-600 underline decoration-wavy decoration-2">Tempur</span>.
+    return (
+        <div
+            data-experience-mode="learning"
+            data-program="cpns"
+            className={`${styles.compact} st-product flex h-screen overflow-hidden bg-[#fbfaf7] font-body text-slate-950`}
+        >
+            <aside className="relative z-20 hidden w-[15.75rem] min-h-0 flex-col border-r-2 border-slate-900 bg-[#fbfaf7] md:flex">
+                <div className="shrink-0 border-b-2 border-slate-900 px-5 pb-4 pt-5">
+                    <Link
+                        href="/cpns"
+                        className="st-focus inline-flex items-center focus-visible:outline-none"
+                    >
+                        <span className="font-script text-[1.65rem] font-black leading-tight text-slate-950">
+                            Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.
                         </span>
                     </Link>
+                    <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">Persiapan SKD CPNS</p>
                 </div>
 
-                <nav className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pt-2 pl-4 pr-6 pb-4 space-y-3 relative z-10">
-                    <NavItem href="/cpns/dashboard" icon={<LayoutDashboard size={20} />} label="Dashboard" />
-                    <NavItem href="/cpns/dashboard/tryout" icon={<Target size={20} />} label="Tryout" badge="XP" />
-                    <NavItem href="/cpns/dashboard/mini-tryout" icon={<ListChecks size={20} />} label="Mini Tryout" badge="XP" />
-                    <NavItem href="/cpns/dashboard/drilling-materi" icon={<Dumbbell size={20} />} label="Drilling Materi" badge="XP" />
-                    <NavItem href="/cpns/dashboard/riwayat" icon={<Clock3 size={20} />} label="Riwayat" />
-                    <NavItem href="/cpns/dashboard/event" icon={<CalendarDays size={20} />} label="Event" badge="LIVE" />
-                    <NavItem href="/cpns/dashboard/materi" icon={<Library size={20} />} label="Kisi-Kisi" />
-                    <NavItem href="/cpns/dashboard/beli-paket" icon={<BookOpen size={20} />} label="Beli Token" />
+                <nav className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 py-3" aria-label="Navigasi CPNS">
+                    <p className="mb-1 px-3 text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">Utama</p>
+                    <div className="space-y-1">
+                        <NavItem href="/cpns/dashboard" icon={<LayoutDashboard size={17} />} label="Beranda" />
+                        <NavItem href="/cpns/dashboard/materi" icon={<Library size={17} />} label="Kisi-Kisi" />
+                        <NavItem href="/cpns/dashboard/drilling-materi" icon={<Dumbbell size={17} />} label="Belajar" />
+                        <NavItem href="/cpns/dashboard/mini-tryout" icon={<ListChecks size={17} />} label="Mini Tryout" />
+                        <NavItem href="/cpns/dashboard/tryout" icon={<Target size={17} />} label="Tryout" />
+                        <NavItem href="/cpns/dashboard/assignments" icon={<Building2 size={17} />} label="Assignment Instansi" />
+                        <NavItem href="/cpns/dashboard/event" icon={<CalendarDays size={17} />} label="Event" />
+                        <NavItem href="/cpns/dashboard/riwayat" icon={<Clock3 size={17} />} label="Hasil" />
+                    </div>
 
-                    {(isAdmin || canAccessArticles) && (
-                        <div className="pt-4 mt-4 border-t-2 border-dashed border-gray-300">
-                            {canAccessArticles && (
-                                <NavItem href="/cpns/admin/articles" icon={<PenLine size={20} />} label="Tulis Artikel" />
-                            )}
-                            {isAdmin && (
-                                <NavItem href="/cpns/admin" icon={<Shield size={20} />} label="Admin" />
-                            )}
-                        </div>
-                    )}
+                    <div className="my-3.5 border-t-2 border-dashed border-slate-300" />
+                    <p className="mb-1 px-3 text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">Lainnya</p>
+                    <div className="space-y-1">
+                        <NavItem href="/cpns/dashboard/pilih-jalur" icon={<Compass size={17} />} label="Pilih Jalur" />
+                        <NavItem href="/cpns/dashboard/beli-paket" icon={<Ticket size={17} />} label="Beli Token" />
+                        {/* Selalu tampil: halaman Tempur Pass CPNS harus bisa dibuka walau belum berlangganan. */}
+                        <NavItem href="/cpns/dashboard/pass" icon={<Sparkles size={17} />} label="Tempur Pass CPNS" badge={hasActiveTempurPass ? 'Aktif' : undefined} />
+                        <NavItem href="/cpns/dashboard/profile" icon={<User size={17} />} label="Profil" />
+                    </div>
+
                 </nav>
 
-                <div className="p-4 border-t-2 border-gray-900 relative z-10 shrink-0">
-                    <div className="flex items-center gap-3 mb-4 px-2 p-3 bg-white border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] -rotate-1 hover:rotate-0 transition-transform">
+                <div className="shrink-0 border-t-2 border-slate-900 p-3">
+                    <div className="flex items-center gap-2.5 border-2 border-slate-900 bg-white p-2.5 st-shadow-sm">
                         <Link
                             href="/cpns/dashboard/profile"
-                            aria-label="Buka pengaturan profil"
-                            title="Buka pengaturan profil"
-                            className="w-10 h-10 border-2 border-gray-900 flex items-center justify-center text-gray-900 font-bold overflow-hidden relative bg-yellow-200 shrink-0 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+                            aria-label="Buka profil"
+                            className="st-focus relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden border-2 border-slate-900 bg-yellow-100 text-sm font-black text-slate-900"
                         >
                             {profile?.avatar_url ? (
-                                <Image
-                                    src={profile.avatar_url}
-                                    alt="Ava"
-                                    fill
-                                    className="object-cover"
-                                    sizes="40px"
-                                />
+                                <Image src={profile.avatar_url} alt="Foto profil" fill className="object-cover" sizes="36px" />
                             ) : (
-                                <span className="text-lg">{user.email?.[0]?.toUpperCase() || '?'}</span>
+                                <span>{user.email?.[0]?.toUpperCase() || '?'}</span>
                             )}
                         </Link>
-                        <div className="overflow-hidden flex-1">
-                            <p className="text-sm font-bold text-gray-900 truncate font-handwriting">
-                                {profile?.full_name ||
-                                    user.user_metadata?.full_name ||
-                                    user.user_metadata?.name ||
-                                    'Pejuang Tryout'}
-                            </p>
-                            <div className="flex items-center gap-1.5 mt-0.5">
-                                <span className="text-[10px] px-1.5 py-0.5 border border-gray-900 bg-blue-100 text-blue-900 font-bold uppercase inline-flex items-center gap-1 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] text-xs" title="Sisa Token SKD CPNS & Kedinasan">
-                                    <Ticket size={12} className="fill-current" />
-                                    {profile?.tryout_quota ?? 0} Token
-                                </span>
-                            </div>
+                        <div className="min-w-0 flex-1">
+                            <p className="truncate text-[13px] font-black text-slate-900">{displayName}</p>
+                            <Link
+                                href="/cpns/dashboard/beli-paket"
+                                className="st-focus mt-0.5 inline-flex min-h-6 items-center gap-1.5 text-[11px] font-black text-blue-700 hover:underline"
+                            >
+                                <Ticket size={12} /> {tokenBalance} token tersisa
+                            </Link>
+                            {hasActiveTempurPass && <TempurPassIndicator href="/cpns/dashboard/pass" label="Tempur Pass CPNS aktif" className="mt-1.5" compact />}
                         </div>
                     </div>
-                    <div className="flex items-center justify-end gap-2 mt-4 pt-4 border-t-2 border-gray-900">
-                        <SidebarSignoutButton signoutAction={signoutAction} />
+                    <div className="mt-1.5 flex justify-end">
+                        <SidebarSignoutButton signoutAction={signoutAction} redirectTo="/cpns" />
                     </div>
                 </div>
             </aside>
 
-            {/* Main Content */}
-            <main className="flex-1 overflow-y-auto pb-20 md:pb-0 relative scrollbar-hide">
-                {/* Mobile Header (Hidden on Desktop) */}
-                <div className="md:hidden h-16 border-b-2 border-gray-900 flex items-center px-6 justify-between sticky top-0 bg-[#fdfbf7]/90 backdrop-blur-md z-30 shadow-sm">
-                    <Link href="/cpns" className="flex items-center group">
-                        <span className="text-2xl font-handwriting font-bold text-gray-800 -rotate-1 group-hover:rotate-0 transition-transform leading-tight">
-                            Siap<span className="text-blue-600 underline decoration-wavy decoration-2">Tempur</span>.
-                        </span>
+            <main className="relative flex-1 overflow-y-auto pb-24 md:pb-0">
+                <div className="sticky top-0 z-30 flex h-14 items-center justify-between border-b-2 border-slate-900 bg-[#fbfaf7]/95 px-4 backdrop-blur-xl md:hidden">
+                    <Link
+                        href="/cpns"
+                        className="st-focus font-display text-xl font-black text-slate-950"
+                    >
+                        Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.
                     </Link>
-                    <MobileProfileDropdown 
-                        user={user} 
-                        profile={profile} 
-                        signoutAction={signoutAction}
-                        canAccessArticles={canAccessArticles}
-                        isAdmin={isAdmin}
-                    />
+                    <div className="flex items-center gap-2">
+                        <Link
+                            href="/cpns/dashboard/beli-paket"
+                            aria-label={`${tokenBalance} token tersisa`}
+                            className="st-focus inline-flex min-h-9 shrink-0 items-center gap-1.5 border-2 border-slate-900 bg-yellow-100 px-2.5 text-xs font-black text-slate-900 st-shadow-sm"
+                        >
+                            <Ticket size={14} aria-hidden="true" />
+                            <span className="tabular-nums">{tokenBalance}</span>
+                            <span className="hidden min-[360px]:inline">token</span>
+                        </Link>
+                        {hasActiveTempurPass && <TempurPassIndicator href="/cpns/dashboard/pass" label="Tempur Pass CPNS aktif" compact />}
+                        <MobileProfileDropdown
+                            user={user}
+                            profile={profile}
+                            tokenBalance={tokenBalance}
+                            hasActiveTempurPass={hasActiveTempurPass}
+                            signoutAction={signoutAction}
+                            signoutRedirectTo="/cpns"
+                        />
+                    </div>
                 </div>
 
-                <div className="p-4 md:p-8 max-w-7xl mx-auto">
+                <div className="mx-auto w-full max-w-6xl p-4 sm:p-5 md:p-6 lg:p-7">
                     {children}
                 </div>
             </main>
 
-            {/* Mobile Bottom Navigation */}
-            <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#fdfbf7]/90 backdrop-blur-xl border-t-2 border-gray-900 z-40">
-                <div className="grid grid-cols-6 gap-1 px-1.5 py-2">
-                    <MobileNavItem href="/cpns/dashboard" icon={<LayoutDashboard size={20} />} label="Home" />
+            <nav
+                className="fixed bottom-0 left-0 right-0 z-40 border-t-2 border-slate-900 bg-[#fbfaf7]/98 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden"
+                aria-label="Navigasi utama"
+            >
+                <div className="grid grid-cols-6 gap-1 px-1.5 py-1.5">
+                    <MobileNavItem href="/cpns/dashboard" icon={<LayoutDashboard size={20} />} label="Beranda" />
+                    <MobileNavItem href="/cpns/dashboard/drilling-materi" icon={<Dumbbell size={20} />} label="Belajar" />
                     <MobileNavItem href="/cpns/dashboard/tryout" icon={<Target size={20} />} label="Tryout" />
-                    <MobileNavItem href="/cpns/dashboard/mini-tryout" icon={<ListChecks size={20} />} label="Mini" />
-                    <MobileNavItem href="/cpns/dashboard/drilling-materi" icon={<Dumbbell size={20} />} label="Drill" />
-                    <MobileNavItem href="/cpns/dashboard/beli-paket" icon={<BookOpen size={20} />} label="Beli" />
-                    <MobileNavItem href="/cpns/dashboard/event" icon={<CalendarDays size={20} />} label="Event" />
+                    <MobileNavItem href="/cpns/dashboard/assignments" icon={<Building2 size={20} />} label="Instansi" />
+                    <MobileNavItem href="/cpns/dashboard/riwayat" icon={<Clock3 size={20} />} label="Hasil" />
+                    <MobileNavItem href="/cpns/dashboard/profile" icon={<User size={20} />} label="Profil" />
                 </div>
             </nav>
         </div>

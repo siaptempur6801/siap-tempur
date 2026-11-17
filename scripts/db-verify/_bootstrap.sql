@@ -1,0 +1,15 @@
+-- Pembuka bersama untuk skrip verifikasi di folder ini.
+--
+-- MENGAPA ADA
+--   Skrip-skrip ini dulu meng-hardcode UUID admin staging. UUID itu TIDAK stabil:
+--   pada 2026-09-19 ditemukan bahwa `93b4d35b-…` punya peran ADMIN di staging
+--   tetapi TANPA peran sama sekali di produksi (di sana ia bernama "Cutover
+--   Content Actor"), sehingga seluruh pemeriksaan gagal dengan
+--   "Organization manage permission required" — pesan yang menyesatkan, karena
+--   yang salah bukan permission-nya melainkan pengguna yang dipakai.
+--
+--   Sekarang admin dicari dari database: peran SUPER_ADMIN didahulukan, lalu
+--   ADMIN. Dengan begitu skrip tetap jalan setelah data peran berubah.
+--
+-- CARA PAKAI
+--   Sisipkan isi berkas ini SETELAH `begin;` dan SEBELUM pemanggilan RPC.

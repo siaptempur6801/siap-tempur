@@ -1,16 +1,19 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { forgotPassword } from '@/app/auth/actions'
 import { Loader2, Mail } from 'lucide-react'
 import { toast } from 'sonner'
+import { acquireSingleFlightLock, releaseSingleFlightLock } from '@/lib/single-flight-lock'
 
 export default function ForgotPasswordForm() {
     const [loading, setLoading] = useState(false)
     const [sent, setSent] = useState(false)
+    const submitLockRef = useRef(false)
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
+        if (!acquireSingleFlightLock(submitLockRef)) return
         setLoading(true)
         const formData = new FormData(event.currentTarget)
 
@@ -20,69 +23,69 @@ export default function ForgotPasswordForm() {
                 toast.error(result.error)
             } else {
                 setSent(true)
-                toast.success('Email Terkirim!', {
-                    description: 'Silakan cek inbox atau spam email Anda untuk me-reset password.'
+                toast.success('Email reset sudah dikirim', {
+                    description: 'Cek kotak masuk atau folder spam email kamu.',
                 })
             }
         } catch {
-            toast.error('Gagal mengirim email')
+            toast.error('Email reset belum bisa dikirim', { description: 'Coba lagi beberapa saat.' })
         } finally {
+            releaseSingleFlightLock(submitLockRef)
             setLoading(false)
         }
     }
 
     return (
-        <div className="w-full max-w-md space-y-8 relative z-10 bg-white p-8 border-2 border-gray-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rounded-xl rotate-1">
-            {/* Tape Effect */}
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-yellow-100/80 border-l border-r border-white/50 shadow-sm -rotate-2"></div>
+        <section className="st-card-lg relative w-full max-w-lg bg-white p-6 md:p-8" aria-labelledby="forgot-title">
+            <div className="absolute -top-3 left-1/2 h-7 w-28 -translate-x-1/2 -rotate-2 border-x border-white/60 bg-[var(--st-yellow)]/80" aria-hidden="true" />
 
-            <div className="text-center">
-                <h2 className="font-handwriting text-4xl font-bold tracking-tight text-gray-900">Lupa Password?</h2>
-                <p className="mt-2 text-gray-600 font-handwriting text-xl">
-                    {sent ? 'Email reset password telah dikirim!' : 'Masukkan email Anda untuk menerima link reset.'}
+            <div>
+                <div className="st-kicker">Pulihkan akun</div>
+                <h1 id="forgot-title" className="st-heading-display mt-4 text-4xl md:text-5xl">Lupa kata sandi?</h1>
+                <p className="st-muted mt-2 font-semibold">
+                    {sent ? 'Tautan reset sudah dikirim ke email kamu.' : 'Masukkan email yang terdaftar. Kami akan mengirim tautan untuk membuat kata sandi baru.'}
                 </p>
             </div>
 
             {sent ? (
-                <div className="mt-8 text-center space-y-6">
-                    <div className="bg-green-50 p-4 rounded-lg border-2 border-green-200">
-                        <Mail className="w-12 h-12 text-green-600 mx-auto mb-2" />
-                        <p className="text-green-800">Cek email Anda dan klik link di dalamnya untuk membuat password baru.</p>
+                <div className="mt-7 space-y-5">
+                    <div className="border-2 border-[var(--st-ink)] bg-green-50 p-5 text-center" role="status">
+                        <Mail className="mx-auto h-10 w-10 text-green-700" />
+                        <h2 className="mt-3 font-black">Periksa email kamu.</h2>
+                        <p className="st-muted mt-1 text-sm font-semibold leading-relaxed">Buka tautan pada email reset untuk membuat kata sandi baru. Cek folder spam jika email belum terlihat.</p>
                     </div>
                     <button
+                        type="button"
                         onClick={() => setSent(false)}
-                        className="text-blue-600 font-bold hover:underline font-handwriting text-xl"
+                        className="st-focus inline-flex min-h-11 items-center font-black text-blue-700 hover:underline"
                     >
-                        Kirim ulang?
+                        Kirim ulang email reset
                     </button>
                 </div>
             ) : (
-                <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+                <form onSubmit={handleSubmit} className="mt-7 space-y-5">
                     <div>
-                        <label htmlFor="email-address" className="sr-only">Email address</label>
+                        <label htmlFor="forgot-email-address" className="mb-1.5 block text-sm font-black">Alamat email</label>
                         <input
-                            id="email-address"
+                            id="forgot-email-address"
                             name="email"
                             type="email"
                             autoComplete="email"
                             required
-                            className="relative block w-full rounded-lg border-2 border-gray-900 bg-[#fdfbf7] px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-blue-600 focus:outline-none focus:ring-0 sm:text-lg font-handwriting"
-                            placeholder="Alamat Email Terdaftar"
+                            className="st-input"
+                            placeholder="nama@email.com"
                         />
                     </div>
-
-                    <div>
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="group relative flex w-full justify-center items-center gap-2 rounded-lg bg-gray-900 px-4 py-3 text-xl font-bold font-handwriting text-white hover:bg-blue-600 hover:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2 transition-all border-2 border-transparent shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)] active:shadow-none active:translate-x-[2px] active:translate-y-[2px] disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {loading && <Loader2 className="animate-spin" size={24} />}
-                            {loading ? 'Mengirim...' : 'Kirim Link Reset'}
-                        </button>
-                    </div>
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="st-button inline-flex min-h-12 w-full items-center justify-center gap-2 bg-blue-600 px-5 py-3 font-black text-white disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        {loading && <Loader2 className="animate-spin" size={19} />}
+                        {loading ? 'Mengirim...' : 'Kirim tautan reset'}
+                    </button>
                 </form>
             )}
-        </div>
+        </section>
     )
 }

@@ -11,7 +11,7 @@ export function EventCertificatePreview({ certificateNumber, previewName, cacheK
     const query = params.size > 0 ? `?${params.toString()}` : ''
 
     return (
-        <div className="border-4 border-gray-900 bg-[#f5f8fc] p-4 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] sm:p-6">
+        <div className="border-4 border-gray-900 bg-[#f5f8fc] p-4 st-shadow-md sm:p-6">
             {/* Preview uses the exact same server-rendered image that is wrapped into the PDF download. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img

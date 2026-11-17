@@ -1,11 +1,57 @@
-import { type NextRequest } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 import { updateSession } from '@/lib/utils/supabase/middleware'
 import { CSRF_COOKIE } from '@/lib/csrf'
+import { LEGACY_ADMIN_BASE_PATH, LEGACY_ADMIN_TAB_ROUTES } from '@/lib/admin-redirects'
+import { adminHref } from '@/lib/admin-routes'
+
+function isLoopbackHostname(hostname: string) {
+    return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1'
+}
+
+/**
+ * Tab legacy `/cpns/admin?tab=...` → halaman kanonik.
+ *
+ * Redirect berbasis path untuk rute legacy ada di `lib/admin-redirects.ts` dan
+ * dievaluasi oleh `next.config.ts`. Tab TIDAK bisa ditangani di sana karena
+ * `redirects()` tidak dapat mencocokkan query parameter.
+ *
+ * Penting: fungsi ini dijalankan SETELAH `updateSession()` dan pemasangan header
+ * CSP + cookie CSRF — bukan di awal seperti implementasi sebelumnya. Versi lama
+ * `return` lebih awal sehingga request ke rute legacy tidak pernah melewati
+ * refresh sesi dan tidak pernah menerima header keamanan.
+ */
+function legacyAdminTabRedirect(request: NextRequest, response: NextResponse) {
+    const pathname = request.nextUrl.pathname
+    if (pathname !== LEGACY_ADMIN_BASE_PATH) return null
+
+    const tab = request.nextUrl.searchParams.get('tab')
+    // Tanpa tab, `/cpns/admin` diarahkan ke root workspace admin.
+    const destination = tab ? LEGACY_ADMIN_TAB_ROUTES[tab.toLowerCase()] : '/admin'
+    if (!destination) return null
+
+    const target = request.nextUrl.clone()
+    target.pathname = destination
+    target.searchParams.delete('tab')
+    if (!target.searchParams.has('program')) target.searchParams.set('program', 'CPNS')
+    if (!target.searchParams.has('track')) target.searchParams.set('track', 'SKD')
+
+    const redirect = NextResponse.redirect(target)
+    // Bawa cookie sesi yang baru di-refresh agar tidak hilang saat redirect.
+    response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie))
+    return redirect
+}
 
 export async function proxy(request: NextRequest) {
     const nonce = crypto.randomUUID().replace(/-/g, '')
     const csrfToken = crypto.randomUUID()
-    
+
+    // `upgrade-insecure-requests` hanya untuk host non-loopback: pada `next start` lokal
+    // (NODE_ENV=production) flag ini membuat browser meng-upgrade request http ke https
+    // sehingga memunculkan ERR_SSL_PROTOCOL_ERROR di dev/E2E.
+    const upgradeInsecureRequests = process.env.NODE_ENV === 'production' && !isLoopbackHostname(request.nextUrl.hostname)
+        ? 'upgrade-insecure-requests;'
+        : ''
+
     const cspHeader = `
         default-src 'self';
         script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${process.env.NODE_ENV === 'production' ? '' : "'unsafe-eval'"} https://app.midtrans.com https://app.sandbox.midtrans.com;
@@ -18,44 +64,44 @@ export async function proxy(request: NextRequest) {
         base-uri 'self';
         form-action 'self';
         frame-ancestors 'none';
-        upgrade-insecure-requests;
+        ${upgradeInsecureRequests}
         ${process.env.CSP_REPORT_URI ? `report-uri ${process.env.CSP_REPORT_URI};` : ''}
     `.replace(/\s{2,}/g, ' ').trim()
 
-    // Pass the modified headers to the downstream components
     const requestHeaders = new Headers(request.headers)
     requestHeaders.set('x-nonce', nonce)
     requestHeaders.set('x-pathname', request.nextUrl.pathname)
     requestHeaders.set('Content-Security-Policy', cspHeader)
 
-    // Call updateSession but we need to ensure the request headers are passed.
-    // updateSession uses NextResponse.next({ request }). We can override the request headers 
-    // by creating a new request object or passing the headers to updateSession.
     const response = await updateSession(request, requestHeaders)
-
-    // Set the CSP header on the outgoing response
     response.headers.set('Content-Security-Policy', cspHeader)
 
-    // Set CSRF token cookie (double-submit pattern)
-    // httpOnly: false so client JS can read it for the custom header
     response.cookies.set(CSRF_COOKIE, csrfToken, {
         httpOnly: false,
-        secure: process.env.NODE_ENV === 'production',
+        secure: process.env.NODE_ENV === 'production' && !isLoopbackHostname(request.nextUrl.hostname),
         sameSite: 'strict',
         path: '/',
     })
-    
+
+    const legacy = legacyAdminTabRedirect(request, response)
+    if (legacy) { legacy.headers.set('Content-Security-Policy', cspHeader); return legacy }
+    // Only normalize page reads. POST/server actions keep their mutation contract.
+    if (request.method === 'GET' && request.nextUrl.pathname.startsWith('/admin')) {
+        const current = `${request.nextUrl.pathname}${request.nextUrl.search}`
+        const canonical = adminHref(current)
+        if (canonical !== current) {
+            const target = new URL(canonical, request.url)
+            const redirected = NextResponse.redirect(target, 307)
+            response.cookies.getAll().forEach(cookie => redirected.cookies.set(cookie))
+            redirected.headers.set('Content-Security-Policy', cspHeader)
+            return redirected
+        }
+    }
     return response
 }
 
 export const config = {
     matcher: [
-        /*
-         * Match all request paths except for the ones starting with:
-         * - _next/static (static files)
-         * - _next/image (image optimization files)
-         * - favicon.ico (favicon file)
-         */
-        '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+        '/((?!_next/static|_next/image|_next/hmr|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
     ],
 }

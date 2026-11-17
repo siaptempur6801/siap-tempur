@@ -5,15 +5,13 @@ import { signout } from '@/app/auth/actions'
 import DashboardShell from '@/components/dashboard/DashboardShell'
 import Script from 'next/script'
 import { logger } from '@/lib/logger'
-import { isAdminRole, isArticleWriterRole } from '@/lib/utils/roles'
+import { env } from '@/lib/env'
+import { hasActivePass } from '@/src/services/tempur-pass.service'
+import { walletService } from '@/src/services/wallet.service'
 
 type UserMetadata = {
     full_name?: string
     name?: string
-}
-
-type DashboardProfile = {
-    role?: string | null
 }
 
 export const dynamic = 'force-dynamic'
@@ -26,29 +24,36 @@ export default async function DashboardLayout({
 }) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    const nonce = (await headers()).get('x-nonce') || undefined
+    const requestHeaders = await headers()
+    const nonce = requestHeaders.get('x-nonce') || undefined
+    const pathname = requestHeaders.get('x-pathname') ?? ''
 
     if (!user) {
         redirect('/login')
     }
 
-    // Fetch profile for status and details
-    // We use maybeSingle() to avoid errors if profile doesn't exist yet
+    // Sesi pengerjaan tryout punya layout full-screen sendiri
+    // (`tryout/[sessionId]/layout.tsx`) yang menyatakan "tanpa sidebar".
+    // Karena layout bersarang tidak menggantikan layout induk, shell di sini harus dilewati
+    // agar soal tidak dirender di dalam kerangka dashboard.
+    const isSessionSurface = /^\/cpns\/dashboard\/tryout\/[^/]+/.test(pathname)
+    if (isSessionSurface) return <>{children}</>
+
     let { data: profile } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
         .maybeSingle()
 
-    // If profile doesn't exist, create it (new user or first time in dashboard)
     if (!profile) {
         const userMetadata = user.user_metadata as UserMetadata | undefined
+        const displayName = userMetadata?.full_name || userMetadata?.name || null
         const { data: newProfile, error: insertError } = await supabase
             .from('profiles')
             .insert({
                 id: user.id,
-                full_name: userMetadata?.full_name || userMetadata?.name || null,
-                tryout_quota: 0
+                full_name: displayName,
+                display_name: displayName,
             })
             .select()
             .single()
@@ -60,28 +65,29 @@ export default async function DashboardLayout({
         }
     }
 
-    const role = (profile as DashboardProfile | null)?.role
-    const isAdminUser = isAdminRole(role)
-    const canAccessArticles = isArticleWriterRole(role)
+    const [tokenBalance, hasTempurPass] = await Promise.all([
+        walletService.getExamTokenBalance(user.id),
+        hasActivePass(user.id, 'cpns'),
+    ])
 
     return (
         <>
             <Script
-                src="https://app.midtrans.com/snap/snap.js"
-                data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY}
+                id="midtrans-snap-script"
+                src={env.midtransSnapScriptUrl()}
+                data-client-key={env.midtransClientKey()}
                 strategy="afterInteractive"
                 nonce={nonce}
             />
             <DashboardShell
                 user={user}
                 profile={profile}
+                tokenBalance={tokenBalance}
+                hasActiveTempurPass={hasTempurPass}
                 signoutAction={signout}
-                isAdmin={isAdminUser}
-                canAccessArticles={canAccessArticles}
             >
                 {children}
             </DashboardShell>
         </>
     )
 }
-

@@ -53,11 +53,25 @@ export interface MidtransTransactionStatus {
     fraud_status?: string;
 }
 
+export interface MidtransQrisAction {
+    name?: string;
+    method?: string;
+    url?: string;
+}
+
+export interface MidtransQrisChargeResponse extends MidtransTransactionStatus {
+    merchant_id?: string;
+    acquirer?: string;
+    actions?: MidtransQrisAction[];
+    signature_key?: string;
+    error_messages?: string[];
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let _snap: any = null;
 
-function getMidtransApiBaseUrl(serverKey: string) {
-    return serverKey.includes('SB-') ? 'https://api.sandbox.midtrans.com' : 'https://api.midtrans.com'
+function getMidtransApiBaseUrl() {
+    return env.midtransApiBaseUrl()
 }
 
 function getMidtransAuthHeader(serverKey: string) {
@@ -68,7 +82,7 @@ function getSnap() {
     if (!_snap) {
         const serverKey = env.midtransServerKey()
         _snap = new midtransClient.Snap({
-            isProduction: !serverKey.includes('SB-'),
+            isProduction: env.midtransIsProduction(),
             serverKey,
             clientKey: env.midtransClientKey()
         });
@@ -122,9 +136,53 @@ export async function createTransaction(
     }
 }
 
+export async function createQrisCharge(
+    orderId: string,
+    amount: number,
+    customerDetails?: MidtransCustomerDetails,
+    itemDetails?: MidtransItemDetails[],
+): Promise<MidtransQrisChargeResponse> {
+    const serverKey = env.midtransServerKey()
+    const payload: Record<string, unknown> = {
+        payment_type: 'qris',
+        transaction_details: {
+            order_id: orderId,
+            gross_amount: amount,
+        },
+        qris: {
+            acquirer: 'gopay',
+        },
+    }
+
+    if (customerDetails) payload.customer_details = customerDetails
+    if (itemDetails?.length) payload.item_details = itemDetails
+
+    const response = await fetch(`${getMidtransApiBaseUrl()}/v2/charge`, {
+        method: 'POST',
+        headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            Authorization: getMidtransAuthHeader(serverKey),
+        },
+        body: JSON.stringify(payload),
+        cache: 'no-store',
+    })
+
+    const result = await response.json().catch(() => ({})) as MidtransQrisChargeResponse
+    if (!response.ok || result.status_code !== '201') {
+        const detail = Array.isArray(result.error_messages)
+            ? result.error_messages.join('; ')
+            : result.status_message || `HTTP ${response.status}`
+        logger.error('Midtrans QRIS charge error', { orderId, status: response.status, detail })
+        throw new Error(`MIDTRANS_QRIS_CHARGE_FAILED:${detail}`)
+    }
+
+    return result
+}
+
 export async function getTransactionStatus(orderId: string): Promise<MidtransTransactionStatus | null> {
     const serverKey = env.midtransServerKey()
-    const response = await fetch(`${getMidtransApiBaseUrl(serverKey)}/v2/${encodeURIComponent(orderId)}/status`, {
+    const response = await fetch(`${getMidtransApiBaseUrl()}/v2/${encodeURIComponent(orderId)}/status`, {
         method: 'GET',
         headers: {
             Accept: 'application/json',
@@ -147,7 +205,7 @@ export async function getTransactionStatus(orderId: string): Promise<MidtransTra
 
 export async function expireTransaction(orderId: string) {
     const serverKey = env.midtransServerKey()
-    const response = await fetch(`${getMidtransApiBaseUrl(serverKey)}/v2/${encodeURIComponent(orderId)}/expire`, {
+    const response = await fetch(`${getMidtransApiBaseUrl()}/v2/${encodeURIComponent(orderId)}/expire`, {
         method: 'POST',
         headers: {
             Accept: 'application/json',

@@ -70,8 +70,28 @@ Status saat ini:
 Status saat ini:
 - grup migration ini memang bertingkat; jangan dianggap duplikat yang bisa dihapus satu per satu
 
+## Baseline Ledger — 2026-09-16
+
+Sebelum baseline, riwayat migrasi remote (`supabase_migrations.schema_migrations`) **tidak sinkron** dengan folder ini, sehingga `supabase db push` menolak berjalan ("Remote migration versions not found in local migrations directory").
+
+| Environment | Baris sebelum | Remote-only (dihapus) | Local-only (dicatat) | Baris sesudah |
+|---|---:|---:|---:|---:|
+| Staging (`lpgrivowdcepcxradavu`) | 82 | 57 | 130 | **155** |
+| Produksi (`llnttutwhtvxtdktiizo`) | 165 | 67 | 57 | **155** |
+
+Baseline menyamakan ledger remote dengan **tepat daftar file di folder ini**, sehingga:
+- migrasi lama (termasuk era pra-Schema-V2) tidak akan pernah diputar ulang ke database yang sekarang;
+- `supabase db push` kembali normal (`Remote database is up to date`).
+
+Arsip ledger sebelum baseline: `supabase/migration-history-archive/*-2026-09-16-before-baseline.json`.
+
+Catatan:
+- Ini **deklarasi baseline**, bukan klaim bahwa setiap file dijalankan satu per satu di environment tersebut.
+- `README.md` di folder ini memicu peringatan `Skipping migration README.md` saat push — kosmetik.
+
 ### Aturan Praktis
 
 - Jika ada perubahan baru, tambahkan migration timestamped baru. Jangan edit migration lama yang sudah pernah dipakai deploy.
+- Untuk migrasi baru, gunakan format **14 digit**: `YYYYMMDDHHMMSS_nama_deskriptif.sql` (folder ini masih berisi warisan 8 dan 12 digit — jangan ditiru).
 - Jika menemukan file ad-hoc tanpa prefix timestamp, pindahkan ke `_archive/`.
 - Jika sebuah objek SQL ditimpa berkali-kali, catat canonical state-nya di README ini daripada menghapus jejak historisnya.

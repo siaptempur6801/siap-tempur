@@ -1,209 +1,49 @@
-import { createClient } from '@/lib/utils/supabase/server'
+import { createV2Client } from '@/lib/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import PracticeSessionClient from '@/components/practice/PracticeSessionClient'
 import { logger } from '@/lib/logger'
-import { isDrillingMateriQuestionSet, normalizeTestSessionKind, TRYOUT_DURATION_MINUTES } from '@/lib/practice-session'
+import { practiceSessionService } from '@/src/services/practice-session.service'
 
 export default async function PracticeSessionPage({ params }: { params: Promise<{ sessionId: string }> }) {
-    const supabase = await createClient()
     const { sessionId } = await params
+    const supabase = await createV2Client()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
 
+    if (authError || !user) redirect('/login')
 
-
-    const { data: session, error: sessionError } = await supabase
-        .from('test_sessions')
-        .select('*')
-        .eq('id', sessionId)
-        .single()
-
-    if (sessionError) {
-        logger.warn('[PracticeSessionPage] Session Error:', { error: sessionError })
-        redirect('/cpns/dashboard/tryout') // Comment out redirect to see error on screen/logs
-    }
+    const session = await practiceSessionService.getSessionView(user.id, sessionId).catch((error) => {
+        logger.warn('[PracticeSessionPage:v2] Failed to load attempt', {
+            attemptId: sessionId,
+            userId: user.id,
+            error: error instanceof Error ? error.message : String(error),
+        })
+        return null
+    })
 
     if (!session) {
-        logger.warn('[PracticeSessionPage] Session not found (Possible RLS issue)')
+        logger.warn('[PracticeSessionPage:v2] Attempt not found', { attemptId: sessionId, userId: user.id })
         redirect('/cpns/dashboard/tryout')
     }
 
-    if (session.status === 'completed') {
+    if (['completed', 'COMPLETED', 'submitted', 'SUBMITTED'].includes(session.status)) {
         redirect(`/cpns/dashboard/tryout/${sessionId}/result`)
     }
 
-    // 2. Fetch Questions & Options
-    // Since we don't have a direct JSON field for questions in the table (we just used it for return in the function),
-    // we need to reconstruct the question set from test_answers.
-
-    const { data: answersData, error: answersError } = await supabase
-        .from('test_answers')
-        .select(`
-            id,
-            question_id,
-            option_id,
-            questions (
-                id,
-                content,
-                type,
-                category,
-                sub_category,
-                image_url,
-                options (
-                    id,
-                    content,
-                    image_url
-                )
-            )
-        `)
-        .eq('session_id', sessionId)
-
-    if (answersError || !answersData) {
-        logger.warn('[PracticeSessionPage] Answers Error:', { error: answersError })
-        return <div>Error loading questions</div>
-    }
-
-    // 2.5 Fetch Tryout Configurations for Sorting
-    const { data: configs } = await supabase
-        .from('tryout_configurations')
-        .select('type, sub_category, sort_order')
-        .eq('is_active', true)
-
-    // Build a map for O(1) sort order lookups
-    const configSortMap: Record<string, number> = {}
-    if (configs) {
-        configs.forEach((c) => {
-            const key = `${c.type}-${c.sub_category}`
-            configSortMap[key] = c.sort_order
-        })
-    }
-
-    // 3. Format Data for Client
-    // We need to transform the joined data into a clean structure
-    interface Option {
-        id: string
-        content: string
-        image_url?: string | null
-    }
-
-    interface Question {
-        id: string
-        content: string
-        type: string
-        category: string
-        sub_category: string
-        image_url?: string | null
-        options: Option[]
-        sort_order?: number
-    }
-
-    interface AnswerData {
-        id: string
-        question_id: string
-        option_id: string | null
-        questions: Question | Question[] // Supabase join can return array or single object depending on query
-    }
-
-    const questions = (answersData as unknown as AnswerData[]).map((item) => {
-        // Handle if joined data is array or object
-        const qRaw = Array.isArray(item.questions) ? item.questions[0] : item.questions
-
-        if (!qRaw) return null
-
-        const sortKey = `${qRaw.type}-${qRaw.sub_category}`
-        const sortOrder = configSortMap[sortKey] || 999
-        const rawOptions = qRaw.options || []
-
-        return {
-            id: qRaw.id,
-            content: qRaw.content,
-            type: qRaw.type,
-            category: qRaw.category,
-            sub_category: qRaw.sub_category,
-            image_url: qRaw.image_url,
-            options: rawOptions,
-            sort_order: sortOrder
-        }
-    }).filter(Boolean) as Question[]
-
-    // Perform server-side sorting based on admin configuration
-    questions.sort((a, b) => {
-        if (a.sort_order !== undefined && b.sort_order !== undefined) {
-            return a.sort_order - b.sort_order
-        }
-        return 0
-    })
-
-    const initialAnswers: Record<string, string> = {}
-        ; (answersData as unknown as AnswerData[]).forEach((item) => {
-            if (item.option_id) {
-                initialAnswers[item.question_id] = item.option_id
-            }
-        })
-
-    const initialCurrentIndex = Math.max(
-        0,
-        Math.min(
-            Number(session.current_question_index ?? 0),
-            Math.max(questions.length - 1, 0)
-        )
-    )
-
-    const initialMarked = session.marked_questions && typeof session.marked_questions === 'object'
-        ? Object.fromEntries(
-            Object.entries(session.marked_questions as Record<string, unknown>).map(([questionId, value]) => [questionId, Boolean(value)])
-        )
-        : {}
-
-    const { data: eventSession } = await supabase
-        .from('tryout_event_sessions')
-        .select(`
-            id,
-            tryout_events (
-                duration_minutes
-            )
-        `)
-        .eq('session_id', sessionId)
-        .maybeSingle()
-
-    // Check if this is a tryout session (has all three types)
-    const questionTypes = new Set(questions.map((q) => q.type))
-    const isTryout = questionTypes.has('TWK') && questionTypes.has('TIU') && questionTypes.has('TKP')
-    const questionSubCategories = new Set(
-        questions.map((q) => (q.sub_category || q.category || '').trim()).filter(Boolean)
-    )
-    const sessionKind = normalizeTestSessionKind(session.session_kind)
-    const isEventSession = Boolean(eventSession)
-    const isDrillingMateri = isDrillingMateriQuestionSet({
-        sessionKind,
-        isCombined: isTryout,
-        answerCount: questions.length,
-        uniqueSubCategoryCount: questionSubCategories.size,
-        isEventSession,
-    })
-    const isTimedSession = session.mode === 'tryout'
-    const event = Array.isArray(eventSession?.tryout_events)
-        ? eventSession.tryout_events[0]
-        : eventSession?.tryout_events
-
-    // Calculate end time for tryout (100 minutes from start)
-    let endTime: string | undefined
-    if (isTimedSession && session.start_time) {
-        const durationMinutes = typeof event?.duration_minutes === 'number'
-            ? event.duration_minutes
-            : TRYOUT_DURATION_MINUTES
-        const endTimeMs = new Date(session.start_time).getTime() + (durationMinutes * 60 * 1000)
-        endTime = new Date(endTimeMs).toISOString()
+    if (session.questions.length === 0) {
+        logger.warn('[PracticeSessionPage:v2] Attempt has no questions', { attemptId: sessionId, userId: user.id })
+        redirect('/cpns/dashboard/tryout')
     }
 
     return (
         <PracticeSessionClient
-            sessionId={sessionId}
-            questions={questions}
-            initialAnswers={initialAnswers}
-            initialCurrentIndex={initialCurrentIndex}
-            initialMarked={initialMarked}
-            endTime={endTime}
-            isTryout={isTimedSession}
-            returnTo={isEventSession ? 'event' : isTimedSession ? 'tryout' : isDrillingMateri ? 'drilling-materi' : 'mini-tryout'}
+            sessionId={session.attemptId}
+            questions={session.questions}
+            initialAnswers={session.initialAnswers}
+            initialCurrentIndex={session.initialCurrentIndex}
+            initialMarked={session.initialMarked}
+            endTime={session.endTime}
+            isTryout={session.isTryout}
+            returnTo={session.returnTo}
         />
     )
 }

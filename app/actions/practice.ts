@@ -1,17 +1,15 @@
 'use server'
 
-import { DRILLING_MATERI_QUESTION_COUNT, isMissingProgressColumnError, isTryoutExpired } from '@/lib/practice-session'
-import { createAdminClient, createClient } from '@/lib/utils/supabase/server'
+import { DRILLING_MATERI_QUESTION_COUNT } from '@/lib/practice-session'
+import { createV2Client } from '@/lib/utils/supabase/server'
 import { getMiniTryoutProduct, isMiniTryoutType, type MiniTryoutType } from '@/lib/constants'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { validateCsrf } from '@/lib/csrf'
 import { logger } from '@/lib/logger'
-
-type ResumeSessionResult = {
-    sessionId: string
-    resumed: true
-}
+import { examAttemptService, PracticeDomainError, type StartAttemptResult } from '@/src/services/exam-attempt.service'
+import { attemptAnswerService } from '@/src/services/attempt-answer.service'
+import { examCompletionService } from '@/src/services/exam-completion.service'
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
@@ -19,193 +17,107 @@ function isUuid(value: string) {
     return UUID_PATTERN.test(value)
 }
 
-async function syncLeaderboardFromSession(
-    supabase: Awaited<ReturnType<typeof createClient>>,
-    sessionId: string
-) {
-    const { error } = await supabase.rpc('upsert_leaderboard_from_session', {
-        p_session_id: sessionId,
-    })
+async function getCurrentUserId() {
+    const supabase = await createV2Client()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) redirect('/login')
+    return user.id
+}
 
-    if (error) {
-        logger.warn('Leaderboard sync failed', {
-            error: error.message,
-            sessionId,
-        })
+function practiceErrorMessage(error: PracticeDomainError) {
+    switch (error.code) {
+        case 'EXAM_NOT_CONFIGURED':
+            return 'Ujian Schema V2 belum dikonfigurasi atau belum diaktifkan di staging.'
+        case 'QUESTION_BANK_EMPTY':
+            return 'Bank soal untuk ujian ini masih kosong.'
+        case 'QUESTION_BANK_INCOMPLETE': {
+            const selected = typeof error.details?.selected === 'number' ? error.details.selected : null
+            const required = typeof error.details?.required === 'number' ? error.details.required : null
+            return selected !== null && required !== null
+                ? `Bank soal baru tersedia ${selected}/${required} soal.`
+                : 'Bank soal untuk ujian ini belum lengkap.'
+        }
+        case 'ATTEMPT_LIMIT_REACHED':
+            return 'Batas percobaan untuk ujian ini sudah tercapai.'
+        case 'ENTITLEMENT_REQUIRED':
+            return 'Akun ini belum memiliki akses untuk ujian tersebut.'
+        case 'INSUFFICIENT_TOKEN_BALANCE':
+            return 'Token tryout kamu tidak mencukupi untuk ujian ini.'
+        case 'ATTEMPT_TIME_EXPIRED':
+            return 'Waktu ujian sudah berakhir. Jawaban tidak dapat disimpan lagi — kumpulkan jawabanmu.'
+        case 'EXAM_CONFIGURATION_ERROR':
+            return 'Konfigurasi ujian Schema V2 belum lengkap.'
+        default:
+            return 'Gagal memproses ujian.'
     }
 }
 
-async function queryInProgressSessions(
-    supabase: Awaited<ReturnType<typeof createClient>>,
+async function runStartWithExpiredAttemptRecovery(
     userId: string,
-    mode: 'practice' | 'tryout',
-    limit = 10
+    start: () => Promise<StartAttemptResult>,
 ) {
-    const baseQuery = supabase
-        .from('test_sessions')
-        .select('id, start_time, session_kind')
-        .eq('user_id', userId)
-        .eq('mode', mode)
-        .eq('status', 'in_progress')
-
-    const primaryQuery = await baseQuery
-        .order('last_activity_at', { ascending: false })
-        .limit(limit)
-
-    if (!primaryQuery.error || !isMissingProgressColumnError(primaryQuery.error)) {
-        return primaryQuery
+    try {
+        return await start()
+    } catch (error) {
+        if (error instanceof PracticeDomainError && error.code === 'EXPIRED_ATTEMPT') {
+            const attemptId = typeof error.details?.attemptId === 'string' ? error.details.attemptId : null
+            if (attemptId) {
+                await examCompletionService.completeAttempt(userId, attemptId)
+                return start()
+            }
+        }
+        throw error
     }
-
-    return supabase
-        .from('test_sessions')
-        .select('id, start_time, session_kind')
-        .eq('user_id', userId)
-        .eq('mode', mode)
-        .eq('status', 'in_progress')
-        .order('start_time', { ascending: false })
-        .limit(limit)
 }
 
-async function findExistingTryoutSession(
-    supabase: Awaited<ReturnType<typeof createClient>>,
-    userId: string
-): Promise<ResumeSessionResult | null> {
-    const { data: sessions, error } = await queryInProgressSessions(supabase, userId, 'tryout', 1)
-
-    if (error) {
-        logger.warn('[findExistingTryoutSession] DB Error', { error: error.message })
-        return null
-    }
-
-    const session = sessions?.[0]
-    if (!session) return null
-
-    if (isTryoutExpired(session.start_time)) {
-        const { error: finishError } = await supabase.rpc('calculate_session_score', {
-            session_uuid: session.id
-        })
-
-        if (finishError) {
-            logger.warn('[findExistingTryoutSession] Failed to auto-finish expired session', { error: finishError })
-        } else {
-            await syncLeaderboardFromSession(supabase, session.id)
-        }
-
-        return null
-    }
-
-    return { sessionId: session.id, resumed: true }
+function revalidatePracticeStart() {
+    revalidatePath('/cpns/dashboard')
+    revalidatePath('/cpns/dashboard/tryout')
+    revalidatePath('/cpns/dashboard/mini-tryout')
+    revalidatePath('/cpns/dashboard/drilling-materi')
+    revalidatePath('/cpns/dashboard/profile')
+    revalidatePath('/cpns/dashboard/riwayat')
 }
 
-async function findExistingPracticeSession(
-    supabase: Awaited<ReturnType<typeof createClient>>,
-    userId: string,
-    type: MiniTryoutType,
-    expectedQuestionCount?: number,
-    expectedSubCategory?: string
-): Promise<ResumeSessionResult | null> {
-    const { data: sessions, error } = await queryInProgressSessions(supabase, userId, 'practice', 10)
-
-    if (error) {
-        logger.warn('[findExistingPracticeSession] Session query error', { error: error.message })
-        return null
-    }
-
-    for (const session of sessions ?? []) {
-        if (expectedSubCategory && session.session_kind && session.session_kind !== 'drilling_materi') {
-            continue
-        }
-
-        if (!expectedSubCategory && session.session_kind === 'drilling_materi') {
-            continue
-        }
-
-        const { data: answerRows, error: answerError } = await supabase
-            .from('test_answers')
-            .select('questions!inner(type, sub_category)')
-            .eq('session_id', session.id)
-            .limit(expectedQuestionCount ? expectedQuestionCount + 1 : 1)
-
-        if (answerError || !answerRows?.length) {
-            continue
-        }
-
-        if (expectedQuestionCount && answerRows.length !== expectedQuestionCount) {
-            continue
-        }
-
-        const questionRows = answerRows
-            .map((answer) => Array.isArray(answer.questions) ? answer.questions[0] : answer.questions)
-            .filter(Boolean)
-
-        if (
-            questionRows.length === answerRows.length &&
-            questionRows.every((question) => (
-                question?.type === type &&
-                (!expectedSubCategory || question.sub_category?.trim() === expectedSubCategory)
-            ))
-        ) {
-            return { sessionId: session.id, resumed: true }
-        }
-    }
-
-    return null
+function revalidatePracticeFinish(attemptId: string) {
+    revalidatePath(`/cpns/dashboard/tryout/${attemptId}/result`)
+    revalidatePath('/cpns/dashboard')
+    revalidatePath('/cpns/dashboard/ranking')
+    revalidatePath('/cpns/dashboard/tryout')
+    revalidatePath('/cpns/dashboard/mini-tryout')
+    revalidatePath('/cpns/dashboard/drilling-materi')
+    revalidatePath('/cpns/dashboard/event')
+    revalidatePath('/cpns/dashboard/profile')
+    revalidatePath('/cpns/dashboard/riwayat')
 }
 
 export async function startPractice(type: MiniTryoutType) {
     try { await validateCsrf() } catch { return { error: 'Invalid request' } }
 
-    const miniTryoutProduct = getMiniTryoutProduct(type)
-    if (!miniTryoutProduct) {
-        return { error: 'Tipe mini tryout tidak valid' }
-    }
+    const product = getMiniTryoutProduct(type)
+    if (!product) return { error: 'Tipe mini tryout tidak valid' }
 
-    const supabase = await createClient()
+    const userId = await getCurrentUserId()
 
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-        redirect('/login')
-    }
-
-    const existingSession = await findExistingPracticeSession(supabase, user.id, miniTryoutProduct.type, miniTryoutProduct.questionCount)
-    if (existingSession) {
-        return { success: true, ...existingSession }
-    }
-
-    // New mini tryout sessions cost one SKD token. Existing active sessions are returned above.
-    const { data, error } = await supabase.rpc('start_mini_tryout_session', {
-        p_user_id: user.id,
-        p_type: miniTryoutProduct.type,
-        p_limit: miniTryoutProduct.questionCount,
-    })
-
-    if (error) {
-        logger.warn('[startPractice] DB Error', { error: error.message })
-        if (error.message?.includes('Not enough SKD tickets') || error.details?.includes('Not enough SKD tickets')) {
-            return { error: 'Token mini tryout habis! Silakan beli paket baru.' }
-        }
-        if (error.message?.includes('Bank soal mini tryout belum lengkap') || error.details?.includes('Bank soal mini tryout belum lengkap')) {
-            return { error: 'Bank soal mini tryout belum lengkap untuk produk ini.' }
-        }
+    try {
+        const result = await runStartWithExpiredAttemptRecovery(userId, () =>
+            examAttemptService.startMiniTryout({
+                userId,
+                subjectCode: product.type,
+                questionCount: product.questionCount,
+            }),
+        )
+        revalidatePracticeStart()
+        return { success: true, sessionId: result.attemptId, resumed: result.resumed }
+    } catch (error) {
+        logger.warn('[startPractice:v2] Failed to start mini tryout', {
+            error: error instanceof Error ? error.message : String(error),
+            type,
+            userId,
+        })
+        if (error instanceof PracticeDomainError) return { error: practiceErrorMessage(error) }
         return { error: 'Gagal memulai mini tryout.' }
     }
-
-
-
-    if (!data || data.length === 0) {
-        logger.warn('[startPractice] No data returned from RPC')
-        return { error: 'Sesi mini tryout tidak berhasil dibuat' }
-    }
-
-    // Return session ID for client-side redirect
-    const sessionId = data[0].session_id
-
-    revalidatePath('/cpns/dashboard')
-    revalidatePath('/cpns/dashboard/mini-tryout')
-    revalidatePath('/cpns/dashboard/profile')
-
-    return { success: true, sessionId, resumed: false }
 }
 
 export async function startMiniTryout(type: MiniTryoutType) {
@@ -215,229 +127,133 @@ export async function startMiniTryout(type: MiniTryoutType) {
 export async function startDrillingMateri(type: MiniTryoutType, subCategory: string) {
     try { await validateCsrf() } catch { return { error: 'Invalid request' } }
 
-    if (!isMiniTryoutType(type)) {
-        return { error: 'Tipe drilling tidak valid' }
-    }
-
+    if (!isMiniTryoutType(type)) return { error: 'Tipe drilling tidak valid' }
     const normalizedSubCategory = subCategory.trim()
-    if (!normalizedSubCategory) {
-        return { error: 'Materi drilling tidak valid' }
-    }
+    if (!normalizedSubCategory) return { error: 'Materi drilling tidak valid' }
 
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) redirect('/login')
+    const userId = await getCurrentUserId()
 
-    const existingSession = await findExistingPracticeSession(supabase, user.id, type, DRILLING_MATERI_QUESTION_COUNT, normalizedSubCategory)
-    if (existingSession) {
-        return { success: true, ...existingSession }
-    }
-
-    const { data, error } = await supabase.rpc('start_drilling_materi_session', {
-        p_user_id: user.id,
-        p_type: type,
-        p_sub_category: normalizedSubCategory,
-    })
-
-    if (error) {
-        logger.warn('[startDrillingMateri] DB Error', { error: error.message })
-        if (error.message?.includes('Not enough SKD tickets') || error.details?.includes('Not enough SKD tickets')) {
-            return { error: 'Token drilling materi habis! Silakan beli paket baru.' }
-        }
-        if (error.message?.includes('Bank soal drilling materi belum lengkap') || error.details?.includes('Bank soal drilling materi belum lengkap')) {
-            const selectedCount = error.message?.match(/selected (\d+)/)?.[1] || error.details?.match(/selected (\d+)/)?.[1]
-            return {
-                error: selectedCount
-                    ? `Bank soal ${type} - ${normalizedSubCategory} baru terbaca ${selectedCount}/${DRILLING_MATERI_QUESTION_COUNT} soal.`
-                    : `Bank soal ${type} - ${normalizedSubCategory} belum cukup untuk drilling ${DRILLING_MATERI_QUESTION_COUNT} soal.`
-            }
-        }
+    try {
+        const result = await runStartWithExpiredAttemptRecovery(userId, () =>
+            examAttemptService.startDrill({
+                userId,
+                subjectCode: type,
+                knowledgeNodeName: normalizedSubCategory,
+                questionCount: DRILLING_MATERI_QUESTION_COUNT,
+            }),
+        )
+        revalidatePracticeStart()
+        return { success: true, sessionId: result.attemptId, resumed: result.resumed }
+    } catch (error) {
+        logger.warn('[startDrillingMateri:v2] Failed to start drill', {
+            error: error instanceof Error ? error.message : String(error),
+            type,
+            subCategory: normalizedSubCategory,
+            userId,
+        })
+        if (error instanceof PracticeDomainError) return { error: practiceErrorMessage(error) }
         return { error: 'Gagal memulai drilling materi.' }
     }
-
-    if (!data || data.length === 0) {
-        logger.warn('[startDrillingMateri] No data returned from RPC')
-        return { error: 'Sesi drilling materi tidak berhasil dibuat' }
-    }
-
-    revalidatePath('/cpns/dashboard')
-    revalidatePath('/cpns/dashboard/drilling-materi')
-    revalidatePath('/cpns/dashboard/profile')
-    revalidatePath('/cpns/dashboard/riwayat')
-
-    return { success: true, sessionId: data[0].session_id, resumed: !data[0].questions }
 }
 
 export async function startTryout() {
     try { await validateCsrf() } catch { return { error: 'Invalid request' } }
 
-    const supabase = await createClient()
-
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) redirect('/login')
-
-    const existingSession = await findExistingTryoutSession(supabase, user.id)
-    if (existingSession) {
-        return { success: true, ...existingSession }
+    const userId = await getCurrentUserId()
+    try {
+        const result = await runStartWithExpiredAttemptRecovery(userId, () =>
+            examAttemptService.startFullTryout({ userId }),
+        )
+        revalidatePracticeStart()
+        return { success: true, sessionId: result.attemptId, resumed: result.resumed }
+    } catch (error) {
+        logger.warn('[startTryout:v2] Failed to start full tryout', {
+            error: error instanceof Error ? error.message : String(error),
+            userId,
+        })
+        if (error instanceof PracticeDomainError) return { error: practiceErrorMessage(error) }
+        return { error: 'Gagal memulai tryout.' }
     }
-
-    // Call reworked RPC — generates 110 soal sesuai blueprint SKD CPNS
-    const { data, error } = await supabase.rpc('start_tryout_session', {
-        p_user_id: user.id
-    })
-
-    if (error) {
-        logger.warn('[startTryout] DB Error', { error: error.message })
-        if (error.message?.includes('Not enough SKD tickets') || error.details?.includes('Not enough SKD tickets')) {
-            return { error: 'Token tryout habis! Silakan beli paket baru.' }
-        }
-        return { error: 'Gagal memulai tryout. Pastikan bank soal sudah terisi cukup.' }
-    }
-
-    if (!data || data.length === 0) {
-        return { error: 'Sesi tryout tidak berhasil dibuat' }
-    }
-
-    const sessionId = data[0].session_id
-    return { success: true, sessionId, resumed: false }
 }
 
 export async function submitAnswer(sessionId: string, questionId: string, optionId: string) {
     try { await validateCsrf() } catch { return { error: 'Invalid request' } }
 
-    const supabase = await createClient()
-
     if (!isUuid(sessionId) || !isUuid(questionId) || !isUuid(optionId)) {
         return { error: 'Invalid answer payload' }
     }
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) redirect('/login')
-
-    const { data: session, error: sessionError } = await supabase
-        .from('test_sessions')
-        .select('id')
-        .eq('id', sessionId)
-        .eq('user_id', user.id)
-        .eq('status', 'in_progress')
-        .maybeSingle()
-
-    if (sessionError) {
-        logger.warn('Error validating answer session', { error: sessionError })
+    const userId = await getCurrentUserId()
+    try {
+        await attemptAnswerService.saveAnswer({
+            userId,
+            attemptId: sessionId,
+            questionId,
+            optionId,
+        })
+        return { success: true }
+    } catch (error) {
+        logger.warn('[submitAnswer:v2] Failed to save answer', {
+            error: error instanceof Error ? error.message : String(error),
+            attemptId: sessionId,
+            questionId,
+            userId,
+        })
+        if (error instanceof PracticeDomainError) return { error: practiceErrorMessage(error) }
         return { error: 'Failed to save answer' }
     }
+}
 
-    if (!session) {
-        return { error: 'Session is not active' }
+export async function submitAnswerOptions(sessionId: string, questionId: string, optionIds: string[]) {
+    try { await validateCsrf() } catch { return { error: 'Invalid request' } }
+
+    if (!isUuid(sessionId) || !isUuid(questionId) || !Array.isArray(optionIds)) {
+        return { error: 'Invalid answer payload' }
+    }
+    const normalizedOptionIds = Array.from(new Set(optionIds))
+    if (normalizedOptionIds.some((optionId) => !isUuid(optionId))) {
+        return { error: 'Invalid answer payload' }
     }
 
-    const admin = await createAdminClient()
-    const [{ data: answerRow, error: answerError }, { data: optionRow, error: optionError }] = await Promise.all([
-        supabase
-            .from('test_answers')
-            .select('id')
-            .eq('session_id', sessionId)
-            .eq('question_id', questionId)
-            .maybeSingle(),
-        admin
-            .from('options')
-            .select('id')
-            .eq('id', optionId)
-            .eq('question_id', questionId)
-            .maybeSingle(),
-    ])
-
-    if (answerError || optionError) {
-        logger.warn('Error validating submitted answer', { error: (answerError || optionError)?.message })
-        return { error: 'Failed to save answer' }
+    const userId = await getCurrentUserId()
+    try {
+        await attemptAnswerService.saveAnswerOptions({
+            userId,
+            attemptId: sessionId,
+            questionId,
+            optionIds: normalizedOptionIds,
+        })
+        return { success: true }
+    } catch (error) {
+        logger.warn('[submitAnswerOptions:v2] Failed to save answer options', {
+            error: error instanceof Error ? error.message : String(error),
+            attemptId: sessionId,
+            questionId,
+            optionCount: normalizedOptionIds.length,
+            userId,
+        })
+        if (error instanceof PracticeDomainError) return { error: practiceErrorMessage(error) }
+        return { error: 'Failed to save answers' }
     }
-
-    if (!answerRow || !optionRow) {
-        return { error: 'Invalid answer option' }
-    }
-
-    const { error } = await supabase
-        .from('test_answers')
-        .update({ option_id: optionId })
-        .eq('session_id', sessionId)
-        .eq('question_id', questionId)
-
-    if (error) {
-        logger.warn('Error submitting answer', { error: error.message })
-        return { error: 'Failed to save answer' }
-    }
-
-    const { error: activityError } = await supabase
-        .from('test_sessions')
-        .update({ last_activity_at: new Date().toISOString() })
-        .eq('id', sessionId)
-
-    if (activityError && !isMissingProgressColumnError(activityError)) {
-        logger.warn('Error updating session activity', { error: activityError.message })
-    }
-
-    return { success: true }
 }
 
 export async function finishPractice(sessionId: string) {
     try { await validateCsrf() } catch { return { error: 'Invalid request' } }
 
-    if (!isUuid(sessionId)) {
-        return { error: 'Invalid session payload' }
-    }
+    if (!isUuid(sessionId)) return { error: 'Invalid session payload' }
 
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) redirect('/login')
-
-    // Validate session belongs to current user and is still in progress
-    const { data: ownedSession } = await supabase
-        .from('test_sessions')
-        .select('id')
-        .eq('id', sessionId)
-        .eq('user_id', user.id)
-        .eq('status', 'in_progress')
-        .maybeSingle()
-
-    if (!ownedSession) {
-        return { error: 'Session not found or already completed' }
-    }
-
-    // Call scoring function
-    const { error } = await supabase.rpc('calculate_session_score', {
-        session_uuid: sessionId
-    })
-
-    if (error) {
-        logger.warn('Error finishing practice', { error: error.message })
+    const userId = await getCurrentUserId()
+    try {
+        await examCompletionService.completeAttempt(userId, sessionId)
+        revalidatePracticeFinish(sessionId)
+        return { success: true }
+    } catch (error) {
+        logger.warn('[finishPractice:v2] Failed to finish attempt', {
+            error: error instanceof Error ? error.message : String(error),
+            attemptId: sessionId,
+            userId,
+        })
+        if (error instanceof PracticeDomainError) return { error: practiceErrorMessage(error) }
         return { error: 'Failed to finish session' }
     }
-
-    await syncLeaderboardFromSession(supabase, sessionId)
-
-    const admin = await createAdminClient()
-    const { error: eventCompletionError } = await admin
-        .rpc('complete_tryout_event_session', {
-            p_user_id: user.id,
-            p_session_id: sessionId,
-        })
-        .maybeSingle()
-
-    if (eventCompletionError) {
-        logger.warn('Error completing event session', {
-            error: eventCompletionError.message,
-            sessionId,
-            userId: user.id,
-        })
-        return { error: 'Failed to finish event session' }
-    }
-
-    revalidatePath(`/cpns/dashboard/tryout/${sessionId}/result`)
-    revalidatePath('/cpns/dashboard')
-    revalidatePath('/cpns/dashboard/ranking')
-    revalidatePath('/cpns/dashboard/tryout')
-    revalidatePath('/cpns/dashboard/mini-tryout')
-    revalidatePath('/cpns/dashboard/event')
-    revalidatePath('/cpns/dashboard/riwayat')
-    return { success: true }
 }

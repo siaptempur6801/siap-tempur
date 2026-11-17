@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
-import { createAdminClient, createClient } from '@/lib/utils/supabase/server'
-import { PASSING_GRADES } from '@/lib/constants'
+import { createV2AdminClient, createV2Client } from '@/lib/utils/supabase/server'
 import { normalizeCertificateName, type EventCertificateKind } from '@/lib/event-certificates'
 import type { CertificateRenderInput } from '@/lib/event-certificate-pdf'
+import { authorizationService } from '@/src/services/authorization.service'
 
 type CertificateRow = {
     id: string
@@ -13,29 +13,9 @@ type CertificateRow = {
     certificate_kind: EventCertificateKind
     rank: number | null
     score: number | null
-    storage_path: string | null
-    generated_at: string | null
+    storage_path: string
+    issued_at: string
     name_locked_at: string | null
-    tryout_events: { title: string } | Array<{ title: string }> | null
-}
-
-type CertificateScoreSessionRow = {
-    test_sessions: {
-        is_passed: boolean | null
-        score_twk: number | null
-        score_tiu: number | null
-        score_tkp: number | null
-    } | Array<{
-        is_passed: boolean | null
-        score_twk: number | null
-        score_tiu: number | null
-        score_tkp: number | null
-    }> | null
-}
-
-function firstRelated<T>(value: T | T[] | null | undefined): T | null {
-    if (Array.isArray(value)) return value[0] || null
-    return value || null
 }
 
 function getSiteUrl() {
@@ -43,49 +23,43 @@ function getSiteUrl() {
 }
 
 async function getCertificatePassingStatus(
-    admin: Awaited<ReturnType<typeof createAdminClient>>,
+    admin: Awaited<ReturnType<typeof createV2AdminClient>>,
     eventId: string,
     userId: string
 ) {
     const { data } = await admin
-        .from('tryout_event_sessions')
-        .select('test_sessions(is_passed, score_twk, score_tiu, score_tkp)')
-        .eq('event_id', eventId)
+        .from('exam_attempts')
+        .select('passed')
         .eq('user_id', userId)
-        .eq('status', 'completed')
+        .contains('metadata', { eventId })
+        .in('status', ['completed', 'COMPLETED'])
+        .order('submitted_at', { ascending: false, nullsFirst: false })
+        .limit(1)
         .maybeSingle()
 
-    const row = data as CertificateScoreSessionRow | null
-    const testSession = firstRelated(row?.test_sessions)
-    if (!testSession) return false
-
-    return Boolean(testSession.is_passed) || (
-        Number(testSession.score_twk || 0) >= PASSING_GRADES.TWK &&
-        Number(testSession.score_tiu || 0) >= PASSING_GRADES.TIU &&
-        Number(testSession.score_tkp || 0) >= PASSING_GRADES.TKP
-    )
+    return Boolean(data?.passed)
 }
 
 export async function getAuthorizedCertificateRenderData(certificateNumber: string): Promise<
     | { response: NextResponse }
     | {
-        admin: Awaited<ReturnType<typeof createAdminClient>>
+        admin: Awaited<ReturnType<typeof createV2AdminClient>>
         row: CertificateRow
         storagePath: string
         input: CertificateRenderInput
     }
 > {
-    const supabase = await createClient()
+    const supabase = await createV2Client()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
         return { response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
     }
 
-    const admin = await createAdminClient()
+    const admin = await createV2AdminClient()
     const { data: certificate, error } = await admin
-        .from('event_certificates')
-        .select('id, event_id, user_id, certificate_number, certificate_name, certificate_kind, rank, score, storage_path, generated_at, name_locked_at, tryout_events(title)')
+        .from('certificates')
+        .select('id, event_id, user_id, certificate_number, certificate_name, certificate_kind, rank, score, storage_path, issued_at, name_locked_at')
         .eq('certificate_number', certificateNumber)
         .maybeSingle()
 
@@ -95,34 +69,32 @@ export async function getAuthorizedCertificateRenderData(certificateNumber: stri
     }
 
     if (row.user_id !== user.id) {
-        const { data: profile } = await admin
-            .from('profiles')
-            .select('role')
-            .eq('id', user.id)
-            .maybeSingle()
-
-        if (!profile || !['admin', 'superadmin'].includes(String(profile.role))) {
+        const authorization = await authorizationService.getAuthorizationForUser(user.id)
+        if (!authorization?.permissions.includes('admin.access')) {
             return { response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
         }
     }
 
-    const event = firstRelated(row.tryout_events)
+    const { data: event } = await admin
+        .from('events')
+        .select('title')
+        .eq('id', row.event_id)
+        .maybeSingle()
     const isPassed = await getCertificatePassingStatus(admin, row.event_id, row.user_id)
-    const storagePath = row.storage_path || `${row.event_id}/${row.user_id}/${row.certificate_number}.pdf`
 
     return {
         admin,
         row,
-        storagePath,
+        storagePath: row.storage_path,
         input: {
             certificateNumber: row.certificate_number,
             certificateName: row.certificate_name,
             certificateKind: row.certificate_kind,
-            eventTitle: event?.title || 'Tryout Akbar Siap Tempur',
+            eventTitle: typeof event?.title === 'string' ? event.title : 'Tryout Akbar Siap Tempur',
             rank: row.rank,
             score: row.score,
             isPassed,
-            issuedAt: row.generated_at || new Date().toISOString(),
+            issuedAt: row.issued_at,
             verifyUrl: `${getSiteUrl().replace(/\/$/, '')}/verify-certificate/${row.certificate_number}`,
         },
     }

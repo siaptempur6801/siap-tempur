@@ -1,8 +1,9 @@
 import type { NextConfig } from "next";
+import { LEGACY_ADMIN_REDIRECTS } from './lib/admin-redirects';
 
 const nextConfig: NextConfig = {
   /* config options here */
-  allowedDevOrigins: ['192.168.1.5', '*.192.168.1.5'],
+  allowedDevOrigins: ['192.168.1.5', '*.192.168.1.5', '192.168.1.6', '*.192.168.1.6'],
   serverExternalPackages: ['@resvg/resvg-js'],
   images: {
     remotePatterns: [
@@ -15,6 +16,16 @@ const nextConfig: NextConfig = {
         hostname: '*.supabase.in',
       },
     ],
+  },
+  /**
+   * Rute admin legacy `/cpns/admin/**` → namespace kanonik `/admin/**`.
+   *
+   * Peta redirect ada di `lib/admin-redirects.ts` supaya dapat diuji tanpa
+   * menjalankan pipeline config Next.js. Lihat modul itu untuk alasan lengkap
+   * kenapa `/cpns/admin` dan tab legacy (`?tab=...`) TIDAK ada di sini.
+   */
+  async redirects() {
+    return LEGACY_ADMIN_REDIRECTS
   },
   async headers() {
     return [
@@ -45,10 +56,10 @@ const nextConfig: NextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
           },
-          {
-            key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://app.midtrans.com https://app.sandbox.midtrans.com https://api.midtrans.com https://api.sandbox.midtrans.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co https://*.supabase.in; connect-src 'self' https://*.supabase.co https://*.supabase.in https://app.midtrans.com https://app.sandbox.midtrans.com https://api.midtrans.com https://api.sandbox.midtrans.com; frame-src https://app.midtrans.com https://app.sandbox.midtrans.com;",
-          },
+          // Content-Security-Policy sengaja TIDAK diatur di sini.
+          // Satu-satunya sumber CSP adalah proxy.ts (nonce + strict-dynamic).
+          // Dua header CSP sekaligus membuat kebijakan saling bertabrakan dan
+          // menyulitkan audit.
         ],
       },
     ];

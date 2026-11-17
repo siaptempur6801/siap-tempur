@@ -1,19 +1,16 @@
-import { createClient } from '@/lib/utils/supabase/server'
+import { createV2Client } from '@/lib/utils/supabase/server'
 export const dynamic = 'force-dynamic'
 import { redirect } from 'next/navigation'
-import { getDashboardData, getGreeting } from '@/lib/dashboard'
+import { getGreeting } from '@/lib/dashboard'
 import DashboardClient from '@/components/dashboard/DashboardClient'
+import { practiceOverviewService } from '@/src/services/practice-overview.service'
 
 export default async function DashboardPage() {
-    const supabase = await createClient()
+    const supabase = await createV2Client()
     const { data: { user } } = await supabase.auth.getUser()
 
-    if (!user) {
-        redirect('/login')
-    }
+    if (!user) redirect('/login')
 
-    // Get current hour for greeting
-    // Get current hour for greeting (using Jakarta/WIB time)
     const currentHour = parseInt(
         new Date().toLocaleTimeString('en-US', {
             hour: 'numeric',
@@ -22,10 +19,7 @@ export default async function DashboardPage() {
         })
     )
     const greeting = getGreeting(currentHour)
-
-    // Fetch dashboard data
-    const dashboardData = await getDashboardData(supabase, user.id)
+    const dashboardData = await practiceOverviewService.getDashboardData(user.id)
 
     return <DashboardClient data={dashboardData} greeting={greeting} />
 }
-

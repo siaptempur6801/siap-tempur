@@ -1,19 +1,10 @@
 'use server'
 
-import { createAdminClient, createClient } from '@/lib/utils/supabase/server'
-import { logger } from '@/lib/logger'
-import { getEffectiveEventCloseTime } from '@/lib/event-access'
-import { AnswerProgressRow, buildAnsweredProgressMap } from '@/lib/event-leaderboard-progress'
-import { autoCloseExpiredTryoutEvents } from '@/lib/tryout-event-status'
-import {
-    computeDisplayedBotEntry,
-    ensureEventLeaderboardBots,
-    getEventBotQuestionCount,
-    getEventLeaderboardQuestionCounts,
-    rankEventLeaderboardEntries,
-    type EventBotQuestionCounts,
-    type LeaderboardRankableEntry,
-} from '@/lib/event-leaderboard-bots'
+import { createAdminClient, createV2AdminClient, createV2Client } from '@/lib/utils/supabase/server'
+import { authorizationRepository } from '@/src/repositories/authorization.repository'
+import { eventRepository } from '@/src/repositories/event.repository'
+import { PERMISSIONS } from '@/src/auth/permissions'
+import type { Json } from '@/types/database.types'
 
 export interface LiveLeaderboardEntry {
     entry_id: string
@@ -22,7 +13,6 @@ export interface LiveLeaderboardEntry {
     avatar_url: string | null
     progress_count: number
     question_count?: number
-    question_counts?: EventBotQuestionCounts
     score_twk: number
     score_tiu: number
     score_tkp: number
@@ -32,278 +22,188 @@ export interface LiveLeaderboardEntry {
     started_at: string
 }
 
-type EventLeaderboardEvent = {
+type AttemptRow = {
     id: string
-    title: string
-    status: string
-    starts_at: string
-    duration_minutes: number
-    start_grace_minutes: number
-}
-
-type EventSessionRow = {
     user_id: string
-    session_id: string
-    started_at: string
-}
-
-type TestSessionScoreRow = {
-    id: string
     status: string
-    score_twk: number | null
-    score_tiu: number | null
-    score_tkp: number | null
+    started_at: string | null
+    submitted_at: string | null
+    duration_used_seconds: number | null
     total_score: number | null
+    metadata: Json
 }
 
-type ProfileRow = {
+type AttemptQuestionRow = {
     id: string
-    full_name: string | null
-    avatar_url: string | null
+    attempt_id: string
+    question_snapshot: Json
 }
 
-function toNumber(value: number | null | undefined) {
-    return typeof value === 'number' ? value : 0
+function snapshotString(snapshot: Json, key: string) {
+    if (!snapshot || Array.isArray(snapshot) || typeof snapshot !== 'object') return null
+    const value = snapshot[key]
+    return typeof value === 'string' ? value : null
 }
 
-async function getAnswerProgressRows(
-    admin: Awaited<ReturnType<typeof createAdminClient>>,
-    sessionIds: string[]
-) {
-    const rows: AnswerProgressRow[] = []
-    const pageSize = 1000
-    let from = 0
-
-    while (true) {
-        const { data, error } = await admin
-            .from('test_answers')
-            .select('id, session_id, option_id')
-            .in('session_id', sessionIds)
-            .order('id', { ascending: true })
-            .range(from, from + pageSize - 1)
-
-        if (error) {
-            logger.error('Event answer progress page fetch failed', error, {
-                from,
-                pageSize,
-                sessionCount: sessionIds.length,
-            })
-            throw new Error('Gagal memuat progress leaderboard event')
-        }
-
-        const page = (data || []) as AnswerProgressRow[]
-        rows.push(...page)
-
-        if (page.length < pageSize) break
-        from += pageSize
-    }
-
-    return rows
-}
-
-async function getCompletedEventLeaderboardEntries(
-    eventId: string,
-    questionCount: number,
-    questionCounts: EventBotQuestionCounts
-): Promise<LeaderboardRankableEntry[]> {
-    const admin = await createAdminClient()
-
-    const { data: eventSessions, error: eventSessionsError } = await admin
-        .from('tryout_event_sessions')
-        .select('user_id, session_id, started_at')
-        .eq('event_id', eventId)
-        .neq('status', 'cancelled')
-
-    if (eventSessionsError) {
-        logger.error('Event sessions fetch failed', eventSessionsError, { eventId })
-        throw new Error('Gagal memuat leaderboard event')
-    }
-
-    const sessions = (eventSessions || []) as EventSessionRow[]
-    if (sessions.length === 0) return []
-
-    const sessionIds = [...new Set(sessions.map((session) => session.session_id))]
-    const userIds = [...new Set(sessions.map((session) => session.user_id))]
-
-    const [
-        { data: testSessions, error: testSessionsError },
-        { data: profiles, error: profilesError },
-        answerProgress,
-    ] = await Promise.all([
-        admin
-            .from('test_sessions')
-            .select('id, status, score_twk, score_tiu, score_tkp, total_score')
-            .in('id', sessionIds),
-        admin
-            .from('profiles')
-            .select('id, full_name, avatar_url')
-            .in('id', userIds),
-        getAnswerProgressRows(admin, sessionIds),
-    ])
-
-    if (testSessionsError || profilesError) {
-        logger.error('Completed event leaderboard fetch failed', {
-            testSessionsError,
-            profilesError,
-            eventId,
-        })
-        throw new Error('Gagal memuat leaderboard event')
-    }
-
-    const scoreMap = new Map(
-        ((testSessions || []) as TestSessionScoreRow[]).map((session) => [session.id, session])
-    )
-    const profileMap = new Map(
-        ((profiles || []) as ProfileRow[]).map((profile) => [profile.id, profile])
-    )
-    const progressMap = buildAnsweredProgressMap(answerProgress)
-
-    return sessions
-        .map((eventSession) => {
-            const score = scoreMap.get(eventSession.session_id)
-            const profile = profileMap.get(eventSession.user_id)
-
-            return {
-                entry_id: `user:${eventSession.user_id}`,
-                user_id: eventSession.user_id,
-                full_name: profile?.full_name || 'Pejuang Tanpa Nama',
-                avatar_url: profile?.avatar_url || null,
-                progress_count: progressMap.get(eventSession.session_id) || 0,
-                question_count: questionCount,
-                question_counts: questionCounts,
-                score_twk: toNumber(score?.score_twk),
-                score_tiu: toNumber(score?.score_tiu),
-                score_tkp: toNumber(score?.score_tkp),
-                total_score: toNumber(score?.total_score),
-                live_rank: 0,
-                is_bot: false,
-                started_at: eventSession.started_at,
-            }
-        })
+function eventIsFinished(event: { status: string; ends_at: string }) {
+    return String(event.status).toLowerCase() === 'closed' || Date.now() > Date.parse(event.ends_at)
 }
 
 export async function getLiveLeaderboardAction(eventId: string) {
-    if (!eventId) {
-        throw new Error('Gagal memuat leaderboard: event ID tidak valid')
-    }
+    if (!eventId) throw new Error('Event ID tidak valid')
 
-    const supabase = await createClient()
-    const admin = await createAdminClient()
-    await autoCloseExpiredTryoutEvents(admin)
+    const supabase = await createV2Client()
     const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
 
-    if (!user) {
-        throw new Error('Unauthorized')
-    }
+    const event = await eventRepository.getEvent(eventId)
+    if (!event) throw new Error('Event tidak ditemukan')
 
-    // 1. Fetch event details first. Scheduled/closed events should show an empty board,
-    // not fail because the live RPC is not relevant yet.
-    const { data: event, error: eventError } = await admin
-        .from('tryout_events')
-        .select('id, title, status, starts_at, duration_minutes, start_grace_minutes')
-        .eq('id', eventId)
-        .maybeSingle()
-        
-    if (eventError || !event) {
-        logger.warn('Live leaderboard event not found', {
-            eventId,
-            error: eventError?.message,
-        })
-        throw new Error('Event tidak ditemukan')
-    }
+    const authorization = await authorizationRepository.getUserAuthorization(user.id)
+    const canManageEvent = authorization.permissions.includes(PERMISSIONS.EVENT_MANAGE)
+    const finished = eventIsFinished(event)
 
-    const leaderboardEvent = event as EventLeaderboardEvent
-    const questionCounts = await getEventLeaderboardQuestionCounts(admin, eventId)
-    const questionCount = getEventBotQuestionCount(questionCounts)
-    const closeTime = getEffectiveEventCloseTime(leaderboardEvent)
-    const isEventFinished = leaderboardEvent.status === 'closed' || Date.now() > closeTime.getTime()
-
-    const { data: profile } = await admin
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single()
-
-    const isAdmin = Boolean(profile && ['admin', 'superadmin'].includes(String(profile.role)))
-
-    if (isEventFinished) {
-        if (!isAdmin) {
-            const { data: participant, error: participantError } = await admin
-                .from('tryout_event_participants')
-                .select('id')
-                .eq('event_id', eventId)
-                .eq('user_id', user.id)
-                .maybeSingle()
-
-            if (participantError || !participant) {
-                throw new Error('Leaderboard event hanya bisa dilihat peserta terdaftar')
-            }
-        }
-
-        return {
-            event: { ...leaderboardEvent, status: 'closed' },
-            leaderboard: rankEventLeaderboardEntries([
-                ...await getCompletedEventLeaderboardEntries(eventId, questionCount, questionCounts),
-                ...(await ensureEventLeaderboardBots(admin, eventId, questionCounts)).map((entry) => computeDisplayedBotEntry({
-                    entry,
-                    eventStatus: 'closed',
-                })),
-            ]),
-        }
-    }
-
-    if (leaderboardEvent.status !== 'live') {
-        return {
-            event: leaderboardEvent,
-            leaderboard: []
-        }
-    }
-
-    if (!isAdmin) {
+    if (!finished && !canManageEvent) {
         throw new Error('Live leaderboard hanya tersedia untuk admin')
     }
-
-    // 2. Fetch live leaderboard using RPC
-    const { data: leaderboard, error } = await supabase.rpc('get_live_event_leaderboard', {
-        p_event_id: eventId
-    })
-
-    if (error) {
-        if (error.code === 'PGRST202' || error.message.includes('schema cache')) {
-            logger.warn('Live leaderboard RPC unavailable in schema cache', { eventId, error })
-
-            const botEntries = await ensureEventLeaderboardBots(admin, eventId, questionCounts)
-
-            return {
-                event,
-                leaderboard: rankEventLeaderboardEntries(botEntries.map((entry) => computeDisplayedBotEntry({
-                    entry,
-                    eventStatus: leaderboardEvent.status,
-                })))
-            }
-        }
-
-        logger.error('Live leaderboard fetch failed', error, { eventId })
-        throw new Error('Gagal memuat leaderboard')
+    if (finished && !canManageEvent) {
+        const registration = await eventRepository.getRegistration(user.id, eventId)
+        if (!registration) throw new Error('Leaderboard event hanya bisa dilihat peserta terdaftar')
     }
 
-    const realEntries = ((leaderboard as LiveLeaderboardEntry[]) || []).map((entry) => ({
-        ...entry,
-        entry_id: entry.entry_id || `user:${entry.user_id}`,
-        question_count: questionCount,
-        question_counts: questionCounts,
-        is_bot: false,
-        started_at: entry.started_at || new Date(
-            new Date(leaderboardEvent.starts_at).getTime() + (entry.live_rank || 0)
-        ).toISOString(),
-    }))
-    const botEntries = (await ensureEventLeaderboardBots(admin, eventId, questionCounts)).map((entry) => computeDisplayedBotEntry({
-        entry,
-        eventStatus: leaderboardEvent.status,
-    }))
+    const admin = await createV2AdminClient()
+    const { data: attemptData, error: attemptError } = await admin
+        .from('exam_attempts')
+        .select('id, user_id, status, started_at, submitted_at, duration_used_seconds, total_score, metadata')
+        .contains('metadata', { eventId })
+        .in('status', ['created', 'CREATED', 'in_progress', 'IN_PROGRESS', 'completed', 'COMPLETED'])
+        .order('started_at', { ascending: true, nullsFirst: false })
+        .limit(5000)
+    if (attemptError) throw attemptError
+
+    const attempts = (attemptData ?? []) as AttemptRow[]
+    if (attempts.length === 0) {
+        return {
+            event: { id: event.id, title: event.title, status: finished ? 'closed' : 'live' },
+            leaderboard: [] as LiveLeaderboardEntry[],
+        }
+    }
+
+    const attemptIds = attempts.map((row) => row.id)
+    const userIds = Array.from(new Set(attempts.map((row) => row.user_id)))
+    const [{ data: profileData, error: profileError }, { data: questionData, error: questionError }] = await Promise.all([
+        admin.from('profiles').select('id, full_name, avatar_url').in('id', userIds),
+        admin.from('attempt_questions').select('id, attempt_id, question_snapshot').in('attempt_id', attemptIds).limit(20000),
+    ])
+    if (profileError) throw profileError
+    if (questionError) throw questionError
+
+    const questions = (questionData ?? []) as AttemptQuestionRow[]
+    const questionIds = questions.map((row) => row.id)
+    const subjectIds = Array.from(new Set(questions
+        .map((row) => snapshotString(row.question_snapshot, 'subjectId'))
+        .filter((id): id is string => Boolean(id))))
+
+    const [{ data: answerData, error: answerError }, { data: subjectData, error: subjectError }] = await Promise.all([
+        questionIds.length
+            ? admin.from('attempt_answers').select('attempt_question_id, selected_option_id').in('attempt_question_id', questionIds).limit(20000)
+            : Promise.resolve({ data: [], error: null }),
+        subjectIds.length
+            ? admin.from('subjects').select('id, code').in('id', subjectIds)
+            : Promise.resolve({ data: [], error: null }),
+    ])
+    if (answerError) throw answerError
+    if (subjectError) throw subjectError
+
+    const answers = (answerData ?? []) as Array<{ attempt_question_id: string; selected_option_id: string | null }>
+    const selectedOptionIds = Array.from(new Set(answers
+        .map((row) => row.selected_option_id)
+        .filter((id): id is string => Boolean(id))))
+    const { data: optionData, error: optionError } = selectedOptionIds.length
+        ? await admin
+            .from('question_options')
+            .select('id, score, is_correct')
+            .in('id', selectedOptionIds)
+        : { data: [], error: null }
+    if (optionError) throw optionError
+
+    const profileById = new Map(((profileData ?? []) as Array<{ id: string; full_name: string | null; avatar_url: string | null }>).map((row) => [row.id, row]))
+    const subjectCodeById = new Map(((subjectData ?? []) as Array<{ id: string; code: string }>).map((row) => [row.id, row.code.toUpperCase()]))
+    const questionById = new Map(questions.map((row) => [row.id, row]))
+    const optionById = new Map(((optionData ?? []) as Array<{ id: string; score: number | null; is_correct: boolean | null }>).map((row) => [row.id, row]))
+
+    const questionCountByAttempt = new Map<string, number>()
+    for (const question of questions) {
+        questionCountByAttempt.set(question.attempt_id, (questionCountByAttempt.get(question.attempt_id) ?? 0) + 1)
+    }
+
+    const progressByAttempt = new Map<string, number>()
+    const scoresByAttempt = new Map<string, { TWK: number; TIU: number; TKP: number }>()
+    for (const answer of answers) {
+        if (!answer.selected_option_id) continue
+        const question = questionById.get(answer.attempt_question_id)
+        const option = optionById.get(answer.selected_option_id)
+        if (!question || !option) continue
+        progressByAttempt.set(question.attempt_id, (progressByAttempt.get(question.attempt_id) ?? 0) + 1)
+
+        const subjectId = snapshotString(question.question_snapshot, 'subjectId')
+        const subjectCode = subjectId ? subjectCodeById.get(subjectId) : null
+        if (!subjectCode || !['TWK', 'TIU', 'TKP'].includes(subjectCode)) continue
+        const score = Number(option.score ?? (option.is_correct ? 5 : 0))
+        const current = scoresByAttempt.get(question.attempt_id) ?? { TWK: 0, TIU: 0, TKP: 0 }
+        current[subjectCode as 'TWK' | 'TIU' | 'TKP'] += Number.isFinite(score) ? score : 0
+        scoresByAttempt.set(question.attempt_id, current)
+    }
+
+    let finalRankByUser = new Map<string, number>()
+    if (finished) {
+        // The generated type snapshot predates this staging RPC. Keep this
+        // invocation on the server-only admin client until types are regenerated.
+        const rpcAdmin = await createAdminClient()
+        const { error: recalcError } = await rpcAdmin.rpc('recalculate_event_rankings', { p_event_id: eventId })
+        if (recalcError) throw recalcError
+        const { data: rankingData, error: rankingError } = await admin
+            .from('event_rankings')
+            .select('user_id, rank')
+            .eq('event_id', eventId)
+        if (rankingError) throw rankingError
+        finalRankByUser = new Map(((rankingData ?? []) as Array<{ user_id: string; rank: number }>).map((row) => [row.user_id, row.rank]))
+    }
+
+    const entries = attempts.map((attempt) => {
+        const profile = profileById.get(attempt.user_id)
+        const scores = scoresByAttempt.get(attempt.id) ?? { TWK: 0, TIU: 0, TKP: 0 }
+        return {
+            entry_id: `user:${attempt.user_id}`,
+            user_id: attempt.user_id,
+            full_name: profile?.full_name || 'Pejuang Tanpa Nama',
+            avatar_url: profile?.avatar_url ?? null,
+            progress_count: progressByAttempt.get(attempt.id) ?? 0,
+            question_count: questionCountByAttempt.get(attempt.id) ?? 0,
+            score_twk: scores.TWK,
+            score_tiu: scores.TIU,
+            score_tkp: scores.TKP,
+            total_score: scores.TWK + scores.TIU + scores.TKP,
+            live_rank: finalRankByUser.get(attempt.user_id) ?? 0,
+            is_bot: false,
+            started_at: attempt.started_at ?? event.starts_at,
+        } satisfies LiveLeaderboardEntry
+    })
+
+    if (!finished) {
+        entries.sort((a, b) =>
+            b.total_score - a.total_score ||
+            b.progress_count - a.progress_count ||
+            Date.parse(a.started_at) - Date.parse(b.started_at) ||
+            a.user_id.localeCompare(b.user_id)
+        )
+        entries.forEach((entry, index) => { entry.live_rank = index + 1 })
+    } else {
+        entries.sort((a, b) => a.live_rank - b.live_rank)
+    }
 
     return {
-        event: leaderboardEvent,
-        leaderboard: rankEventLeaderboardEntries([...realEntries, ...botEntries])
+        event: { id: event.id, title: event.title, status: finished ? 'closed' : 'live' },
+        leaderboard: entries,
     }
 }

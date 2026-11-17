@@ -1,0 +1,53 @@
+name: Schema V2 CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'app/actions/practice.ts'
+      - 'app/actions/tka-**'
+      - 'app/api/practice-sessions/**'
+      - 'app/cpns/dashboard/tryout/**'
+      - 'app/tka/**'
+      - 'components/tka/**'
+      - 'src/repositories/**'
+      - 'src/services/**'
+      - 'src/auth/**'
+      - 'lib/env.ts'
+      - 'lib/utils/supabase/**'
+      - 'supabase/migrations/**'
+      - 'tests/e2e/**'
+      - 'playwright.config.ts'
+      - 'types/database.types.ts'
+      - 'package.json'
+      - 'package-lock.json'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint

@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { ArrowLeft, CheckCircle2, Target } from "lucide-react";
 import SeoNavbar from "@/components/SeoNavbar";
+import { appHref } from '@/lib/protected-href'
+import { createClient } from '@/lib/utils/supabase/server'
 
 export const metadata: Metadata = {
     title: "Latihan Soal TWK CPNS 2026 - Materi & Simulasi",
@@ -17,7 +19,11 @@ export const metadata: Metadata = {
     },
 };
 
-export default function TWKPage() {
+export default async function TWKPage() {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    const authed = Boolean(user)
+
     return (
         <div className="min-h-screen bg-[#fdfbf7]">
             <SeoNavbar />
@@ -31,11 +37,11 @@ export default function TWKPage() {
                     {/* Hero Section */}
                     <div className="mb-12">
                         <Badge variant="red" className="mb-4">SKD Subtes 1</Badge>
-                        <h1 className="text-4xl md:text-5xl font-handwriting font-bold mb-4 leading-tight">
+                        <h1 className="text-4xl md:text-5xl font-display font-bold mb-4 leading-tight">
                             Latihan Soal TWK CPNS <br className="hidden md:block" />
                             <span className="text-red-600">Tes Wawasan Kebangsaan</span>
                         </h1>
-                        <p className="text-xl text-gray-600 font-handwriting max-w-2xl">
+                        <p className="text-xl text-gray-600 font-display max-w-2xl">
                             Uji pemahamanmu tentang Nasionalisme, Integritas, Bela Negara, dan Pilar Negara. Jangan sampai gagal di TWK hanya karena kurang latihan soal penalaran!
                         </p>
                     </div>
@@ -47,7 +53,7 @@ export default function TWKPage() {
                                 <Target className="w-12 h-12 text-red-600" />
                             </div>
                             <div>
-                                <h2 className="text-2xl font-bold font-handwriting mb-2">Passing Grade TWK: 65 Poin</h2>
+                                <h2 className="text-2xl font-bold font-display mb-2">Passing Grade TWK: 65 Poin</h2>
                                 <p className="text-gray-700 font-body mb-4">
                                     Dari total 30 soal TWK, Anda harus menjawab benar minimal <strong>13 soal</strong> (masing-masing bernilai 5 poin). Jika salah, tidak ada pengurangan nilai (0 poin).
                                 </p>
@@ -67,7 +73,7 @@ export default function TWKPage() {
 
                     {/* Materi Section */}
                     <div className="mb-12">
-                        <h2 className="text-3xl font-handwriting font-bold mb-6">Materi TWK (Sesuai Kisi-Kisi BKN)</h2>
+                        <h2 className="text-3xl font-display font-bold mb-6">Materi TWK (Sesuai Kisi-Kisi BKN)</h2>
                         <div className="grid md:grid-cols-2 gap-4">
                             {[
                                 { title: "Nasionalisme", desc: "Mampu mewujudkan kepentingan nasional melalui cita-cita dan tujuan yang sama dengan tetap mempertahankan identitas nasional." },
@@ -79,7 +85,7 @@ export default function TWKPage() {
                                 <Card key={i} variant="standard" className="p-5 flex gap-4">
                                     <CheckCircle2 className="w-6 h-6 text-green-500 shrink-0 mt-1" />
                                     <div>
-                                        <h3 className="font-bold font-handwriting text-xl mb-1">{item.title}</h3>
+                                        <h3 className="font-bold font-display text-xl mb-1">{item.title}</h3>
                                         <p className="text-gray-600 font-body text-sm leading-relaxed">{item.desc}</p>
                                     </div>
                                 </Card>
@@ -89,16 +95,16 @@ export default function TWKPage() {
 
                     {/* CTA Section */}
                     <Section dashedBorder="top" pattern="dots" className="text-center rounded-3xl mt-16 bg-white border-4 border-gray-900">
-                        <h2 className="text-3xl font-handwriting font-bold mb-4">Siap Uji Kemampuan TWK Kamu?</h2>
+                        <h2 className="text-3xl font-display font-bold mb-4">Siap Uji Kemampuan TWK Kamu?</h2>
                         <p className="text-gray-600 font-body mb-8 max-w-lg mx-auto">
                             Soal TWK CPNS saat ini banyak yang bertipe HOTS (Higher Order Thinking Skills) dan penalaran panjang. Jangan cuma hafal pasal, coba simulasinya sekarang!
                         </p>
                         <div className="flex flex-col sm:flex-row justify-center gap-4">
                             <Button asChild size="lg" variant="primary">
-                                <Link href="/cpns/mini-tryout">Mulai Mini Tryout (TWK)</Link>
+                                <Link href={appHref('/cpns/mini-tryout', '/cpns/dashboard/mini-tryout', authed)}>Mulai Mini Tryout (TWK)</Link>
                             </Button>
                             <Button asChild size="lg" variant="white">
-                                <Link href="/cpns/full-tryout">Simulasi Full 110 Soal</Link>
+                                <Link href={appHref('/cpns/full-tryout', '/cpns/dashboard/tryout', authed)}>Simulasi Full 110 Soal</Link>
                             </Button>
                         </div>
                     </Section>

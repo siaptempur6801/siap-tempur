@@ -2,11 +2,16 @@ import { Page, Locator } from '@playwright/test';
 
 export class HomePage {
   readonly page: Page;
-  readonly getStartedButton: Locator;
+  readonly loginLink: Locator;
+  readonly cpnsCard: Locator;
+  readonly tkaCard: Locator;
 
   constructor(page: Page) {
     this.page = page;
-    this.getStartedButton = page.getByRole('button', { name: /Masuk \/ Daftar|Mulai Latihan Sekarang/i }).first();
+    this.loginLink = page.getByRole('link', { name: /^Masuk$/i }).first();
+    // Locator berbasis data-testid supaya tidak rapuh terhadap perubahan copywriting.
+    this.cpnsCard = page.getByTestId('program-card-cpns').first();
+    this.tkaCard = page.getByTestId('program-card-tka').first();
   }
 
   async goto() {

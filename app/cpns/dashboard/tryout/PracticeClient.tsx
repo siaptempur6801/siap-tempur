@@ -1,15 +1,16 @@
 'use client'
 
 import { startTryout } from '@/app/actions/practice'
-import { ArrowRight, Loader2, Ticket, BookOpen, Trophy, AlertCircle, Zap } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { AlertCircle, ArrowRight, BookOpen, CheckCircle2, Clock3, ShieldCheck, Ticket } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { cn } from '@/lib/utils'
 import { PageAnimateContainer, PageAnimateItem } from '@/components/ui/PageAnimate'
 import PaperBackground from '@/components/PaperBackground'
 import { TRYOUT_TOKEN_COST } from '@/lib/constants'
 import TokenUsageConfirmModal from '@/components/practice/TokenUsageConfirmModal'
+import { LoadingSpinner } from '@/components/ui/LoadingState'
+import { acquireSingleFlightLock, releaseSingleFlightLock } from '@/lib/single-flight-lock'
 
 interface PracticeClientProps {
     quota: number
@@ -56,12 +57,13 @@ export default function PracticeClient({
     activeSessionId,
     activeResumeQuestionNumber,
     activeAnsweredQuestions,
-    activeStartedAt
+    activeStartedAt,
 }: PracticeClientProps) {
     const [loadingTryout, setLoadingTryout] = useState(false)
     const [showTokenConfirm, setShowTokenConfirm] = useState(false)
     const [hydratedResumeQuestionNumber, setHydratedResumeQuestionNumber] = useState<number | null>(activeResumeQuestionNumber)
     const [resumeTimeLabel, setResumeTimeLabel] = useState<string | null>(null)
+    const startLockRef = useRef(false)
     const router = useRouter()
 
     const hydrateResumeQuestionNumber = useCallback(() => {
@@ -71,12 +73,7 @@ export default function PracticeClient({
         }
 
         const storedResumeQuestionNumber = loadStoredResumeQuestionNumber(activeSessionId)
-        if (storedResumeQuestionNumber) {
-            setHydratedResumeQuestionNumber(storedResumeQuestionNumber)
-            return
-        }
-
-        setHydratedResumeQuestionNumber(activeResumeQuestionNumber)
+        setHydratedResumeQuestionNumber(storedResumeQuestionNumber || activeResumeQuestionNumber)
     }, [activeSessionId, activeResumeQuestionNumber])
 
     useEffect(() => {
@@ -87,9 +84,7 @@ export default function PracticeClient({
         if (typeof window === 'undefined') return
 
         const handleVisibilityChange = () => {
-            if (!document.hidden) {
-                hydrateResumeQuestionNumber()
-            }
+            if (!document.hidden) hydrateResumeQuestionNumber()
         }
 
         window.addEventListener('focus', hydrateResumeQuestionNumber)
@@ -109,43 +104,28 @@ export default function PracticeClient({
             return
         }
 
-        const updateTimeLabel = () => {
-            setResumeTimeLabel(formatRemainingTime(activeStartedAt))
-        }
-
+        const updateTimeLabel = () => setResumeTimeLabel(formatRemainingTime(activeStartedAt))
         updateTimeLabel()
         const interval = window.setInterval(updateTimeLabel, 30000)
-
         return () => window.clearInterval(interval)
     }, [activeStartedAt])
 
     const resumeDetails = useMemo(() => {
         const items: string[] = []
-
-        if ((activeAnsweredQuestions ?? 0) > 0) {
-            items.push(`${activeAnsweredQuestions} terjawab`)
-        }
-
-        if (resumeTimeLabel) {
-            items.push(resumeTimeLabel)
-        }
-
+        if ((activeAnsweredQuestions ?? 0) > 0) items.push(`${activeAnsweredQuestions} soal terjawab`)
+        if (resumeTimeLabel) items.push(resumeTimeLabel)
         return items
     }, [activeAnsweredQuestions, resumeTimeLabel])
 
     const hasSavedProgress = (activeAnsweredQuestions ?? 0) > 0 || (hydratedResumeQuestionNumber ?? 1) > 1
     const bannerMessage = activeSessionId
         ? hasSavedProgress && hydratedResumeQuestionNumber
-            ? `Sesi tryout kamu masih berjalan. Lanjutkan dari soal nomor ${hydratedResumeQuestionNumber} tanpa pakai tiket baru.`
-            : 'Sesi tryout kamu masih berjalan. Lanjutkan tryout tanpa pakai tiket baru.'
+            ? `Sesi kamu masih aktif. Lanjutkan dari soal ${hydratedResumeQuestionNumber} tanpa memakai token baru.`
+            : 'Sesi kamu masih aktif dan bisa dilanjutkan tanpa memakai token baru.'
         : null
-    const buttonSubLabel = activeSessionId
-        ? hasSavedProgress && hydratedResumeQuestionNumber
-            ? `Posisi Terakhir Soal ${hydratedResumeQuestionNumber}`
-            : 'Sesi Masih Berjalan'
-        : '110 Soal • 100 Menit'
 
     const startTryoutSession = async () => {
+        if (!acquireSingleFlightLock(startLockRef)) return
         let isNavigating = false
         try {
             setLoadingTryout(true)
@@ -157,14 +137,15 @@ export default function PracticeClient({
             }
 
             if (result?.success && result?.sessionId) {
-                toast.success(result.resumed ? 'Melanjutkan sesi tryout tersimpan.' : 'Tryout SKD dimulai!')
-                isNavigating = true
+                toast.success(result.resumed ? 'Melanjutkan Full Tryout.' : 'Full Tryout dimulai.')
                 router.push(`/cpns/dashboard/tryout/${result.sessionId}`)
+                isNavigating = true
             }
         } catch {
-            toast.error('Gagal memulai tryout')
+            toast.error('Full Tryout belum bisa dimulai')
         } finally {
             if (!isNavigating) {
+                releaseSingleFlightLock(startLockRef)
                 setLoadingTryout(false)
             }
         }
@@ -177,12 +158,12 @@ export default function PracticeClient({
         }
 
         if (quota <= 0) {
-            toast.error("Kuota Habis!", {
-                description: "Silahkan beli paket Tryout terlebih dahulu untuk melanjutkan.",
+            toast.error('Token belum tersedia', {
+                description: 'Beli token untuk memulai Full Tryout baru.',
                 action: {
-                    label: "Beli Paket",
-                    onClick: () => router.push('/cpns/dashboard/beli-paket')
-                }
+                    label: 'Beli Token',
+                    onClick: () => router.push('/cpns/dashboard/beli-paket'),
+                },
             })
             return
         }
@@ -191,188 +172,146 @@ export default function PracticeClient({
     }
 
     return (
-        <div className="w-full relative min-h-screen">
+        <div className="relative min-h-screen w-full">
             <PaperBackground />
-            <PageAnimateContainer className="space-y-10 p-4 md:p-8 max-w-6xl mx-auto font-handwriting pb-20 relative z-10">
-                {/* Header Section */}
-                <PageAnimateItem className="relative z-10">
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-100 border-2 border-gray-900 text-blue-700 text-xs font-bold uppercase tracking-wider shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] mb-4 transform -rotate-1">
-                        <BookOpen size={14} className="fill-current" />
-                        <span>Pusat Tryout SKD CPNS & Kedinasan</span>
+            <PageAnimateContainer className="relative z-10 mx-auto max-w-6xl space-y-7 px-4 py-6 pb-24 sm:px-6 lg:px-8 lg:py-9">
+                <PageAnimateItem>
+                    <div className="st-kicker">
+                        <BookOpen size={14} /> Full Tryout SKD
                     </div>
-                    <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-3">
-                        Siap Tryout Hari Ini?
-                    </h1>
-                    <p className="text-xl text-gray-600 max-w-2xl leading-relaxed italic">
-                        "Kesuksesan adalah 1% bakat dan 99% tryout soal yang konsisten. Mau CPNS atau Kedinasan, persiapannya dimulai dari sini."
-                    </p>
+                    <div className="mt-4 max-w-3xl">
+                        <h1 className="st-heading text-3xl sm:text-4xl lg:text-5xl">Uji kesiapanmu dalam satu sesi penuh.</h1>
+                        <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
+                            Kerjakan TWK, TIU, dan TKP dalam satu sesi. Setelah selesai, lihat skor per bagian dan tinjau pembahasan untuk menentukan fokus latihan berikutnya.
+                        </p>
+                    </div>
                 </PageAnimateItem>
 
-                {/* Main Content Box */}
-                <PageAnimateItem className="relative group">
-                    {/* Decorative Elements Removed */}
-
-                    <div className="relative overflow-hidden bg-white border-4 border-gray-900 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] p-8 md:p-12">
-                        {/* Paper Grid Pattern */}
-                        <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none"
-                            style={{ backgroundImage: "radial-gradient(#000 1px, transparent 1px)", backgroundSize: "20px 20px" }}
-                        />
-
-                        <div className="relative z-10 grid lg:grid-cols-2 gap-12 items-center">
-                            {/* Left: Info & Stats */}
-                            <div className="space-y-8">
+                {activeSessionId && bannerMessage && (
+                    <PageAnimateItem>
+                        <div className="st-card flex flex-col gap-3 border-blue-600 bg-blue-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex items-start gap-3">
+                                <Clock3 className="mt-0.5 h-5 w-5 shrink-0 text-blue-700" />
                                 <div>
-                                    <h2 className="text-4xl font-black text-gray-900 mb-4 underline decoration-blue-500/30 decoration-8 underline-offset-4">
-                                        Simulasi Terstandar
-                                    </h2>
-                                    <p className="text-lg text-gray-600 leading-relaxed font-sans">
-                                        Format soal, waktu, dan sistem penilaian disesuaikan dengan standar <strong className="text-gray-900">CAT BKN 2025/2026</strong>.
-                                        Cocok untuk persiapan <strong className="text-gray-900">CPNS</strong> maupun <strong className="text-gray-900">Sekolah Kedinasan</strong>. Akses full tryout membutuhkan <strong className="text-gray-900">{TRYOUT_TOKEN_COST} token</strong> untuk satu kali pengerjaan.
-                                    </p>
+                                    <p className="font-black text-slate-950">Lanjutkan sesi aktif</p>
+                                    <p className="mt-1 text-sm leading-6 text-slate-600">{bannerMessage}</p>
+                                    {hasSavedProgress && resumeDetails.length > 0 && (
+                                        <p className="mt-1 text-xs font-bold text-blue-700">{resumeDetails.join(' • ')}</p>
+                                    )}
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={handleStartTryout}
+                                disabled={loadingTryout}
+                                className="st-button st-focus inline-flex min-h-11 shrink-0 items-center justify-center gap-2 bg-blue-600 px-4 py-2.5 text-sm text-white disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                {loadingTryout ? <LoadingSpinner label="Menyiapkan full tryout" size="sm" /> : <ArrowRight className="h-4 w-4" />}
+                                {loadingTryout ? 'Menyiapkan...' : 'Lanjutkan'}
+                            </button>
+                        </div>
+                    </PageAnimateItem>
+                )}
+
+                <PageAnimateItem>
+                    <section className="st-card-md overflow-hidden">
+                        <div className="grid lg:grid-cols-[1.2fr_0.8fr]">
+                            <div className="p-5 sm:p-7 lg:p-8">
+                                <div className="flex flex-wrap gap-2">
+                                    <span className="st-pill bg-red-50 text-red-700">TWK · 30 soal</span>
+                                    <span className="st-pill bg-amber-50 text-amber-800">TIU · 35 soal</span>
+                                    <span className="st-pill bg-blue-50 text-blue-700">TKP · 45 soal</span>
                                 </div>
 
-                                {/* Feature Checklist */}
-                                <div className="space-y-3 font-sans">
-                                    <div className="flex items-center gap-3 text-gray-700">
-                                        <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-green-700 border border-green-200">
-                                            <ArrowRight size={14} />
+                                <h2 className="mt-6 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">110 soal dalam 100 menit</h2>
+                                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
+                                    Full Tryout memakai {TRYOUT_TOKEN_COST} token untuk sesi baru. Sesi yang sudah aktif bisa dilanjutkan tanpa memakai token lagi.
+                                </p>
+
+                                <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                                    {[
+                                        'Mencakup tiga bagian SKD',
+                                        'Progres sesi aktif tersimpan',
+                                        'Skor per bagian setelah selesai',
+                                        'Pembahasan jawaban tersedia di hasil',
+                                    ].map((item) => (
+                                        <div key={item} className="flex items-start gap-2 text-sm font-semibold text-slate-700">
+                                            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                                            <span>{item}</span>
                                         </div>
-                                        <span className="font-bold">Mencakup TWK, TIU, & TKP</span>
-                                    </div>
-                                    <div className="flex items-center gap-3 text-gray-700">
-                                        <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-green-700 border border-green-200">
-                                            <ArrowRight size={14} />
-                                        </div>
-                                        <span className="font-bold">Passing Grade Terupdate</span>
-                                    </div>
-                                    <div className="flex items-center gap-3 text-gray-700">
-                                        <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-green-700 border border-green-200">
-                                            <ArrowRight size={14} />
-                                        </div>
-                                        <span className="font-bold">Ranking Nasional Otomatis</span>
-                                    </div>
-                                    <div className="flex items-center gap-3 text-gray-700">
-                                        <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 border border-blue-200">
-                                            <Ticket size={14} />
-                                        </div>
-                                        <span className="font-bold">Biaya akses: {TRYOUT_TOKEN_COST} token per full tryout</span>
-                                    </div>
+                                    ))}
                                 </div>
 
-                                {/* Ticket Balance */}
-                                <div className="inline-flex items-center gap-4 p-4 bg-gray-50 border-2 border-gray-300 border-dashed transform rotate-[-0.5deg]">
-                                    <div className="w-12 h-12 bg-white border-2 border-gray-900 flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                        <Ticket className="text-blue-600 w-6 h-6" />
+                                <div className="mt-7 flex items-center gap-3 border-t-2 border-slate-900 pt-5">
+                                    <div className="flex h-11 w-11 items-center justify-center border-2 border-slate-900 bg-yellow-100">
+                                        <Ticket className="h-5 w-5 text-blue-700" />
                                     </div>
                                     <div>
-                                        <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">Sisa Tiket</div>
-                                        <div className="text-2xl font-black text-gray-900">{quota} <span className="text-sm">Tiket</span></div>
+                                        <p className="text-xs font-black uppercase tracking-[0.12em] text-slate-500">Saldo token</p>
+                                        <p className="text-2xl font-black text-slate-950">{quota} <span className="text-sm text-slate-500">token</span></p>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Right: Actions */}
-                            <div className="flex flex-col items-center justify-center">
-                                <div className="w-full space-y-4">
-                                    {activeSessionId && (
-                                        <div className="rounded-lg border-2 border-dashed border-blue-300 bg-blue-50 px-4 py-3 text-center text-sm font-sans text-blue-700">
-                                            {bannerMessage}
+                            <div className="border-t-2 border-slate-900 bg-blue-50 p-5 sm:p-7 lg:border-l-2 lg:border-t-0 lg:p-8">
+                                <div className="flex h-full flex-col justify-between gap-6">
+                                    <div>
+                                        <div className="flex h-11 w-11 items-center justify-center border-2 border-slate-900 bg-white">
+                                            <ShieldCheck className="h-5 w-5 text-blue-700" />
                                         </div>
-                                    )}
+                                        <h3 className="mt-4 text-xl font-black text-slate-950">Siap mulai sesi baru?</h3>
+                                        <p className="mt-2 text-sm leading-6 text-slate-600">
+                                            Pastikan kamu punya waktu yang cukup dan koneksi internet yang stabil. Waktu mulai berjalan setelah sesi berhasil dibuat.
+                                        </p>
+                                    </div>
+
                                     {quota > 0 || activeSessionId ? (
                                         <button
+                                            type="button"
                                             onClick={handleStartTryout}
                                             disabled={loadingTryout}
-                                            className={cn(
-                                                "w-full group relative py-6 flex flex-col items-center justify-center bg-blue-600 text-white border-2 border-gray-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all",
-                                                loadingTryout && "opacity-80 pointer-events-none"
-                                            )}
+                                            className="st-button st-focus flex min-h-12 w-full items-center justify-center gap-2 bg-blue-600 px-5 py-3 text-base text-white disabled:cursor-not-allowed disabled:opacity-60"
                                         >
-                                            {loadingTryout ? (
-                                                <div className="flex items-center gap-2">
-                                                    <Loader2 className="animate-spin" />
-                                                    <span className="text-2xl font-black">Menyiapkan Sesi...</span>
-                                                </div>
-                                            ) : (
-                                                <>
-                                                    <Zap className="absolute top-2 right-2 w-8 h-8 text-yellow-300 opacity-20 group-hover:opacity-100 transition-opacity" />
-                                                    <span className="text-4xl font-black mb-1">{activeSessionId ? 'Lanjutkan Tryout' : 'Mulai Tryout'}</span>
-                                                    <span className="text-sm font-bold opacity-80 uppercase tracking-widest flex items-center gap-2">
-                                                        {activeSessionId
-                                                            ? buttonSubLabel
-                                                            : '110 Soal • 100 Menit'} <ArrowRight size={14} />
-                                                    </span>
-                                                    {activeSessionId && hasSavedProgress && resumeDetails.length > 0 && (
-                                                        <span className="mt-2 text-xs font-bold opacity-90 text-center">
-                                                            {resumeDetails.join(' | ')}
-                                                        </span>
-                                                    )}
-                                                </>
-                                            )}
+                                            {loadingTryout ? <LoadingSpinner label="Menyiapkan full tryout" /> : <ArrowRight className="h-5 w-5" />}
+                                            {loadingTryout ? 'Menyiapkan sesi...' : activeSessionId ? 'Lanjutkan Full Tryout' : 'Mulai Full Tryout'}
                                         </button>
                                     ) : (
                                         <button
+                                            type="button"
                                             onClick={() => router.push('/cpns/dashboard/beli-paket')}
-                                            className="w-full group relative py-6 flex flex-col items-center justify-center bg-orange-100 text-orange-700 border-2 border-orange-500 border-dashed hover:bg-orange-200 transition-all font-bold"
+                                            className="st-button st-focus flex min-h-12 w-full items-center justify-center gap-2 bg-white px-5 py-3 text-base text-blue-700"
                                         >
-                                            <span className="text-4xl font-black mb-1 uppercase italic">Ticket Habis!</span>
-                                            <span className="text-sm font-bold opacity-80 uppercase tracking-widest underline decoration-2 underline-offset-4 flex items-center gap-2">
-                                                Isi Tiket Sekarang <Zap size={14} />
-                                            </span>
+                                            <Ticket className="h-5 w-5" /> Beli Token
                                         </button>
                                     )}
-
-                                    <p className="text-center text-sm font-sans text-gray-400 italic">
-                                        *Pastikan koneksi internet stabil selama pengerjaan.
-                                    </p>
-                                </div>
-
-                                {/* Score Breakdown Pills */}
-                                <div className="mt-12 flex flex-wrap justify-center gap-3">
-                                    <div className="px-4 py-2 bg-red-50 text-red-700 border-2 border-red-200 font-bold rounded-lg text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,0.05)]">
-                                        TWK: 30 Soal
-                                    </div>
-                                    <div className="px-4 py-2 bg-yellow-50 text-yellow-800 border-2 border-yellow-200 font-bold rounded-lg text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,0.05)]">
-                                        TIU: 35 Soal
-                                    </div>
-                                    <div className="px-4 py-2 bg-blue-50 text-blue-700 border-2 border-blue-200 font-bold rounded-lg text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,0.05)]">
-                                        TKP: 45 Soal
-                                    </div>
                                 </div>
                             </div>
                         </div>
+                    </section>
+                </PageAnimateItem>
+
+                <PageAnimateItem className="grid gap-4 md:grid-cols-3">
+                    <div className="st-flat-card p-5">
+                        <p className="text-xs font-black uppercase tracking-[0.12em] text-slate-500">Sebelum mulai</p>
+                        <h3 className="mt-2 font-black text-slate-950">Siapkan 100 menit.</h3>
+                        <p className="mt-1 text-sm leading-6 text-slate-600">Pilih waktu yang cukup agar sesi tidak perlu sering ditinggalkan.</p>
+                    </div>
+                    <div className="st-flat-card p-5">
+                        <p className="text-xs font-black uppercase tracking-[0.12em] text-slate-500">Saat mengerjakan</p>
+                        <h3 className="mt-2 font-black text-slate-950">Tandai soal yang ingin ditinjau.</h3>
+                        <p className="mt-1 text-sm leading-6 text-slate-600">Gunakan penanda untuk kembali ke soal yang masih ingin kamu periksa.</p>
+                    </div>
+                    <div className="st-flat-card p-5">
+                        <p className="text-xs font-black uppercase tracking-[0.12em] text-slate-500">Jika perlu keluar</p>
+                        <h3 className="mt-2 font-black text-slate-950">Progres sesi tetap disimpan.</h3>
+                        <p className="mt-1 text-sm leading-6 text-slate-600">Kamu bisa kembali ke sesi aktif selama sesi tersebut belum selesai.</p>
                     </div>
                 </PageAnimateItem>
 
-                {/* Tips Section */}
-                <PageAnimateItem className="grid xl:grid-cols-3 gap-6">
-                    <div className="p-6 bg-yellow-50 border-2 border-dashed border-gray-900 flex flex-col items-center text-center rotate-1">
-                        <Zap className="text-yellow-500 mb-3" size={32} />
-                        <h4 className="font-bold text-gray-900 mb-1 italic">Tips Tryout</h4>
-                        <p className="text-sm text-gray-600">Kerjakan soal yang paling mudah terlebih dahulu untuk menghemat waktu.</p>
-                    </div>
-                    <div className="p-6 bg-pink-50 border-2 border-dashed border-gray-900 flex flex-col items-center text-center -rotate-1">
-                        <Trophy className="text-pink-500 mb-3" size={32} />
-                        <h4 className="font-bold text-gray-900 mb-1 italic">Target Lulus</h4>
-                        <p className="text-sm text-gray-600">Fokus pada ambang batas skor (Passing Grade) di setiap kategori.</p>
-                    </div>
-                    <div className="p-6 bg-blue-50 border-2 border-dashed border-gray-900 flex flex-col items-center text-center rotate-1">
-                        <AlertCircle className="text-blue-500 mb-3" size={32} />
-                        <h4 className="font-bold text-gray-900 mb-1 italic">Persiapan</h4>
-                        <p className="text-sm text-gray-600">Berdoa dan tarik nafas dalam-dalam sebelum menekan tombol GAS!</p>
-                    </div>
-                </PageAnimateItem>
-
-                {/* Warning Section */}
-                <PageAnimateItem className="p-6 bg-red-50 border-2 border-gray-900 text-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rotate-[-0.5deg]">
-                    <div className="flex items-start gap-4">
-                        <AlertCircle className="w-6 h-6 text-red-600 shrink-0 mt-1" />
-                        <div>
-                            <h4 className="font-bold text-lg mb-1 italic">Perhatian:</h4>
-                            <p className="text-sm md:text-base font-sans leading-relaxed">
-                                Jika harus keluar, progres tryout akan tetap tersimpan dan bisa dilanjutkan lagi dari dashboard. Tiket tetap terpakai sampai sesi tersebut benar-benar selesai.
-                            </p>
-                        </div>
+                <PageAnimateItem>
+                    <div className="flex items-start gap-3 border-2 border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+                        <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+                        <p className="leading-6"><strong>Satu token digunakan saat membuat Full Tryout baru.</strong> Keluar dari sesi tidak mengembalikan token; lanjutkan sesi aktif yang sama untuk menyelesaikannya.</p>
                     </div>
                 </PageAnimateItem>
             </PageAnimateContainer>
@@ -380,10 +319,10 @@ export default function PracticeClient({
             <TokenUsageConfirmModal
                 isOpen={showTokenConfirm}
                 title="Mulai Full Tryout SKD?"
-                description={`Full tryout baru akan memakai ${TRYOUT_TOKEN_COST} token dari saldo kamu. Waktu 100 menit akan berjalan setelah sesi berhasil dibuat.`}
+                description={`Full Tryout baru akan memakai ${TRYOUT_TOKEN_COST} token dari saldo kamu. Waktu 100 menit berjalan setelah sesi berhasil dibuat.`}
                 details={[
                     { label: 'Soal', value: 110 },
-                    { label: 'Durasi', value: '100 Menit' },
+                    { label: 'Durasi', value: '100 menit' },
                 ]}
                 quota={quota}
                 isLoading={loadingTryout}

@@ -1,70 +1,32 @@
-'use client'
-
-import React from 'react'
 import Link from 'next/link'
-import { SearchX, Home, ArrowLeft } from 'lucide-react'
-import PaperBackground from '@/components/PaperBackground'
-import { motion } from 'framer-motion'
+import { ArrowLeft, Home } from 'lucide-react'
+import { MascotBubble } from '@/components/brand/playful'
+
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export default function NotFound() {
     return (
-        <div className="min-h-screen w-full flex flex-col items-center justify-center p-6 relative bg-[#fdfbf7] overflow-hidden font-handwriting">
-            <PaperBackground />
+        <main className="st-product flex min-h-screen items-center justify-center bg-[#fbfaf7] px-4 py-12 font-body">
+            <section className="w-full max-w-lg border-2 border-slate-900 bg-white p-6 text-center sm:p-8">
+                <MascotBubble name="tara" size="sm" bubbleTone="peach" className="mx-auto w-fit">
+                    Halamannya nggak ketemu, tapi tenang — kamu nggak kehilangan progres apa pun.
+                </MascotBubble>
+                <p className="mt-5 text-xs font-black uppercase tracking-[0.14em] text-slate-500">404 · Halaman tidak ditemukan</p>
+                <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">Halaman yang kamu cari tidak tersedia.</h1>
+                <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-slate-600 sm:text-base">
+                    Tautannya mungkin sudah berubah atau halaman tersebut belum tersedia. Kamu bisa kembali ke halaman utama atau dashboard CPNS.
+                </p>
 
-            <div className="relative z-10 max-w-md w-full text-center">
-                {/* 404 Sketchy Illustration */}
-                <motion.div
-                    initial={{ rotate: -5, scale: 0.9, opacity: 0 }}
-                    animate={{ rotate: 0, scale: 1, opacity: 1 }}
-                    className="mb-8 relative inline-block"
-                >
-                    <div className="absolute -inset-4 bg-yellow-200/50 -rotate-3 rounded-sm z-0"></div>
-                    <div className="relative z-10 bg-white border-4 border-gray-900 p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-                        <span className="text-8xl font-black text-gray-900 block mb-2">404</span>
-                        <div className="flex items-center justify-center gap-2 text-blue-600">
-                            <SearchX size={32} />
-                            <span className="text-2xl font-bold uppercase tracking-widest">Halaman Hilang</span>
-                        </div>
-                    </div>
-                </motion.div>
-
-                <motion.div
-                    initial={{ y: 20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                >
-                    <h2 className="text-3xl font-bold text-gray-800 mb-4">Waduh, Kamu Tersesat?</h2>
-                    <p className="text-xl text-gray-600 mb-8 italic">
-                        Sepertinya soal atau halaman yang kamu cari sudah pindah atau memang belum ada. Jangan panik, tetap fokus!
-                    </p>
-
-                    <div className="flex flex-col gap-4">
-                        <Link
-                            href="/cpns/dashboard"
-                            className="flex items-center justify-center gap-3 px-8 py-4 bg-blue-600 text-white border-2 border-gray-900 text-2xl font-bold shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all"
-                        >
-                            <Home size={24} />
-                            Kembali ke Dashboard
-                        </Link>
-
-                        <Link
-                            href="/"
-                            className="flex items-center justify-center gap-3 px-8 py-4 bg-white text-gray-900 border-2 border-gray-900 text-xl font-bold hover:bg-gray-50 transition-colors"
-                        >
-                            <ArrowLeft size={20} />
-                            Halaman Utama
-                        </Link>
-                    </div>
-                </motion.div>
-
-                {/* Decorative Elements */}
-                <div className="absolute top-0 -right-20 opacity-20 pointer-events-none rotate-12">
-                    <svg width="200" height="200" viewBox="0 0 200 200">
-                        <path d="M10 10 Q 100 0 190 10 Q 200 100 190 190 Q 100 200 10 190 Q 0 100 10 10" fill="none" stroke="currentColor" strokeWidth="4" />
-                        <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fontSize="120">?</text>
-                    </svg>
+                <div className="mt-7 grid gap-3 sm:grid-cols-2">
+                    <Link href="/" className="st-button st-focus flex min-h-11 items-center justify-center gap-2 bg-white px-4 py-2.5 text-sm text-slate-900">
+                        <ArrowLeft size={17} /> Halaman Utama
+                    </Link>
+                    <Link href="/cpns/dashboard" className="st-button st-focus flex min-h-11 items-center justify-center gap-2 bg-blue-600 px-4 py-2.5 text-sm text-white">
+                        <Home size={17} /> Dashboard CPNS
+                    </Link>
                 </div>
-            </div>
-        </div>
+            </section>
+        </main>
     )
 }

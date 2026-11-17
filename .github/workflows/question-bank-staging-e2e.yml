@@ -1,0 +1,112 @@
+name: Question Bank Staging E2E
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'app/actions/question-bank.ts'
+      - 'app/actions/content-review.ts'
+      - 'app/admin/AdminOperationsWorkspace.tsx'
+      - 'app/admin/content/questions/**'
+      - 'app/admin/content/review/**'
+      - 'components/admin/QuestionBankForm.tsx'
+      - 'components/admin/QuestionOptionsEditor.tsx'
+      - 'components/admin/AdminModal.tsx'
+      - 'lib/question-bank.ts'
+      - 'lib/question-options.ts'
+      - 'src/services/question-bank.service.ts'
+      - 'src/services/admin-v2.service.ts'
+      - 'scripts/test-question-bank.mjs'
+      - 'supabase/migrations/20260921062621_question_bank_atomic_editor.sql'
+      - '.github/workflows/question-bank-staging-e2e.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: question-bank-staging-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: 'true'
+  APP_ENV: staging
+  NEXT_PUBLIC_APP_ENV: staging
+  # Gate ini membuat user disposabel (ADMIN/FINANCE/CONTENT_REVIEWER) dan login
+  # berkali-kali dari satu alamat runner, sehingga limiter auth per-IP memblokir
+  # skenario yang sah. Script gate menolak URL selain staging.
+  E2E_DISABLE_AUTH_RATE_LIMIT: '1'
+  NEXT_PUBLIC_SUPABASE_URL: https://lpgrivowdcepcxradavu.supabase.co
+  NEXT_PUBLIC_SUPABASE_EXPECTED_PROJECT_REF: lpgrivowdcepcxradavu
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_9MDt_8bH6lsECYEaX9zqeg_6Upvnpaf
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_9MDt_8bH6lsECYEaX9zqeg_6Upvnpaf
+  NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3105
+  MIDTRANS_SERVER_KEY_SANDBOX: qb-gate-not-used
+  NEXT_PUBLIC_MIDTRANS_CLIENT_KEY_SANDBOX: qb-gate-not-used
+  QB_BASE_URL: http://127.0.0.1:3105
+
+jobs:
+  question-bank-gate:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout exact head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build staging app
+        run: npm run build
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Question Bank gate against staging
+        env:
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TMPDIR: ${{ runner.temp }}/qb-evidence
+        run: |
+          if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "SUPABASE_SERVICE_ROLE_KEY belum diset. Gate membutuhkan service role staging."
+            exit 1
+          fi
+          mkdir -p "$TMPDIR"
+          npm run start -- --hostname 127.0.0.1 --port 3105 > qb-app.log 2>&1 &
+          APP_PID=$!
+          trap 'kill "$APP_PID" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 60); do
+            if curl -sf -o /dev/null http://127.0.0.1:3105/login; then
+              echo "App siap setelah ${attempt} percobaan."
+              break
+            fi
+            if [ "$attempt" = "60" ]; then
+              echo "App tidak siap dalam 120 detik."
+              cat qb-app.log
+              exit 1
+            fi
+            sleep 2
+          done
+          npm run test:question-bank
+
+      - name: Upload app log and evidence on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: question-bank-gate-evidence
+          path: |
+            qb-app.log
+            ${{ runner.temp }}/qb-evidence
+          if-no-files-found: ignore
+          retention-days: 7

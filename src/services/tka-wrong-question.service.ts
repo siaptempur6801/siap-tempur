@@ -1,0 +1,157 @@
+import { createClient } from '@/lib/utils/supabase/server'
+import { parseQuestionSnapshotOption, parseQuestionSnapshotStimulus } from '@/src/domain/question-snapshot'
+
+type RecordValue = Record<string, unknown>
+
+export type TkaWrongQuestionOption = {
+    id: string
+    key: string
+    content: string
+    imageUrl: string | null
+    responseGroup: string | null
+    responseGroupOrder: number | null
+}
+
+export type TkaWrongQuestionItem = {
+    wrongQuestionId: string
+    questionId: string
+    subjectCode: string
+    questionCode: string
+    stem: string
+    responseType: string
+    cognitiveLevel: string | null
+    stimulus: {
+        title: string | null
+        content: string
+        imageUrl: string | null
+    } | null
+    options: TkaWrongQuestionOption[]
+    failureCount: number
+    wrongCount: number
+    unansweredCount: number
+    latestOutcome: 'wrong' | 'unanswered' | 'correct'
+    lastFailedAt: string
+}
+
+export type TkaWrongQuestionReviewResult = {
+    isCorrect: boolean
+    scoreAwarded: number
+    remainingOpen: number
+    explanation: string
+}
+
+function asRecord(value: unknown): RecordValue | null {
+    if (!value || Array.isArray(value) || typeof value !== 'object') return null
+    return value as RecordValue
+}
+
+function asArray(value: unknown): unknown[] {
+    return Array.isArray(value) ? value : []
+}
+
+function readString(record: RecordValue | null, key: string) {
+    const value = record?.[key]
+    return typeof value === 'string' ? value : null
+}
+
+function readNumber(record: RecordValue | null, key: string) {
+    const value = record?.[key]
+    if (typeof value === 'number' && Number.isFinite(value)) return value
+    if (typeof value === 'string' && value.trim() !== '') {
+        const parsed = Number(value)
+        return Number.isFinite(parsed) ? parsed : null
+    }
+    return null
+}
+
+function parseItem(row: RecordValue, subjectCodeById: Map<string, string>): TkaWrongQuestionItem | null {
+    const snapshot = asRecord(row.question_snapshot)
+    const question = asRecord(snapshot?.question)
+    const wrongQuestionId = readString(row, 'id')
+    const questionId = readString(row, 'question_id')
+    const subjectId = readString(row, 'subject_id')
+    const stem = readString(question, 'stem')
+    const latestOutcome = readString(row, 'latest_outcome')
+    const lastFailedAt = readString(row, 'last_failed_at')
+    if (!wrongQuestionId || !questionId || !subjectId || stem === null || !lastFailedAt) return null
+    if (!['wrong', 'unanswered', 'correct'].includes(latestOutcome ?? '')) return null
+
+    return {
+        wrongQuestionId,
+        questionId,
+        subjectCode: subjectCodeById.get(subjectId) ?? '',
+        questionCode: readString(question, 'question_code') ?? '',
+        stem,
+        responseType: readString(question, 'question_type') ?? 'single_choice',
+        cognitiveLevel: readString(question, 'cognitive_level'),
+        stimulus: parseQuestionSnapshotStimulus(snapshot),
+        options: asArray(snapshot?.options).flatMap((value) => {
+            const parsed = parseQuestionSnapshotOption(value)
+            return parsed ? [parsed] : []
+        }),
+        failureCount: readNumber(row, 'failure_count') ?? 1,
+        wrongCount: readNumber(row, 'wrong_count') ?? 0,
+        unansweredCount: readNumber(row, 'unanswered_count') ?? 0,
+        latestOutcome: latestOutcome as TkaWrongQuestionItem['latestOutcome'],
+        lastFailedAt,
+    }
+}
+
+export class TkaWrongQuestionService {
+    async listOpen(limit = 100): Promise<TkaWrongQuestionItem[]> {
+        const supabase = await createClient()
+        const { data, error } = await supabase.rpc('get_tka_smp_wrong_questions', {
+            p_limit: Math.max(1, Math.min(limit, 200)),
+        })
+        if (error) throw error
+        const payload = asRecord(data)
+        const rows = asArray(payload?.items).flatMap((value) => {
+            const row = asRecord(value)
+            return row ? [row] : []
+        })
+
+        const subjectIds = Array.from(new Set(rows.map((row) => readString(row, 'subject_id')).filter((id): id is string => Boolean(id))))
+        const subjectCodeById = new Map<string, string>()
+        if (subjectIds.length > 0) {
+            const { data: subjects, error: subjectError } = await supabase
+                .from('subjects')
+                .select('id, code')
+                .in('id', subjectIds)
+            if (subjectError) throw subjectError
+            for (const subject of subjects ?? []) subjectCodeById.set(String(subject.id), String(subject.code ?? ''))
+        }
+
+        const parsed = rows.flatMap((row) => {
+            const item = parseItem(row, subjectCodeById)
+            return item ? [item] : []
+        })
+
+        // Put single-choice items first so repeat mode starts with the lowest-friction
+        // question type while still preserving recency inside each type.
+        return parsed.sort((left, right) => {
+            const leftRank = left.responseType === 'single_choice' ? 0 : 1
+            const rightRank = right.responseType === 'single_choice' ? 0 : 1
+            if (leftRank !== rightRank) return leftRank - rightRank
+            return Date.parse(right.lastFailedAt) - Date.parse(left.lastFailedAt)
+        })
+    }
+
+    async review(wrongQuestionId: string, optionIds: string[]): Promise<TkaWrongQuestionReviewResult> {
+        const supabase = await createClient()
+        const { data, error } = await supabase.rpc('review_wrong_question', {
+            p_wrong_question_id: wrongQuestionId,
+            p_option_ids: optionIds,
+        })
+        if (error) throw error
+        const payload = asRecord(data)
+        if (!payload) throw new Error('Invalid wrong-question review payload')
+        return {
+            isCorrect: payload.is_correct === true,
+            scoreAwarded: readNumber(payload, 'score_awarded') ?? 0,
+            remainingOpen: readNumber(payload, 'remaining_open') ?? 0,
+            explanation: readString(payload, 'explanation') ?? '',
+        }
+    }
+}
+
+export const tkaWrongQuestionService = new TkaWrongQuestionService()

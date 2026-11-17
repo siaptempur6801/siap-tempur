@@ -20,6 +20,13 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Artefak test/E2E (di-gitignore, tapi ESLint flat config tidak membacanya):
+    "playwright-report/**",
+    "playwright-report-*/**",
+    "test-results/**",
+    "test-results-*/**",
+    "playwright/.auth/**",
+    "coverage/**",
   ]),
 ]);
 

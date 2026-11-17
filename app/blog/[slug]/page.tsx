@@ -1,10 +1,12 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, Clock } from 'lucide-react'
+import { ArrowLeft, Clock, Newspaper } from 'lucide-react'
 import SeoNavbar from '@/components/SeoNavbar'
-import { Badge } from '@/components/ui/Badge'
-import { createClient } from '@/lib/utils/supabase/server'
+import ReadingProgress from '@/components/blog/ReadingProgress'
+import ArticleToc from '@/components/blog/ArticleToc'
+import { buildArticleToc } from '@/lib/article-toc'
+import { getPublishedArticleBySlug } from '@/src/services/article-read.service'
 import { estimateReadTime, formatArticleDate } from '@/lib/articles'
 import { escapeHtml, sanitizeArticleHtml } from '@/lib/article-sanitize'
 import { logger } from '@/lib/logger'
@@ -20,20 +22,17 @@ type Article = {
 }
 
 async function getArticle(slug: string) {
-    const supabase = await createClient()
-    const { data, error } = await supabase
-        .from('articles')
-        .select('title, slug, excerpt, content, category, cover_image_url, published_at')
-        .eq('slug', slug)
-        .eq('status', 'published')
-        .maybeSingle()
-
-    if (error) {
-        logger.warn('[blog-detail-read]', { error: error.message, slug })
+    try {
+        // Di-cache 5 menit; dibatalkan lewat `revalidatePath('/blog/${slug}')`
+        // pada setiap penulisan artikel.
+        return (await getPublishedArticleBySlug(slug)) as Article | null
+    } catch (error) {
+        logger.warn('[blog-detail-read]', {
+            error: error instanceof Error ? error.message : String(error),
+            slug,
+        })
         return null
     }
-
-    return data as Article | null
 }
 
 function getSafeArticleContent(article: Article) {
@@ -94,48 +93,58 @@ export default async function BlogDetailPage({
 
     if (!article) notFound()
     const articleContent = getSafeArticleContent(article)
-    const articleHtml = getSafeArticleHtml(article)
+    // `articleHtml` dipakai untuk render; daftar isi dibangun dari HTML yang sama agar
+    // `id` heading dan tautan daftar isi selalu sinkron.
+    const { html: articleHtml, items: tocItems } = buildArticleToc(getSafeArticleHtml(article))
 
     return (
-        <div className="min-h-screen bg-[#fdfbf7]">
+        <div className="st-product min-h-screen overflow-x-clip bg-[var(--st-paper)] font-body">
             <SeoNavbar />
-            <main className="pt-24 pb-16">
-                <article className="container mx-auto max-w-3xl px-4">
-                    <Link href="/blog" className="mb-8 inline-flex items-center font-body text-gray-500 transition-colors hover:text-gray-900">
-                        <ArrowLeft className="mr-2 h-4 w-4" />
+            <ReadingProgress />
+            <main className="px-4 pb-20 pt-28 md:px-8 md:pb-28">
+                <article className="mx-auto max-w-4xl">
+                    <Link href="/blog" className="st-focus inline-flex min-h-11 items-center gap-2 rounded-xl px-1 font-black text-gray-600 transition-colors hover:text-blue-700">
+                        <ArrowLeft size={17} />
                         Kembali ke Blog
                     </Link>
 
-                    <div className="mb-8 border-b-4 border-dashed border-gray-900 pb-8">
-                        <div className="mb-4 flex flex-wrap items-center gap-3">
-                            <Badge variant="blue">{article.category || 'Artikel'}</Badge>
-                            <span className="inline-flex items-center text-sm font-bold text-gray-500">
-                                <Clock className="mr-1 h-4 w-4" />
+                    <header className="mt-8 border-b-2 border-dashed border-[var(--st-ink)] pb-8 md:pb-10">
+                        <div className="flex flex-wrap items-center gap-3">
+                            <span className="st-kicker">
+                                <Newspaper size={15} />
+                                {article.category || 'Artikel'}
+                            </span>
+                            <span className="inline-flex items-center gap-1.5 text-sm font-bold text-gray-500">
+                                <Clock size={16} />
                                 {estimateReadTime(articleContent)}
                             </span>
                             <span className="text-sm font-bold text-gray-400">{formatArticleDate(article.published_at)}</span>
                         </div>
-                        <h1 className="font-handwriting text-4xl font-bold leading-tight text-gray-900 md:text-6xl">
+                        <h1 className="st-heading-display mt-6 text-5xl sm:text-6xl md:text-7xl">
                             {article.title}
                         </h1>
                         {article.excerpt && (
-                            <p className="mt-5 font-handwriting text-xl text-gray-600 md:text-2xl">{article.excerpt}</p>
+                            <p className="st-muted mt-6 max-w-3xl text-lg font-semibold leading-relaxed md:text-xl">{article.excerpt}</p>
                         )}
-                    </div>
+                    </header>
 
                     {article.cover_image_url && (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                             src={article.cover_image_url}
                             alt={article.title}
-                            className="mb-8 max-h-[420px] w-full rounded-md border-2 border-gray-900 object-cover shadow-[5px_5px_0px_0px_rgba(0,0,0,1)]"
+                            className="my-8 max-h-[440px] w-full rounded-st-lg border-2 border-[var(--st-ink)] object-cover st-shadow-md md:my-10"
                         />
                     )}
 
-                    <div
-                        className="space-y-6 font-body text-lg leading-relaxed text-gray-800 [&_a]:font-bold [&_a]:text-blue-600 [&_a]:hover:underline [&_a]:decoration-wavy [&_blockquote]:border-l-4 [&_blockquote]:border-gray-900 [&_blockquote]:pl-5 [&_blockquote]:italic [&_blockquote]:my-6 [&_blockquote]:bg-gray-50 [&_blockquote]:py-2 [&_blockquote]:pr-4 [&_code]:rounded [&_code]:bg-gray-100 [&_code]:px-1.5 [&_code]:py-0.5 [&_h1]:font-handwriting [&_h1]:text-4xl [&_h1]:font-bold [&_h1]:mt-10 [&_h1]:mb-6 [&_h2]:font-handwriting [&_h2]:text-3xl [&_h2]:font-bold [&_h2]:mt-8 [&_h2]:mb-4 [&_h3]:font-handwriting [&_h3]:text-2xl [&_h3]:font-bold [&_h3]:mt-6 [&_h3]:mb-3 [&_li]:mb-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:my-5 [&_p]:mb-5 [&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:border-2 [&_pre]:border-gray-900 [&_pre]:bg-gray-900 [&_pre]:text-gray-100 [&_pre]:p-5 [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:my-5 [&_img]:mx-auto [&_img]:rounded-md [&_img]:border-2 [&_img]:border-gray-900 [&_img]:shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] [&_img]:my-8 [&_mark]:bg-yellow-200 [&_mark]:px-1"
-                        dangerouslySetInnerHTML={{ __html: articleHtml }}
-                    />
+                    <ArticleToc items={tocItems} />
+
+                    <div className="st-card-lg mt-8 bg-white p-5 md:p-8">
+                        <div
+                            className="font-body text-base font-medium leading-8 text-gray-800 md:text-lg [&_a]:font-black [&_a]:text-blue-700 [&_a]:underline [&_a]:decoration-wavy [&_a]:decoration-2 [&_blockquote]:my-7 [&_blockquote]:rounded-2xl [&_blockquote]:border-2 [&_blockquote]:border-[var(--st-ink)] [&_blockquote]:bg-[var(--st-yellow-soft)] [&_blockquote]:px-5 [&_blockquote]:py-4 [&_blockquote]:font-semibold [&_blockquote]:italic [&_code]:rounded-lg [&_code]:bg-gray-100 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-sm [&_h2]:mb-4 [&_h2]:mt-10 [&_h2]:font-display [&_h2]:text-3xl [&_h2]:font-black [&_h2]:leading-tight [&_h2]:text-gray-950 md:[&_h2]:text-4xl [&_h3]:mb-3 [&_h3]:mt-8 [&_h3]:text-2xl [&_h3]:font-black [&_h3]:leading-tight [&_h3]:text-gray-950 [&_h4]:mb-2 [&_h4]:mt-6 [&_h4]:text-xl [&_h4]:font-black [&_img]:mx-auto [&_img]:my-8 [&_img]:rounded-2xl [&_img]:border-2 [&_img]:border-[var(--st-ink)] [&_img]:st-shadow-md [&_li]:mb-2 [&_mark]:bg-[var(--st-yellow)] [&_mark]:px-1 [&_ol]:my-5 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:mb-5 [&_pre]:my-6 [&_pre]:overflow-x-auto [&_pre]:rounded-2xl [&_pre]:border-2 [&_pre]:border-[var(--st-ink)] [&_pre]:bg-slate-950 [&_pre]:p-5 [&_pre]:text-gray-100 [&_strong]:font-black [&_ul]:my-5 [&_ul]:list-disc [&_ul]:pl-6"
+                            dangerouslySetInnerHTML={{ __html: articleHtml }}
+                        />
+                    </div>
                 </article>
             </main>
         </div>

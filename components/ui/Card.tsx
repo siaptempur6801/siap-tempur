@@ -10,9 +10,9 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 const Card = React.forwardRef<HTMLDivElement, CardProps>(
   ({ className, variant = "standard", rotate = 0, interactive = false, ...props }, ref) => {
     const variants = {
-      standard: "bg-[#fdfbf7] border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]",
-      binder: "bg-[#fffdeb] border-4 border-blue-600 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]",
-      sketch: "bg-white border-2 border-gray-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]",
+      standard: "bg-[#fdfbf7] border-2 border-gray-900 st-shadow-md",
+      binder: "bg-[#fffdeb] border-4 border-blue-600 st-shadow-md",
+      sketch: "bg-white border-2 border-gray-900 st-shadow-lg",
     };
 
     return (
@@ -22,7 +22,7 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
         className={cn(
           "rounded-xl transition-all duration-300",
           variants[variant],
-          interactive && "hover:shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1",
+          interactive && "hover:st-shadow-lg hover:-translate-y-1",
           className
         )}
         {...props}

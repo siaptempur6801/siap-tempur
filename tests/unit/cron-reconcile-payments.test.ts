@@ -1,40 +1,36 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const {
-    selectMock,
-    eqMock,
-    orderMock,
-    limitMock,
     fromMock,
-    rpcMock,
-    getTransactionStatusMock,
+    syncUserOrderMock,
+    createV2AdminClientMock,
+    closeExpiredEventsMock,
 } = vi.hoisted(() => ({
-    selectMock: vi.fn(),
-    eqMock: vi.fn(),
-    orderMock: vi.fn(),
-    limitMock: vi.fn(),
     fromMock: vi.fn(),
-    rpcMock: vi.fn(),
-    getTransactionStatusMock: vi.fn(),
+    syncUserOrderMock: vi.fn(),
+    createV2AdminClientMock: vi.fn(),
+    closeExpiredEventsMock: vi.fn(),
 }))
 
-vi.mock('@supabase/supabase-js', () => ({
-    createClient: vi.fn(() => ({
-        from: fromMock,
-        rpc: rpcMock,
-    })),
+vi.mock('@/lib/utils/supabase/server', () => ({
+    createV2AdminClient: createV2AdminClientMock,
 }))
 
-vi.mock('@/lib/env', () => ({
-    env: {
-        supabaseUrl: () => 'https://example.supabase.co',
-        supabaseServiceRoleKey: () => 'service-role',
-        midtransServerKey: () => 'midtrans-server-key',
+vi.mock('@/src/services/payment.service', () => ({
+    paymentService: {
+        syncUserOrder: syncUserOrderMock,
     },
 }))
 
-vi.mock('@/lib/midtrans', () => ({
-    getTransactionStatus: getTransactionStatusMock,
+/**
+ * Cron yang sama juga menjalankan bookkeeping status event. Di-mock di sini supaya
+ * test rekonsiliasi pembayaran tidak ikut menyentuh tabel `events`; perilaku
+ * auto-close diuji tersendiri di `event-auto-close.test.ts`.
+ */
+vi.mock('@/src/services/event.service', () => ({
+    eventService: {
+        closeExpiredEvents: closeExpiredEventsMock,
+    },
 }))
 
 vi.mock('@/lib/logger', () => ({
@@ -47,22 +43,21 @@ vi.mock('@/lib/logger', () => ({
 
 import { GET } from '@/app/api/cron/reconcile-payments/route'
 
-type MockTableResult = {
-    data?: unknown[]
-    error?: unknown
+type PendingPaymentRow = {
+    order_id: string
+    created_at?: string
 }
 
-function mockTableResult(result: MockTableResult) {
-    limitMock.mockResolvedValueOnce({
-        data: result.data ?? [],
-        error: result.error ?? null,
-    })
-
-    orderMock.mockReturnValueOnce({ limit: limitMock })
-    eqMock.mockReturnValueOnce({ order: orderMock })
-    selectMock.mockReturnValueOnce({ eq: eqMock })
-    fromMock.mockReturnValueOnce({ select: selectMock })
+type OrderRow = {
+    id: string
+    user_id: string
+    status: string
 }
+
+let pendingPayments: PendingPaymentRow[]
+let orders: OrderRow[]
+let paymentError: unknown
+let orderError: unknown
 
 function authorizedRequest() {
     return new Request('http://localhost/api/cron/reconcile-payments', {
@@ -70,117 +65,151 @@ function authorizedRequest() {
     })
 }
 
+function installCanonicalQueryMocks() {
+    fromMock.mockImplementation((table: string) => {
+        if (table === 'payments') {
+            return {
+                select: vi.fn(() => ({
+                    eq: vi.fn(() => ({
+                        eq: vi.fn(() => ({
+                            order: vi.fn(() => ({
+                                limit: vi.fn(async () => ({
+                                    data: pendingPayments,
+                                    error: paymentError,
+                                })),
+                            })),
+                        })),
+                    })),
+                })),
+            }
+        }
+
+        if (table === 'orders') {
+            return {
+                select: vi.fn(() => ({
+                    in: vi.fn(async () => ({
+                        data: orders,
+                        error: orderError,
+                    })),
+                })),
+            }
+        }
+
+        throw new Error(`Unexpected table: ${table}`)
+    })
+}
+
 describe('payment reconciliation cron', () => {
     beforeEach(() => {
         process.env.CRON_SECRET = 'cron-secret'
-        selectMock.mockReset()
-        eqMock.mockReset()
-        orderMock.mockReset()
-        limitMock.mockReset()
+        pendingPayments = []
+        orders = []
+        paymentError = null
+        orderError = null
+
         fromMock.mockReset()
-        rpcMock.mockReset()
-        getTransactionStatusMock.mockReset()
+        syncUserOrderMock.mockReset()
+        createV2AdminClientMock.mockReset()
+        closeExpiredEventsMock.mockReset()
+        createV2AdminClientMock.mockResolvedValue({ from: fromMock })
+        closeExpiredEventsMock.mockResolvedValue({ closed: 0 })
+        installCanonicalQueryMocks()
     })
 
     it('rejects requests without the cron bearer token', async () => {
         const response = await GET(new Request('http://localhost/api/cron/reconcile-payments'))
 
         expect(response.status).toBe(401)
-        expect(fromMock).not.toHaveBeenCalled()
-        expect(rpcMock).not.toHaveBeenCalled()
+        expect(createV2AdminClientMock).not.toHaveBeenCalled()
+        expect(syncUserOrderMock).not.toHaveBeenCalled()
+        // Endpoint tidak berautorisasi juga tidak boleh menyentuh tabel events.
+        expect(closeExpiredEventsMock).not.toHaveBeenCalled()
     })
 
-    it('reconciles a settled package payment through the idempotent token RPC', async () => {
-        mockTableResult({
-            data: [{
-                order_id: 'SKD-SKD-PAKET-5-userid-123',
-                amount: 40500,
-                package_name: 'Paket Pejuang',
-            }],
-        })
-        mockTableResult({ data: [] })
-        getTransactionStatusMock.mockResolvedValueOnce({
-            transaction_status: 'settlement',
-            gross_amount: '40500.00',
-        })
-        rpcMock.mockResolvedValueOnce({ data: [{ status: 'settlement', quota_granted: true }], error: null })
+    it('menutup event kedaluwarsa dan melaporkan jumlahnya', async () => {
+        closeExpiredEventsMock.mockResolvedValueOnce({ closed: 3 })
 
         const response = await GET(authorizedRequest())
+        const payload = await response.json()
 
         expect(response.status).toBe(200)
-        expect(rpcMock).toHaveBeenCalledWith('process_paid_transaction', {
-            p_order_id: 'SKD-SKD-PAKET-5-userid-123',
-            p_transaction_status: 'settlement',
-            p_increment_by: 5,
-        })
+        expect(closeExpiredEventsMock).toHaveBeenCalledTimes(1)
+        expect(payload.data.events).toEqual({ closed: 3 })
     })
 
-    it('skips package reconciliation when Midtrans amount does not match the stored transaction', async () => {
-        mockTableResult({
-            data: [{
-                order_id: 'SKD-SKD-PAKET-5-userid-123',
-                amount: 40500,
-                package_name: 'Paket Pejuang',
-            }],
-        })
-        mockTableResult({ data: [] })
-        getTransactionStatusMock.mockResolvedValueOnce({
-            transaction_status: 'settlement',
-            gross_amount: '40000.00',
-        })
+    it('kegagalan auto-close event TIDAK menggagalkan rekonsiliasi pembayaran', async () => {
+        // Rekonsiliasi pembayaran sudah selesai saat auto-close dijalankan. Menjadikan
+        // kegagalannya fatal akan membuang pekerjaan yang sudah berhasil, dan
+        // sebaliknya membuat cron terlihat gagal padahal pembayaran sudah direkonsiliasi.
+        pendingPayments = [{ order_id: 'order-1' }]
+        orders = [{ id: 'order-1', user_id: 'user-1', status: 'pending' }]
+        syncUserOrderMock.mockResolvedValueOnce({ status: 'settlement', paid: true })
+        closeExpiredEventsMock.mockRejectedValueOnce(new Error('EVENTS_TABLE_DOWN'))
 
         const response = await GET(authorizedRequest())
+        const payload = await response.json()
 
         expect(response.status).toBe(200)
-        expect(rpcMock).not.toHaveBeenCalled()
+        expect(payload.data.orders.settled).toBe(1)
+        expect(payload.data.events).toEqual({ error: 'EVENTS_TABLE_DOWN' })
     })
 
-    it('expires an old pending package payment when Midtrans no longer has the order', async () => {
-        mockTableResult({
-            data: [{
-                order_id: 'SKD-SKD-PAKET-5-userid-123',
-                amount: 40500,
-                package_name: 'Paket Pejuang',
-                created_at: '2020-01-01T00:00:00.000Z',
-            }],
-        })
-        mockTableResult({ data: [] })
-        getTransactionStatusMock.mockResolvedValueOnce(null)
-        rpcMock.mockResolvedValueOnce({ data: [{ status: 'expire', quota_granted: false }], error: null })
+    it('reconciles a settled canonical pending order through the payment service', async () => {
+        pendingPayments = [{ order_id: 'order-1' }]
+        orders = [{ id: 'order-1', user_id: 'user-1', status: 'pending' }]
+        syncUserOrderMock.mockResolvedValueOnce({ status: 'settlement', paid: true })
 
         const response = await GET(authorizedRequest())
+        const payload = await response.json()
 
         expect(response.status).toBe(200)
-        expect(rpcMock).toHaveBeenCalledWith('process_paid_transaction', {
-            p_order_id: 'SKD-SKD-PAKET-5-userid-123',
-            p_transaction_status: 'expire',
-            p_increment_by: 0,
+        expect(syncUserOrderMock).toHaveBeenCalledWith('user-1', 'order-1')
+        expect(payload.data.orders).toEqual({
+            checked: 1,
+            settled: 1,
+            expired: 0,
+            pending: 0,
+            skipped: 0,
+            failed: 0,
         })
     })
 
-    it('reconciles a settled event payment by registering the participant', async () => {
-        mockTableResult({ data: [] })
-        mockTableResult({
-            data: [{
-                order_id: 'EVT-eventid-userid-123',
-                user_id: 'user-id',
-                event_id: 'event-id',
-                amount: 35000,
-            }],
-        })
-        getTransactionStatusMock.mockResolvedValueOnce({
-            transaction_status: 'settlement',
-            gross_amount: '35000.00',
-        })
-        rpcMock.mockResolvedValueOnce({ data: null, error: null })
+    it('keeps a provider-pending canonical order pending', async () => {
+        pendingPayments = [{ order_id: 'order-1' }]
+        orders = [{ id: 'order-1', user_id: 'user-1', status: 'pending' }]
+        syncUserOrderMock.mockResolvedValueOnce({ status: 'pending', paid: false })
 
         const response = await GET(authorizedRequest())
+        const payload = await response.json()
 
         expect(response.status).toBe(200)
-        expect(rpcMock).toHaveBeenCalledWith('register_event_after_payment', {
-            p_user_id: 'user-id',
-            p_event_id: 'event-id',
-            p_order_id: 'EVT-eventid-userid-123',
-        })
+        expect(payload.data.orders.pending).toBe(1)
+        expect(payload.data.orders.failed).toBe(0)
+    })
+
+    it('counts a final provider failure as expired', async () => {
+        pendingPayments = [{ order_id: 'order-1' }]
+        orders = [{ id: 'order-1', user_id: 'user-1', status: 'pending' }]
+        syncUserOrderMock.mockResolvedValueOnce({ status: 'expire', paid: false })
+
+        const response = await GET(authorizedRequest())
+        const payload = await response.json()
+
+        expect(response.status).toBe(200)
+        expect(payload.data.orders.expired).toBe(1)
+        expect(payload.data.orders.pending).toBe(0)
+    })
+
+    it('skips a pending payment when its canonical order is already final', async () => {
+        pendingPayments = [{ order_id: 'order-1' }]
+        orders = [{ id: 'order-1', user_id: 'user-1', status: 'paid' }]
+
+        const response = await GET(authorizedRequest())
+        const payload = await response.json()
+
+        expect(response.status).toBe(200)
+        expect(syncUserOrderMock).not.toHaveBeenCalled()
+        expect(payload.data.orders.skipped).toBe(1)
+        expect(payload.data.orders.checked).toBe(0)
     })
 })

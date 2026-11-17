@@ -1,0 +1,10 @@
+pool_version	node_code	node_name	candidate_unique_questions	approved_unique_questions	state	reason	pool_sha256
+cpns-drill-v1	TIU-NUMERIK	Kemampuan Numerik	30	30	FROZEN_V1_READY	At least 30 reviewed unique questions.	72043e53947eab0687470d2c9c3936e48aa6b78083d0d42ec1036b989532f9b8
+cpns-drill-v1	TIU-VERBAL	Kemampuan Verbal	30	30	FROZEN_V1_READY	At least 30 reviewed unique questions.	b31d423c086c32145ead9d40cd8e32d9658ac77ce418a68c728b0ef8a2a4cea2
+cpns-drill-v1	TWK-BAHASA	Bahasa Negara	30	30	FROZEN_V1_READY	At least 30 reviewed unique questions.	2a84a3602063984ab91a6588638f0de413e1cd2c8ce28aa03103ae514007d53d
+cpns-drill-v1	TWK-BELA	Bela Negara	30	30	FROZEN_V1_READY	At least 30 reviewed unique questions.	70a2e7ef0b87c135d33508e6daa584378e16ea92801c6f54d69db485c0278d4e
+cpns-drill-v1	TWK-INT	Integritas	30	29	UNAVAILABLE_NOT_FROZEN	Fewer than 30 approved questions; hide/unavailable until review is complete or pool is revised.	792fa930aaf8637a093798daba78ef52f487d740ffe60d5a3eb0813e024ee628
+cpns-drill-v1	TWK-NAS	Nasionalisme	30	30	FROZEN_V1_READY	At least 30 reviewed unique questions.	b550465100c7c478c7594d8643cb3ddbc1eb29ff8f2858e7dc397160729abccd
+cpns-drill-v1	TWK-PILAR	Pilar Negara	30	30	FROZEN_V1_READY	At least 30 reviewed unique questions.	d4fb26e6046a0db46fd3ac05f296f34f67f9e463207e9c0069ece4c34219a406
+cpns-drill-v1	TWK-PILAR-PANCASILA	Pancasila	30	26	UNAVAILABLE_NOT_FROZEN	Fewer than 30 approved questions; hide/unavailable until review is complete or pool is revised.	ebe064db49d23b3a1344bf965089ce480174aa0d64b3c68d80937e4d9bd17333
+cpns-drill-v1	TWK-PILAR-UUD45	Undang-Undang Dasar Negara Republik Indonesia Tahun 1945	30	30	FROZEN_V1_READY	At least 30 reviewed unique questions.	5b2eb84bff5fe9c910c84deb2fc502a3ba9495b1767fa95d483495b8928975fa

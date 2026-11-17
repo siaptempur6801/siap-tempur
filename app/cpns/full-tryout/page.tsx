@@ -1,34 +1,24 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Monitor, Target, CheckCircle2, Award, Activity } from "lucide-react";
+import { createClient } from "@/lib/utils/supabase/server";
+import { protectedHref } from "@/lib/protected-href";
+import {
+    ArrowRight,
+    BarChart3,
+    BookOpenCheck,
+    CheckCircle2,
+    Clock3,
+    RotateCcw,
+    Target,
+} from "lucide-react";
 import StructuredData from "@/components/StructuredData";
 import SeoNavbar from "@/components/SeoNavbar";
 import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
-import { Card } from "@/components/ui/Card";
-import { Section } from "@/components/ui/Section";
 
 export const metadata: Metadata = {
-    title: "Full Tryout SKD CPNS 2026: Simulasi CAT BKN Asli | SiapTempur",
-    description: "Ikuti simulasi Full Tryout SKD CPNS dengan 110 soal, timer 100 menit, sistem CAT BKN, skor otomatis, dan ranking nasional. Siapkan dirimu maksimal dengan SiapTempur.",
-};
-
-const productSchema = {
-    "@context": "https://schema.org/",
-    "@type": "Product",
-    "name": "Token Full Tryout SKD CPNS",
-    "description": "Token akses untuk mengikuti simulasi Full Tryout SKD CPNS dengan sistem CAT BKN, ranking nasional, dan pembahasan komprehensif.",
-    "brand": {
-        "@type": "Brand",
-        "name": "SiapTempur"
-    },
-    "offers": {
-        "@type": "Offer",
-        "url": "https://siaptempur.id/cpns/full-tryout",
-        "priceCurrency": "IDR",
-        "price": "10000.00",
-        "availability": "https://schema.org/InStock"
-    }
+    title: "Full Tryout SKD CPNS | SiapTempur",
+    description:
+        "Latihan full tryout SKD CPNS untuk TWK, TIU, dan TKP dengan batas waktu, hasil per bagian, pembahasan, dan riwayat pengerjaan.",
 };
 
 const faqSchema = {
@@ -37,132 +27,150 @@ const faqSchema = {
     "mainEntity": [
         {
             "@type": "Question",
-            "name": "Berapa lama durasi Full Tryout SKD?",
+            "name": "Apa yang saya dapat setelah menyelesaikan full tryout?",
             "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "Sesuai dengan ketentuan resmi BKN, durasi pengerjaan Full Tryout SKD adalah 100 menit untuk menjawab 110 soal."
-            }
+                "text": "Setelah sesi selesai, kamu dapat melihat hasil, rincian skor per bagian yang tersedia, dan pembahasan jawaban untuk membantu menentukan latihan berikutnya.",
+            },
         },
         {
             "@type": "Question",
-            "name": "Bagaimana sistem penilaian di Full Tryout?",
+            "name": "Apakah saya bisa melanjutkan sesi yang belum selesai?",
             "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "Sistem penilaian 100% mengikuti CAT BKN, termasuk ketentuan poin benar/salah pada TWK dan TIU, serta gradasi poin 1-5 pada soal TKP. Nilai akhirnya akan dibandingkan dengan Passing Grade."
-            }
-        }
-    ]
+                "text": "Jika sesi masih aktif dan dapat dilanjutkan, SiapTempur akan mengarahkan kamu kembali ke sesi tersebut. Ketentuan sesi tetap mengikuti aturan tryout yang sedang digunakan.",
+            },
+        },
+    ],
 };
 
-export default function FullTryoutPage() {
-    return (
-        <main className="font-body min-h-screen bg-[#fdfbf7] text-gray-800 pb-20">
-            <StructuredData data={productSchema} />
-            <StructuredData data={faqSchema} />
+const benefits = [
+    {
+        icon: Clock3,
+        title: "Latihan dengan batas waktu",
+        text: "Biasakan mengatur waktu dan mengambil keputusan saat mengerjakan soal dalam sesi penuh.",
+        tone: "bg-blue-100 text-blue-700",
+    },
+    {
+        icon: Target,
+        title: "TWK, TIU, dan TKP",
+        text: "Kerjakan tiga bagian SKD dalam satu alur tryout agar hasilmu lebih mudah dibandingkan dan ditinjau.",
+        tone: "bg-yellow-100 text-amber-800",
+    },
+    {
+        icon: BarChart3,
+        title: "Hasil yang mudah dibaca",
+        text: "Lihat total skor dan rincian hasil per bagian yang tersedia setelah sesi selesai.",
+        tone: "bg-emerald-100 text-emerald-700",
+    },
+    {
+        icon: BookOpenCheck,
+        title: "Belajar dari pembahasan",
+        text: "Tinjau jawaban dan pembahasan untuk memahami bagian yang masih perlu kamu perbaiki.",
+        tone: "bg-blue-100 text-blue-800",
+    },
+] as const;
 
+export default async function FullTryoutPage() {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    const authed = Boolean(user)
+
+    return (
+        <main data-experience-mode="marketing" data-program="cpns" className="st-product min-h-screen pb-20">
+            <StructuredData data={faqSchema} />
             <SeoNavbar />
 
-            {/* HERO SECTION */}
-            <Section paper className="pt-32 pb-20 text-center relative overflow-hidden">
-                <div className="absolute top-10 left-10 md:left-20 opacity-20"><Monitor size={100} /></div>
-                <div className="absolute bottom-10 right-10 md:right-20 opacity-20"><Award size={120} /></div>
-                
-                <Badge variant="blue" className="mb-6 inline-flex items-center gap-2 px-4 py-1 relative z-10">
-                    <CheckCircle2 className="w-4 h-4" /> 100% Sesuai Standar BKN
-                </Badge>
-                <h1 className="font-handwriting text-5xl md:text-7xl font-bold mb-6 max-w-5xl mx-auto leading-tight relative z-10">
-                    Simulasi Tryout SKD CPNS Mirip CAT BKN Asli
-                </h1>
-                <p className="text-xl md:text-2xl text-gray-700 max-w-3xl mx-auto mb-10 font-handwriting leading-relaxed relative z-10">
-                    Uji kesiapanmu dengan 110 soal berstandar nasional, 100 menit timer berjalan, dan langsung ketahui apakah kamu melewati Passing Grade atau belum.
-                </p>
-                <div className="flex flex-col sm:flex-row justify-center gap-4 relative z-10">
-                    <Button size="lg" className="w-full sm:w-auto text-xl py-6" asChild>
-                        <Link href="/login?returnTo=/cpns/dashboard">Mulai Full Tryout <ArrowRight className="ml-2 w-5 h-5" /></Link>
-                    </Button>
-                    <Button size="lg" variant="outline" className="w-full sm:w-auto text-xl py-6 border-2 border-gray-900" asChild>
-                        <Link href="/login?returnTo=/cpns">Beli Token</Link>
-                    </Button>
-                </div>
-            </Section>
-
-            {/* WHY FULL TRYOUT */}
-            <Section className="bg-white">
-                <div className="text-center mb-16">
-                    <h2 className="font-handwriting text-4xl md:text-5xl font-bold mb-4">Mengapa Harus Full Tryout di SiapTempur?</h2>
-                    <p className="font-handwriting text-xl text-gray-600 max-w-2xl mx-auto">Dirancang untuk membuatmu terbiasa dengan tekanan ujian yang sesungguhnya.</p>
-                </div>
-                
-                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-                    <Card className="p-6 border-2 border-gray-900 bg-blue-50 text-center hover:bg-blue-100 transition-colors">
-                        <Monitor className="w-12 h-12 text-blue-600 mx-auto mb-4" />
-                        <h3 className="font-handwriting font-bold text-xl mb-2">Interface CAT 100% Mirip BKN</h3>
-                        <p className="text-sm text-gray-600">Navigasi soal, tombol ragu-ragu, dan timer dirancang semirip mungkin dengan aslinya.</p>
-                    </Card>
-                    <Card className="p-6 border-2 border-gray-900 bg-red-50 text-center hover:bg-red-100 transition-colors">
-                        <Target className="w-12 h-12 text-red-600 mx-auto mb-4" />
-                        <h3 className="font-handwriting font-bold text-xl mb-2">Soal HOTS Terupdate</h3>
-                        <p className="text-sm text-gray-600">Proporsi soal TWK, TIU, dan TKP diracik sesuai dengan kisi-kisi dan FR tahun terakhir.</p>
-                    </Card>
-                    <Card className="p-6 border-2 border-gray-900 bg-yellow-50 text-center hover:bg-yellow-100 transition-colors">
-                        <Award className="w-12 h-12 text-yellow-600 mx-auto mb-4" />
-                        <h3 className="font-handwriting font-bold text-xl mb-2">Skor & Ranking Instan</h3>
-                        <p className="text-sm text-gray-600">Selesai ujian, skor akhir langsung keluar lengkap dengan status lulus Passing Grade.</p>
-                    </Card>
-                    <Card className="p-6 border-2 border-gray-900 bg-green-50 text-center hover:bg-green-100 transition-colors">
-                        <CheckCircle2 className="w-12 h-12 text-green-600 mx-auto mb-4" />
-                        <h3 className="font-handwriting font-bold text-xl mb-2">Pembahasan Super Jelas</h3>
-                        <p className="text-sm text-gray-600">Pelajari letak kesalahanmu dengan pembahasan rinci untuk setiap butir soal.</p>
-                    </Card>
-                </div>
-            </Section>
-
-            {/* ANALISIS HASIL */}
-            <Section dashedBorder="both" className="bg-[#f0f4f8]">
-                <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-12">
-                    <div className="md:w-1/2">
-                        <Badge variant="green" className="mb-4">Fitur Premium</Badge>
-                        <h2 className="font-handwriting text-4xl md:text-5xl font-bold mb-6 leading-tight">Analisis Kelemahanmu Lebih Cepat</h2>
-                        <p className="text-lg text-gray-600 mb-6 leading-relaxed">
-                            Mengerjakan tryout saja tidak cukup jika kamu tidak tahu di mana kelemahanmu. Sistem kami akan menganalisis kecepatan menjawab dan akurasi per subtes.
-                        </p>
-                        <ul className="space-y-3 text-gray-700 font-medium">
-                            <li className="flex items-center gap-2"><Activity className="text-blue-500 w-5 h-5"/> Evaluasi waktu pengerjaan per bagian</li>
-                            <li className="flex items-center gap-2"><Activity className="text-blue-500 w-5 h-5"/> Rincian skor TWK, TIU, TKP</li>
-                            <li className="flex items-center gap-2"><Activity className="text-blue-500 w-5 h-5"/> Pemetaan kekuatan vs kelemahan materi</li>
-                        </ul>
-                    </div>
-                    <div className="md:w-1/2 w-full">
-                        {/* Dummy Spider Chart Graphic */}
-                        <div className="bg-white p-6 rounded-xl border-4 border-gray-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative aspect-square max-w-sm mx-auto flex items-center justify-center">
-                            <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-size-[20px_20px] opacity-50"></div>
-                            <div className="text-center z-10">
-                                <div className="text-6xl mb-4">📊</div>
-                                <div className="font-handwriting font-bold text-xl text-gray-800">Visualisasi Analisis Nilai</div>
-                                <div className="text-sm text-gray-500 mt-2">(Akan muncul setelah ujian selesai)</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </Section>
-
-            {/* BIAYA TOKEN */}
-            <Section className="bg-white text-center">
-                <div className="max-w-2xl mx-auto">
-                    <h2 className="font-handwriting text-4xl font-bold mb-4">1 Token, Akses Selamanya</h2>
-                    <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-                        Tidak ada sistem langganan bulanan yang mencekik. Hanya <strong className="bg-yellow-200 px-1">Rp 10.000 / token</strong> untuk sekali ujian SKD komprehensif. Beli sekarang, kerjakan nanti kapanpun kamu siap.
+            <section className="relative overflow-hidden border-b-2 border-slate-900 px-4 pb-20 pt-32 md:px-8 md:pb-24">
+                <div className="pointer-events-none absolute -left-24 bottom-[-5rem] h-52 w-52 rounded-full border-2 border-dashed border-yellow-500 bg-yellow-50" aria-hidden="true" />
+                <div className="pointer-events-none absolute -right-20 top-20 h-60 w-60 rotate-12 border-2 border-dashed border-blue-300 bg-blue-50" aria-hidden="true" />
+                <div className="relative mx-auto max-w-5xl text-center">
+                    <span className="st-kicker"><CheckCircle2 className="h-4 w-4" /> Full Tryout SKD</span>
+                    <h1 className="st-heading-display mx-auto mt-7 max-w-4xl text-5xl md:text-7xl">
+                        Jangan berhenti di skor.
+                        <span className="block text-blue-600">Belajar dari hasil tryout-mu.</span>
+                    </h1>
+                    <p className="st-muted mx-auto mt-6 max-w-3xl text-lg font-semibold leading-relaxed md:text-xl">
+                        Kerjakan Full Tryout TWK, TIU, dan TKP dengan batas waktu. Setelah selesai, lihat hasil dan pembahasan untuk menentukan bagian yang perlu kamu perbaiki berikutnya.
                     </p>
-                    <div className="flex flex-col sm:flex-row justify-center gap-4">
-                        <Button size="lg" className="w-full sm:w-auto text-xl py-6 flex-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]" asChild>
-                            <Link href="/login?returnTo=/cpns">Beli Token</Link>
+                    <div className="mt-9 flex flex-col justify-center gap-4 sm:flex-row">
+                        <Button size="lg" className="w-full sm:w-auto" asChild>
+                            <Link href={protectedHref('/cpns/dashboard/tryout', authed)}>
+                                Mulai Full Tryout <ArrowRight className="h-5 w-5" />
+                            </Link>
                         </Button>
-                        <Button size="lg" variant="secondary" className="w-full sm:w-auto text-xl py-6 flex-1 border-2 border-gray-900" asChild>
-                            <Link href="/cpns#active-event">Cari Event Tryout Akbar</Link>
+                        <Button size="lg" variant="outline" className="w-full sm:w-auto" asChild>
+                            <Link href={protectedHref('/cpns/dashboard/beli-paket', authed)}>Lihat paket token</Link>
+                        </Button>
+                    </div>
+                    <p className="st-muted mt-4 text-sm font-bold">
+                        {authed
+                            ? 'Sesi dan hasil tryout akan tersimpan di akunmu.'
+                            : 'Kamu akan diminta masuk terlebih dahulu agar sesi dan hasil belajarmu tersimpan.'}
+                    </p>
+                </div>
+            </section>
+
+            <section className="px-4 py-16 md:px-8 md:py-24">
+                <div className="mx-auto max-w-6xl">
+                    <div className="mx-auto max-w-3xl text-center">
+                        <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-700">Cara kerjanya</p>
+                        <h2 className="st-heading-display mt-2 text-4xl md:text-5xl">Tryout adalah awal dari proses belajar.</h2>
+                        <p className="st-muted mt-4 text-lg font-semibold leading-relaxed">Tujuannya bukan sekadar menyelesaikan banyak soal, tetapi memahami hasil dan memperbaiki bagian yang masih lemah.</p>
+                    </div>
+                    <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+                        {benefits.map(({ icon: Icon, title, text, tone }) => (
+                            <article key={title} className="st-card p-6">
+                                <div className={`flex h-12 w-12 items-center justify-center border-2 border-slate-900 ${tone}`}>
+                                    <Icon className="h-6 w-6" />
+                                </div>
+                                <h3 className="st-heading mt-4 text-xl">{title}</h3>
+                                <p className="st-muted mt-2 text-sm font-semibold leading-relaxed">{text}</p>
+                            </article>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            <section className="st-section-soft px-4 py-16 md:px-8 md:py-20">
+                <div className="mx-auto grid max-w-5xl gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+                    <div>
+                        <span className="st-kicker">Setelah tryout</span>
+                        <h2 className="st-heading-display mt-5 text-4xl md:text-5xl">Ubah hasil menjadi langkah belajar berikutnya.</h2>
+                        <p className="st-muted mt-4 text-lg font-semibold leading-relaxed">Buka hasil tryout, periksa skor setiap bagian, lalu pelajari pembahasan soal. Gunakan informasi itu untuk memilih latihan yang paling relevan sebelum mencoba Full Tryout lagi.</p>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-3">
+                        <StepCard icon={<BarChart3 className="h-6 w-6" />} number="1" title="Ukur" text="Lihat hasilmu" />
+                        <StepCard icon={<BookOpenCheck className="h-6 w-6" />} number="2" title="Pelajari" text="Tinjau pembahasan" />
+                        <StepCard icon={<RotateCcw className="h-6 w-6" />} number="3" title="Perbaiki" text="Latihan lalu coba lagi" />
+                    </div>
+                </div>
+            </section>
+
+            <section className="px-4 py-16 md:px-8 md:py-24">
+                <div className="mx-auto max-w-3xl text-center">
+                    <h2 className="st-heading-display text-4xl md:text-5xl">Siap mengukur kemampuanmu?</h2>
+                    <p className="st-muted mt-4 text-lg font-semibold leading-relaxed">Mulai Full Tryout saat kamu siap. Jika token belum tersedia, kamu bisa melihat pilihan paket terlebih dahulu.</p>
+                    <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
+                        <Button size="lg" className="w-full sm:w-auto" asChild>
+                            <Link href={protectedHref('/cpns/dashboard/tryout', authed)}>Mulai Full Tryout <ArrowRight className="h-5 w-5" /></Link>
+                        </Button>
+                        <Button size="lg" variant="secondary" className="w-full sm:w-auto" asChild>
+                            <Link href="/cpns">Kembali ke persiapan CPNS</Link>
                         </Button>
                     </div>
                 </div>
-            </Section>
+            </section>
         </main>
+    );
+}
+
+function StepCard({ icon, number, title, text }: { icon: React.ReactNode; number: string; title: string; text: string }) {
+    return (
+        <article className="st-card p-5">
+            <div className="text-blue-700">{icon}</div>
+            <div className="mt-3 text-xs font-black uppercase tracking-wide text-slate-500">{number}. {title}</div>
+            <div className="st-heading mt-1">{text}</div>
+        </article>
     );
 }

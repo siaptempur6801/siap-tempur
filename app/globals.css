@@ -2,6 +2,17 @@
 
 @theme {
   --color-background: var(--background);
+  --color-card: var(--card, var(--background));
+  --color-card-foreground: var(--card-foreground, var(--foreground));
+  --color-ring: var(--ring);
+  --color-success-muted: var(--success-muted);
+  --color-success-border: var(--success-border);
+  --color-warning-muted: var(--warning-muted);
+  --color-warning-border: var(--warning-border);
+  --color-danger-muted: var(--danger-muted);
+  --color-danger-border: var(--danger-border);
+  --color-info-muted: var(--info-muted);
+  --color-info-border: var(--info-border);
   --color-foreground: var(--foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
@@ -12,46 +23,372 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-border: var(--border);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
 
-  --font-sans: var(--font-geist-sans);
+  /* Skala radius SiapTempur (selaras docs/PRODUCT_DESIGN_SYSTEM_V1_1.md §7):
+     sm 12px · md 16px · lg 20px · xl 24px · 2xl 32px. */
+  --radius-st-sm: 0.75rem;
+  --radius-st-md: 1rem;
+  --radius-st-lg: 1.25rem;
+  --radius-st-xl: 1.5rem;
+  --radius-st-2xl: 2rem;
+
   --font-mono: var(--font-geist-mono);
-  --font-handwriting: var(--font-handwriting);
-  --font-body: var(--font-body);
+  /* ------------------------------------------------------------------
+     Pemetaan palet Tailwind → token brand.
+     Semua utility lama (gray/slate/indigo/blue/amber/violet/…) otomatis
+     memakai satu bahasa visual tanpa menyentuh ribuan file.
+     ------------------------------------------------------------------ */
+  --color-gray-50: var(--brand-ink-50);
+  --color-gray-100: var(--brand-ink-100);
+  --color-gray-200: var(--brand-ink-200);
+  --color-gray-300: var(--brand-ink-300);
+  --color-gray-400: var(--brand-ink-400);
+  --color-gray-500: var(--brand-ink-500);
+  --color-gray-600: var(--brand-ink-600);
+  --color-gray-700: var(--brand-ink-700);
+  --color-gray-800: var(--brand-ink-800);
+  --color-gray-900: var(--brand-ink-900);
+  --color-gray-950: var(--brand-ink-950);
+  --color-slate-50: var(--brand-ink-50);
+  --color-slate-100: var(--brand-ink-100);
+  --color-slate-200: var(--brand-ink-200);
+  --color-slate-300: var(--brand-ink-300);
+  --color-slate-400: var(--brand-ink-400);
+  --color-slate-500: var(--brand-ink-500);
+  --color-slate-600: var(--brand-ink-600);
+  --color-slate-700: var(--brand-ink-700);
+  --color-slate-800: var(--brand-ink-800);
+  --color-slate-900: var(--brand-ink-900);
+  --color-slate-950: var(--brand-ink-950);
+  --color-blue-50: var(--brand-blue-50);
+  --color-blue-100: var(--brand-blue-100);
+  --color-blue-200: var(--brand-blue-200);
+  --color-blue-300: var(--brand-blue-300);
+  --color-blue-400: var(--brand-blue-400);
+  --color-blue-500: var(--brand-blue-500);
+  --color-blue-600: var(--brand-blue-600);
+  --color-blue-700: var(--brand-blue-700);
+  --color-blue-800: var(--brand-blue-800);
+  --color-blue-900: var(--brand-blue-900);
+  --color-blue-950: var(--brand-blue-950);
+  --color-indigo-50: var(--brand-blue-50);
+  --color-indigo-100: var(--brand-blue-100);
+  --color-indigo-200: var(--brand-blue-200);
+  --color-indigo-300: var(--brand-blue-300);
+  --color-indigo-400: var(--brand-blue-400);
+  --color-indigo-500: var(--brand-blue-500);
+  --color-indigo-600: var(--brand-blue-600);
+  --color-indigo-700: var(--brand-blue-700);
+  --color-indigo-800: var(--brand-blue-800);
+  --color-indigo-900: var(--brand-blue-900);
+  --color-indigo-950: var(--brand-blue-950);
+  --color-violet-50: var(--brand-blue-50);
+  --color-violet-100: var(--brand-blue-100);
+  --color-violet-200: var(--brand-blue-200);
+  --color-violet-300: var(--brand-blue-300);
+  --color-violet-400: var(--brand-blue-400);
+  --color-violet-500: var(--brand-blue-500);
+  --color-violet-600: var(--brand-blue-600);
+  --color-violet-700: var(--brand-blue-700);
+  --color-violet-800: var(--brand-blue-800);
+  --color-violet-900: var(--brand-blue-900);
+  --color-violet-950: var(--brand-blue-950);
+  --color-purple-50: var(--brand-blue-50);
+  --color-purple-100: var(--brand-blue-100);
+  --color-purple-200: var(--brand-blue-200);
+  --color-purple-300: var(--brand-blue-300);
+  --color-purple-400: var(--brand-blue-400);
+  --color-purple-500: var(--brand-blue-500);
+  --color-purple-600: var(--brand-blue-600);
+  --color-purple-700: var(--brand-blue-700);
+  --color-purple-800: var(--brand-blue-800);
+  --color-purple-900: var(--brand-blue-900);
+  --color-purple-950: var(--brand-blue-950);
+  --color-sky-50: var(--brand-blue-50);
+  --color-sky-100: var(--brand-blue-100);
+  --color-sky-200: var(--brand-blue-200);
+  --color-sky-300: var(--brand-blue-300);
+  --color-sky-400: var(--brand-blue-400);
+  --color-sky-500: var(--brand-blue-500);
+  --color-sky-600: var(--brand-blue-600);
+  --color-sky-700: var(--brand-blue-700);
+  --color-sky-800: var(--brand-blue-800);
+  --color-sky-900: var(--brand-blue-900);
+  --color-sky-950: var(--brand-blue-950);
+  --color-cyan-50: var(--brand-blue-50);
+  --color-cyan-100: var(--brand-blue-100);
+  --color-cyan-200: var(--brand-blue-200);
+  --color-cyan-300: var(--brand-blue-300);
+  --color-cyan-400: var(--brand-blue-400);
+  --color-cyan-500: var(--brand-blue-500);
+  --color-cyan-600: var(--brand-blue-600);
+  --color-cyan-700: var(--brand-blue-700);
+  --color-cyan-800: var(--brand-blue-800);
+  --color-cyan-900: var(--brand-blue-900);
+  --color-cyan-950: var(--brand-blue-950);
+  --color-teal-50: var(--brand-blue-50);
+  --color-teal-100: var(--brand-blue-100);
+  --color-teal-200: var(--brand-blue-200);
+  --color-teal-300: var(--brand-blue-300);
+  --color-teal-400: var(--brand-blue-400);
+  --color-teal-500: var(--brand-blue-500);
+  --color-teal-600: var(--brand-blue-600);
+  --color-teal-700: var(--brand-blue-700);
+  --color-teal-800: var(--brand-blue-800);
+  --color-teal-900: var(--brand-blue-900);
+  --color-teal-950: var(--brand-blue-950);
+  --color-fuchsia-50: var(--brand-blue-50);
+  --color-fuchsia-100: var(--brand-blue-100);
+  --color-fuchsia-200: var(--brand-blue-200);
+  --color-fuchsia-300: var(--brand-blue-300);
+  --color-fuchsia-400: var(--brand-blue-400);
+  --color-fuchsia-500: var(--brand-blue-500);
+  --color-fuchsia-600: var(--brand-blue-600);
+  --color-fuchsia-700: var(--brand-blue-700);
+  --color-fuchsia-800: var(--brand-blue-800);
+  --color-fuchsia-900: var(--brand-blue-900);
+  --color-fuchsia-950: var(--brand-blue-950);
+  --color-amber-50: var(--brand-amber-50);
+  --color-amber-100: var(--brand-amber-100);
+  --color-amber-200: var(--brand-amber-200);
+  --color-amber-300: var(--brand-amber-300);
+  --color-amber-400: var(--brand-amber-400);
+  --color-amber-500: var(--brand-amber-500);
+  --color-amber-600: var(--brand-amber-600);
+  --color-amber-700: var(--brand-amber-700);
+  --color-amber-800: var(--brand-amber-800);
+  --color-amber-900: var(--brand-amber-900);
+  --color-amber-950: var(--brand-amber-950);
+  --color-yellow-50: var(--brand-amber-50);
+  --color-yellow-100: var(--brand-amber-100);
+  --color-yellow-200: var(--brand-amber-200);
+  --color-yellow-300: var(--brand-amber-300);
+  --color-yellow-400: var(--brand-amber-400);
+  --color-yellow-500: var(--brand-amber-500);
+  --color-yellow-600: var(--brand-amber-600);
+  --color-yellow-700: var(--brand-amber-700);
+  --color-yellow-800: var(--brand-amber-800);
+  --color-yellow-900: var(--brand-amber-900);
+  --color-yellow-950: var(--brand-amber-950);
+  --color-orange-50: var(--brand-amber-50);
+  --color-orange-100: var(--brand-amber-100);
+  --color-orange-200: var(--brand-amber-200);
+  --color-orange-300: var(--brand-amber-300);
+  --color-orange-400: var(--brand-amber-400);
+  --color-orange-500: var(--brand-amber-500);
+  --color-orange-600: var(--brand-amber-600);
+  --color-orange-700: var(--brand-amber-700);
+  --color-orange-800: var(--brand-amber-800);
+  --color-orange-900: var(--brand-amber-900);
+  --color-orange-950: var(--brand-amber-950);
+  --color-pink-50: var(--brand-peach-50);
+  --color-pink-100: var(--brand-peach-100);
+  --color-pink-200: var(--brand-peach-200);
+  --color-pink-300: var(--brand-peach-300);
+  --color-pink-400: var(--brand-peach-400);
+  --color-pink-500: var(--brand-peach-500);
+  --color-pink-600: var(--brand-peach-600);
+  --color-pink-700: var(--brand-peach-700);
+  --color-pink-800: var(--brand-peach-800);
+  --color-pink-900: var(--brand-peach-900);
+  --color-pink-950: var(--brand-peach-950);
+
+  /* Hue kembar disatukan: green=emerald (sukses), rose=red (bahaya). */
+  --color-green-50: var(--color-emerald-50);
+  --color-rose-50: var(--color-red-50);
+  --color-green-100: var(--color-emerald-100);
+  --color-rose-100: var(--color-red-100);
+  --color-green-200: var(--color-emerald-200);
+  --color-rose-200: var(--color-red-200);
+  --color-green-300: var(--color-emerald-300);
+  --color-rose-300: var(--color-red-300);
+  --color-green-400: var(--color-emerald-400);
+  --color-rose-400: var(--color-red-400);
+  --color-green-500: var(--color-emerald-500);
+  --color-rose-500: var(--color-red-500);
+  --color-green-600: var(--color-emerald-600);
+  --color-rose-600: var(--color-red-600);
+  --color-green-700: var(--color-emerald-700);
+  --color-rose-700: var(--color-red-700);
+  --color-green-800: var(--color-emerald-800);
+  --color-rose-800: var(--color-red-800);
+  --color-green-900: var(--color-emerald-900);
+  --color-rose-900: var(--color-red-900);
+  --color-green-950: var(--color-emerald-950);
+  --color-rose-950: var(--color-red-950);
+
+  /* Utility brand eksplisit untuk kode baru. */
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-blue: var(--brand-blue);
+  --color-brand-amber: var(--brand-amber);
+  --color-brand-peach: var(--brand-peach);
+  --color-brand-admin-canvas: var(--brand-admin-canvas);
+  --color-brand-paper: var(--brand-paper);
+  --color-brand-paper-strong: var(--brand-paper-strong);
+  --color-brand-ink-soft: var(--brand-ink-100);
+  --color-brand-ink-line: var(--brand-ink-200);
+  --color-brand-ink-muted: var(--brand-ink-500);
+  --color-brand-blue-soft: var(--brand-blue-50);
+  --color-brand-blue-100: var(--brand-blue-100);
+  --color-brand-blue-700: var(--brand-blue-700);
+  --color-brand-blue-800: var(--brand-blue-800);
+  --color-brand-amber-soft: var(--brand-amber-100);
+  --color-brand-amber-200: var(--brand-amber-200);
+  --color-brand-peach-50: var(--brand-peach-50);
+  --color-brand-peach-100: var(--brand-peach-100);
+  --color-brand-peach-800: var(--brand-peach-800);
+
+  /* Tipografi brand: Poppins sebagai display + body, Patrick Hand hanya aksen.
+     CATATAN: `--font-poppins` di-inject next/font pada <body>, sehingga di :root
+     referensinya harus punya fallback literal — tanpa itu nilai custom property
+     menjadi invalid dan browser jatuh ke font sistem. */
+  --font-display: var(--font-poppins, "Poppins"), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-poppins, "Poppins"), ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-poppins, "Poppins"), ui-sans-serif, system-ui, sans-serif;
+  --font-script: var(--font-patrick, "Patrick Hand"), cursive;
+  /* Alias lama: tetap berarti "tulisan tangan" (dipakai wordmark/logo & aksen dekoratif). */
+  --font-handwriting: var(--font-patrick, "Patrick Hand"), cursive;
+}
+
+/* =====================================================================
+   BRAND TOKENS — sumber kebenaran warna & tipografi SiapTempur.
+   Nilai primitif diambil dari brand sheet resmi:
+   #0D2B45 (ink) · #1976D2 (blue) · #F9A825 (amber) · #FDDCCA (peach) · #FFFFFF
+   Skala di bawah memakai tangga terang (lightness) yang sama dengan palet
+   Tailwind bawaan, hanya hue/chroma-nya yang dipindah ke brand — sehingga
+   kontras teks tetap terjaga saat palet dipetakan ulang.
+   ===================================================================== */
+:root {
+  --brand-ink: #0d2b45;
+  --brand-blue: #1976d2;
+  --brand-amber: #f9a825;
+  --brand-peach: #fddcca;
+  --brand-white: #ffffff;
+  --brand-paper: #fbfaf7;
+  --brand-paper-strong: #f4f1ea;
+  /* Kanvas Admin Workspace — biru keabuan dingin, kontras dengan paper hangat produk. */
+  --brand-admin-canvas: #f4f7fb;
+
+  /* Netral navy — dipakai untuk gray & slate */
+  --brand-ink-50: oklch(0.984 0.005 250);
+  --brand-ink-100: oklch(0.968 0.008 250);
+  --brand-ink-200: oklch(0.929 0.014 250);
+  --brand-ink-300: oklch(0.869 0.02 250);
+  --brand-ink-400: oklch(0.704 0.03 250);
+  --brand-ink-500: oklch(0.554 0.035 250);
+  --brand-ink-600: oklch(0.446 0.04 252);
+  --brand-ink-700: oklch(0.372 0.045 252);
+  --brand-ink-800: oklch(0.279 0.048 253);
+  --brand-ink-900: oklch(0.208 0.045 254);
+  --brand-ink-950: oklch(0.129 0.038 254);
+
+  /* Biru aksi — dipakai untuk blue, indigo, violet, purple, sky, cyan, teal */
+  --brand-blue-50: oklch(0.97 0.02 253);
+  --brand-blue-100: oklch(0.932 0.04 253);
+  --brand-blue-200: oklch(0.882 0.07 253);
+  --brand-blue-300: oklch(0.809 0.1 253);
+  --brand-blue-400: oklch(0.707 0.125 253);
+  --brand-blue-500: oklch(0.623 0.138 253);
+  --brand-blue-600: oklch(0.546 0.145 253);
+  --brand-blue-700: oklch(0.488 0.135 253);
+  --brand-blue-800: oklch(0.424 0.115 253);
+  --brand-blue-900: oklch(0.379 0.1 253);
+  --brand-blue-950: oklch(0.282 0.07 253);
+
+  /* Amber aksen — dipakai untuk amber, yellow, orange */
+  --brand-amber-50: oklch(0.987 0.03 78);
+  --brand-amber-100: oklch(0.962 0.058 78);
+  --brand-amber-200: oklch(0.924 0.092 78);
+  --brand-amber-300: oklch(0.879 0.125 78);
+  --brand-amber-400: oklch(0.828 0.15 78);
+  --brand-amber-500: oklch(0.769 0.163 78);
+  --brand-amber-600: oklch(0.666 0.15 72);
+  --brand-amber-700: oklch(0.555 0.135 68);
+  --brand-amber-800: oklch(0.473 0.12 64);
+  --brand-amber-900: oklch(0.414 0.105 60);
+  --brand-amber-950: oklch(0.279 0.075 55);
+
+  /* Peach hangat — dipakai untuk permukaan/aksen lembut (pink lama) */
+  --brand-peach-50: oklch(0.985 0.008 30);
+  --brand-peach-100: oklch(0.955 0.02 30);
+  --brand-peach-200: oklch(0.91 0.04 30);
+  --brand-peach-300: oklch(0.87 0.055 30);
+  --brand-peach-400: oklch(0.82 0.075 30);
+  --brand-peach-500: oklch(0.78 0.09 30);
+  --brand-peach-600: oklch(0.7 0.1 28);
+  --brand-peach-700: oklch(0.6 0.1 26);
+  --brand-peach-800: oklch(0.5 0.09 24);
+  --brand-peach-900: oklch(0.42 0.075 22);
+  --brand-peach-950: oklch(0.28 0.05 20);
 }
 
 :root {
-  /* Notebook Theme (Light Mode) */
-  --background: #fdfbf7;
-  /* Creamy Paper */
-  --foreground: #1f2937;
-  /* Gray 800 (Pencil/Ink) */
-
-  --primary: #2563eb;
-  /* Blue 600 (Blue Pen) */
+  --background: var(--brand-paper);
+  --foreground: var(--brand-ink);
+  --primary: var(--brand-blue);
   --primary-foreground: #ffffff;
+  --secondary: var(--brand-ink-100);
+  --secondary-foreground: var(--brand-ink);
+  --accent: var(--brand-amber);
+  --accent-foreground: var(--brand-ink);
+  --muted: var(--brand-ink-100);
+  --muted-foreground: var(--brand-ink-500);
+  --border: var(--brand-ink-200);
+  --input: var(--brand-ink-300);
+  --ring: var(--brand-blue);
+  --success: #059669;
+  --success-foreground: #ffffff;
+  --warning: var(--brand-amber-600);
+  --warning-foreground: #ffffff;
+  --danger: #dc2626;
+  --danger-foreground: #ffffff;
+  --info: var(--brand-blue-600);
+  --info-foreground: #ffffff;
 
-  --secondary: #f3f4f6;
-  /* Gray 100 */
-  --secondary-foreground: #1f2937;
+  --px-canvas: var(--brand-paper);
+  --px-surface: var(--brand-white);
+  --px-surface-subtle: var(--brand-ink-100);
+  --px-surface-blue: var(--brand-blue-50);
+  --px-surface-green: #ecfdf5;
+  --px-surface-amber: var(--brand-amber-50);
+  --px-surface-violet: var(--brand-blue-50);
+  --px-text: var(--brand-ink);
+  --px-text-muted: var(--brand-ink-500);
+  --px-border: var(--brand-ink-200);
+  --px-border-strong: var(--brand-ink-300);
+  --px-primary: var(--brand-blue);
+  --px-primary-hover: var(--brand-blue-700);
+  --px-success: #059669;
+  --px-warning: #d97706;
+  --px-danger: #dc2626;
 
-  --muted: #e5e7eb;
-  /* Gray 200 */
-  --muted-foreground: #6b7280;
-  /* Gray 500 */
+  --px-shadow-xs: 0 1px 2px rgb(13 43 69 / 0.05);
+  --px-shadow-sm: 0 1px 3px rgb(13 43 69 / 0.09), 0 1px 2px rgb(13 43 69 / 0.05);
+  --px-shadow-md: 0 10px 28px rgb(13 43 69 / 0.09);
+  --px-shadow-lg: 0 18px 48px rgb(13 43 69 / 0.12);
+  --px-radius-sm: 0.75rem;
+  --px-radius-md: 1rem;
+  --px-radius-lg: 1.25rem;
+  --px-radius-xl: 1.5rem;
 
-  --accent: #facc15;
-  /* Yellow 400 (Highlighter) */
-  --accent-foreground: #1f2937;
+  --shadow-brand-sm: 3px 3px 0 0 var(--brand-ink);
+  --shadow-brand-md: 5px 5px 0 0 var(--brand-ink);
+  --shadow-brand-lg: 8px 8px 0 0 var(--brand-ink);
 
-  --border: #1f2937;
-  /* Dark Ink Border */
-  --input: #e5e7eb;
-  --ring: #2563eb;
+  --content-marketing: 80rem;
+  --content-learning: 75rem;
+  --content-reading: 48rem;
+  --touch-target: 2.75rem;
 }
 
-
-
-/* Custom Theme Scrollbar */
 ::-webkit-scrollbar {
   width: 10px !important;
   height: 10px !important;
@@ -59,33 +396,371 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--secondary) !important;
+  background: #f8fafc !important;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--muted) !important;
-  border-radius: 5px;
-  border: 2px solid var(--secondary) !important;
+  background: #cbd5e1 !important;
+  border-radius: 999px;
+  border: 2px solid #f8fafc !important;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--muted-foreground) !important;
+  background: #94a3b8 !important;
 }
 
-/* Firefox */
 * {
   scrollbar-width: thin !important;
-  scrollbar-color: var(--muted) var(--secondary) !important;
+  scrollbar-color: #cbd5e1 #f8fafc !important;
+}
+
+html {
+  background: var(--background);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), sans-serif;
+  /* Pakai variabel font next/font langsung (tersedia di <body>) dengan fallback literal. */
+  font-family: var(--font-poppins, "Poppins"), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-/* Make all buttons show pointer cursor */
+.px-container-marketing {
+  width: 100%;
+  max-width: var(--content-marketing);
+  margin-inline: auto;
+}
+
+.px-container-learning {
+  width: 100%;
+  max-width: var(--content-learning);
+  margin-inline: auto;
+}
+
+.px-container-reading {
+  width: 100%;
+  max-width: var(--content-reading);
+  margin-inline: auto;
+}
+
+.px-touch-target {
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+}
+
+.px-focus-ring:focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 3px;
+}
+
+.px-surface {
+  border: 1px solid var(--px-border);
+  border-radius: var(--px-radius-md);
+  background: var(--px-surface);
+  box-shadow: var(--px-shadow-xs);
+}
+
+.px-panel {
+  border: 1px solid var(--px-border);
+  border-radius: var(--px-radius-lg);
+  background: var(--px-surface);
+  box-shadow: var(--px-shadow-sm);
+}
+
+.px-section-title {
+  color: var(--px-text);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+
+.px-muted {
+  color: var(--px-text-muted);
+}
+
+[data-experience-mode="marketing"] {
+  --px-card-shadow: var(--px-shadow-md);
+  color: var(--px-text);
+}
+
+[data-experience-mode="learning"] {
+  --px-card-shadow: var(--px-shadow-sm);
+  min-height: 100%;
+  background: var(--px-canvas);
+  color: var(--px-text);
+}
+
+[data-program="cpns"] {
+  --program-accent: #2563eb;
+  --program-accent-soft: #eff6ff;
+}
+
+[data-program="tka-sd"] {
+  --program-accent: #d97706;
+  --program-accent-soft: #fffbeb;
+}
+
+[data-program="tka-smp"] {
+  --program-accent: #059669;
+  --program-accent-soft: #ecfdf5;
+}
+
+[data-program="tka-sma"] {
+  --program-accent: #7c3aed;
+  --program-accent-soft: #f5f3ff;
+}
+
+[data-experience-mode="exam"] {
+  --px-card-shadow: none;
+  background: #ffffff;
+  color: var(--px-text);
+}
+
+[data-experience-mode="exam"] .px-decorative-motion {
+  animation: none !important;
+  transform: none !important;
+}
+
+/* SiapTempur learner theme.
+   Scoped intentionally so admin surfaces keep their current UI. */
+.st-product {
+  --st-paper: var(--brand-paper);
+  --st-paper-strong: var(--brand-paper-strong);
+  --st-ink: var(--brand-ink);
+  --st-ink-muted: var(--brand-ink-600);
+  --st-blue: var(--brand-blue);
+  --st-blue-dark: var(--brand-blue-700);
+  --st-blue-soft: var(--brand-blue-50);
+  --st-yellow: var(--brand-amber-200);
+  --st-yellow-soft: var(--brand-amber-50);
+  --st-green: #16a34a;
+  --st-green-soft: #ecfdf3;
+  --st-red: #dc2626;
+  --st-red-soft: #fff1f2;
+  --st-cyan-soft: var(--brand-blue-50);
+  --st-border: 2px solid var(--st-ink);
+  --st-shadow-sm: 3px 3px 0 var(--st-ink);
+  --st-shadow-md: 5px 5px 0 var(--st-ink);
+  --st-shadow-lg: 8px 8px 0 var(--st-ink);
+  --st-radius-sm: 0.75rem;
+  --st-radius-md: 1rem;
+  --st-radius-lg: 1.25rem;
+  --st-radius-pill: 9999px;
+
+  background: var(--st-paper);
+  color: var(--st-ink);
+}
+
+.st-product .st-card,
+.st-product .px-surface,
+.st-product .px-panel {
+  border: var(--st-border);
+  border-radius: var(--st-radius-md);
+  background: #ffffff;
+  box-shadow: var(--st-shadow-sm);
+}
+
+.st-product .st-card-md {
+  border: var(--st-border);
+  border-radius: var(--st-radius-lg);
+  background: #ffffff;
+  box-shadow: var(--st-shadow-md);
+}
+
+.st-product .st-card-lg {
+  border: var(--st-border);
+  border-radius: var(--st-radius-lg);
+  background: #ffffff;
+  box-shadow: var(--st-shadow-lg);
+}
+
+.st-product .st-flat-card {
+  border: var(--st-border);
+  border-radius: var(--st-radius-sm);
+  background: #ffffff;
+  box-shadow: none;
+}
+
+.st-product .st-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: var(--st-border);
+  border-radius: var(--st-radius-pill);
+  background: var(--st-yellow);
+  padding: 0.35rem 0.7rem;
+  box-shadow: 2px 2px 0 var(--st-ink);
+  color: var(--st-ink);
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.st-product .st-heading-display {
+  font-family: var(--font-display), var(--font-sans), sans-serif;
+  font-weight: 900;
+  letter-spacing: -0.025em;
+  line-height: 1.02;
+  color: var(--st-ink);
+}
+
+.st-product .st-heading {
+  font-weight: 900;
+  letter-spacing: -0.025em;
+  color: var(--st-ink);
+}
+
+.st-product .st-muted {
+  color: var(--st-ink-muted);
+}
+
+.st-product .st-divider {
+  border-color: var(--st-ink);
+}
+
+/* Hard shadow neo-brutalist berbasis token brand — GLOBAL (dipakai juga oleh admin
+   yang berada di luar scope `.st-product`).
+   sm = chip/badge, md = kartu & tombol standar, lg = hero/elemen prioritas. */
+.st-shadow-sm {
+  box-shadow: 3px 3px 0 var(--brand-ink);
+}
+
+.st-shadow-md {
+  box-shadow: 5px 5px 0 var(--brand-ink);
+}
+
+.st-shadow-lg {
+  box-shadow: 8px 8px 0 var(--brand-ink);
+}
+
+.st-product .st-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1.5px solid var(--st-ink);
+  border-radius: var(--st-radius-pill);
+  padding: 0.25rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+.st-product .st-input {
+  min-height: 2.75rem;
+  width: 100%;
+  border: var(--st-border);
+  border-radius: var(--st-radius-sm);
+  background: #ffffff;
+  padding: 0.65rem 0.8rem;
+  font-weight: 650;
+  color: var(--st-ink);
+  outline: none;
+}
+
+.st-product .st-input:focus-visible {
+  box-shadow: 0 0 0 3px rgb(36 99 235 / 0.2);
+  border-color: var(--st-blue);
+}
+
+.st-product .st-button {
+  border-width: 2px !important;
+  border-color: var(--st-ink) !important;
+  border-radius: var(--st-radius-sm) !important;
+  box-shadow: 4px 4px 0 var(--st-ink) !important;
+  font-weight: 900 !important;
+}
+
+.st-product .st-button:hover:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 var(--st-ink) !important;
+}
+
+.st-product .st-button:active:not(:disabled) {
+  transform: translate(4px, 4px);
+  box-shadow: none !important;
+}
+
+.st-product .st-option {
+  width: 100%;
+  border: var(--st-border);
+  border-radius: var(--st-radius-sm);
+  background: #ffffff;
+  box-shadow: 2px 2px 0 #cbd5e1;
+}
+
+.st-product .st-option:hover {
+  border-color: var(--st-blue);
+}
+
+.st-product .st-option[data-selected="true"] {
+  border-color: var(--st-ink);
+  background: var(--st-blue-soft);
+  box-shadow: 3px 3px 0 var(--st-blue);
+}
+
+.st-product .st-section-soft {
+  border-block: var(--st-border);
+  background: var(--st-blue-soft);
+}
+
+.st-product .st-success {
+  border: var(--st-border);
+  border-radius: var(--st-radius-md);
+  background: var(--st-green-soft);
+}
+
+.st-product .st-warning {
+  border: var(--st-border);
+  border-radius: var(--st-radius-md);
+  background: var(--st-yellow-soft);
+}
+
+.st-product .st-danger {
+  border: var(--st-border);
+  border-radius: var(--st-radius-md);
+  background: var(--st-red-soft);
+}
+
+/* Catch TKA/CPNS learner primitives that use Tailwind border-2 directly.
+   Directional borders are excluded so layout dividers and sidebars stay flush. */
+.st-product [class~="border-2"]:not([class*="border-t-"]):not([class*="border-b-"]):not([class*="border-l-"]):not([class*="border-r-"]):not([class*="rounded-"]) {
+  border-radius: var(--st-radius-md);
+}
+
+.st-product .st-focus:focus-visible {
+  outline: 3px solid var(--st-blue);
+  outline-offset: 3px;
+}
+
+/* Exam keeps the same identity while removing decorative visual noise. */
+.st-product[data-experience-mode="exam"] {
+  background: var(--st-paper);
+}
+
+.st-product[data-experience-mode="exam"] .st-card,
+.st-product[data-experience-mode="exam"] .st-card-md,
+.st-product[data-experience-mode="exam"] .st-card-lg,
+.st-product[data-experience-mode="exam"] [class*="shadow-["] {
+  box-shadow: none !important;
+}
+
+.st-product[data-experience-mode="exam"] .font-display,
+.st-product[data-experience-mode="exam"] .prose {
+  font-family: var(--font-body), var(--font-sans), sans-serif !important;
+}
+
+.st-product[data-experience-mode="exam"] button {
+  min-height: var(--touch-target);
+  border-radius: var(--st-radius-sm) !important;
+}
+
+.st-product[data-experience-mode="exam"] button:focus-visible,
+.st-product[data-experience-mode="exam"] a:focus-visible {
+  outline: 3px solid var(--st-blue);
+  outline-offset: 2px;
+}
+
 button,
 [role="button"],
 [type="button"],
@@ -94,34 +769,30 @@ button,
   cursor: pointer;
 }
 
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible {
+  outline-color: var(--ring);
+}
 
-/* Hide spin buttons for number inputs */
-/* Chrome, Safari, Edge, Opera */
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-/* Firefox */
 input[type=number] {
   appearance: textfield;
   -moz-appearance: textfield;
 }
 
-/* Custom Animations */
 @keyframes gradient-x {
-  0% {
-    background-position: 0% 50%;
-  }
-
-  50% {
-    background-position: 100% 50%;
-  }
-
-  100% {
-    background-position: 0% 50%;
-  }
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 .animate-gradient-x {
@@ -130,40 +801,63 @@ input[type=number] {
 }
 
 @keyframes shimmer {
-  100% {
-    transform: translateX(100%);
-  }
+  100% { transform: translateX(100%); }
+}
+
+.st-skeleton {
+  position: relative;
+  overflow: hidden;
+  background-color: #e5e7eb;
+  color: transparent;
+}
+
+.st-skeleton::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.7), transparent);
+  animation: shimmer 1.35s ease-in-out infinite;
+}
+
+button[data-press-lock="true"],
+form[data-submit-lock="true"] button[type="submit"] {
+  cursor: wait;
 }
 
 @keyframes float {
-  0% {
-    transform: translateY(0px);
-  }
-
-  50% {
-    transform: translateY(-10px);
-  }
-
-  100% {
-    transform: translateY(0px);
-  }
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0); }
 }
 
-/* Exam Preview Animations */
 @keyframes float-annotation {
-
-  0%,
-  100% {
-    transform: translateY(0px);
-  }
-
-  50% {
-    transform: translateY(-8px);
-  }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
 }
 
 .animate-float-annotation {
   animation: float-annotation 3s ease-in-out infinite;
+}
+
+/* Maskot mengambang lembut (marketing/learning). Blok prefers-reduced-motion di bawah
+   otomatis menonaktifkannya. */
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.animate-bob {
+  animation: bob 4s ease-in-out infinite;
+}
+
+/* Sticker/aksen boleh "goyang" halus saat hover — hanya di marketing. */
+.hover-wiggle {
+  transition: transform 200ms ease;
+}
+
+.hover-wiggle:hover {
+  transform: rotate(-3deg) scale(1.03);
 }
 
 .blink-timer {
@@ -171,13 +865,151 @@ input[type=number] {
 }
 
 @keyframes blink-colon {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
 
-  0%,
-  100% {
-    opacity: 1;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
+}
 
-  50% {
-    opacity: 0.4;
+/* TKA attempt cards are grid items; clamp their intrinsic width so status/date
+   content cannot force the mobile document wider than the viewport. */
+main a[href^="/tka/"][href*="/tryout/"]:not([class*="inline-flex"]) {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 639px) {
+  main a[href^="/tka/"][href*="/tryout/"]:not([class*="inline-flex"]) > div {
+    min-width: 0;
+    flex-wrap: wrap;
   }
+}
+
+
+/* Admin is one scoped visual system; participant brand surfaces keep their theme. */
+.admin-workspace {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #526277;
+  --border: #e2e8f0;
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+  --ring: #2563eb;
+  --success: #047857;
+  --success-muted: #ecfdf5;
+  --success-border: #a7f3d0;
+  --warning: #92400e;
+  --warning-muted: #fffbeb;
+  --warning-border: #fde68a;
+  --danger: #b91c1c;
+  --danger-muted: #fef2f2;
+  --danger-border: #fecaca;
+  --info: #1d4ed8;
+  --info-muted: #eff6ff;
+  --info-border: #bfdbfe;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-success-muted: var(--success-muted);
+  --color-success-border: var(--success-border);
+  --color-warning: var(--warning);
+  --color-warning-muted: var(--warning-muted);
+  --color-warning-border: var(--warning-border);
+  --color-danger: var(--danger);
+  --color-danger-muted: var(--danger-muted);
+  --color-danger-border: var(--danger-border);
+  --color-info: var(--info);
+  --color-info-muted: var(--info-muted);
+  --color-info-border: var(--info-border);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.dark .admin-workspace {
+  --background: #0f172a;
+  --foreground: #e2e8f0;
+  --card: #172033;
+  --card-foreground: #e2e8f0;
+  --muted: #202c40;
+  --muted-foreground: #a7b4c6;
+  --border: #334155;
+  --primary: #3b82f6;
+  --ring: #60a5fa;
+  --success: #6ee7b7;
+  --success-muted: #14342e;
+  --success-border: #28564b;
+  --warning: #fcd34d;
+  --warning-muted: #3a2b16;
+  --warning-border: #665027;
+  --danger: #fca5a5;
+  --danger-muted: #3e202a;
+  --danger-border: #68313d;
+  --info: #93c5fd;
+  --info-muted: #1b2f50;
+  --info-border: #304d77;
+}
+
+.admin-workspace [data-admin-navigation] {
+  --foreground: #f8fafc;
+  --muted-foreground: #a7b4c6;
+  --color-foreground: var(--foreground);
+  --color-muted-foreground: var(--muted-foreground);
+}
+
+.admin-input { height: 36px; line-height: 20px; }
+textarea.admin-input { height: auto; min-height: 96px; padding-block: 8px; }
+input.admin-input[type="file"] { height: auto; min-height: 36px; padding-block: 4px; }
+.admin-action { white-space: normal; }
+.admin-data-table thead { background: var(--muted); color: var(--muted-foreground); font-size: 12px; line-height: 16px; }
+.admin-data-table th { height: 40px; padding: 12px 16px; font-weight: 500; white-space: nowrap; }
+.admin-data-table td { padding: 10px 16px; vertical-align: middle; line-height: 20px; }
+.admin-data-table tbody tr { border-bottom: 1px solid var(--border); }
+.admin-data-table tbody tr:last-child { border-bottom: 0; }
+.admin-data-table tbody tr:hover { background: color-mix(in srgb, var(--muted) 65%, transparent); }
+.admin-data-table .admin-action { height: 28px; min-height: 28px; padding: 3px 10px; font-size: 13px; line-height: 20px; }
+.admin-data-table .admin-table-icon-action { width: 28px; padding: 0; }
+.admin-data-table .admin-table-row-actions { display: flex; min-height: 28px; align-items: center; justify-content: flex-start; gap: 8px; }
+.admin-workspace :where(button, a, input, select, textarea, summary):focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.admin-workspace form[data-admin-form] { width: 100%; max-width: 960px; display: flex; flex-direction: column; gap: 24px; }
+.admin-workspace form.admin-question-form[data-admin-form] { max-width: none; }
+.admin-workspace form.admin-article-form[data-admin-form] { max-width: none; }
+.admin-workspace :where(h1,h2,h3,h4) { text-wrap: balance; }
+.admin-workspace .admin-badge { white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) {
+  .admin-workspace *, .admin-workspace *::before, .admin-workspace *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
+
+.admin-more-filters[open] { order: 2; width: 100%; }
+@media (max-width: 767px) {
+  .admin-table-toolbar > select { flex: 1 1 140px; width: auto; min-width: 0; }
+}
+
+@media (max-width: 767px) {
+  .admin-workspace .admin-action { min-height: 36px; }
+  .admin-workspace .admin-data-table .admin-action { height: 36px; min-height: 36px; }
+  .admin-workspace .admin-data-table .admin-table-icon-action { width: 36px; }
+  .admin-workspace .admin-data-table .admin-table-row-actions { min-height: 36px; }
 }

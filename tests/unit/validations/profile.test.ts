@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { passwordUpdateSchema, profileInfoSchema } from '@/lib/validations/profile'
+import { passwordChangeSchema, passwordUpdateSchema, profileInfoSchema } from '@/lib/validations/profile'
 
 describe('Profile validations', () => {
   it('rejects overly long profile fields', () => {
@@ -33,5 +33,16 @@ describe('Profile validations', () => {
   it('requires a strong password shape', () => {
     expect(passwordUpdateSchema.safeParse({ newPassword: 'password123' }).success).toBe(false)
     expect(passwordUpdateSchema.safeParse({ newPassword: 'Password123' }).success).toBe(true)
+  })
+
+  it('rejects an empty name and an implausible birth date', () => {
+    expect(profileInfoSchema.safeParse({ full_name: ' ' }).success).toBe(false)
+    expect(profileInfoSchema.safeParse({ birth_date: '1899-12-31' }).success).toBe(false)
+  })
+
+  it('requires the current password and a different strong new password', () => {
+    expect(passwordChangeSchema.safeParse({ currentPassword: '', newPassword: 'Password123' }).success).toBe(false)
+    expect(passwordChangeSchema.safeParse({ currentPassword: 'Password123', newPassword: 'Password123' }).success).toBe(false)
+    expect(passwordChangeSchema.safeParse({ currentPassword: 'Password123', newPassword: 'NewPassword456' }).success).toBe(true)
   })
 })

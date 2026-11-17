@@ -1,6 +1,6 @@
 # Siap Tempur
 
-Siap Tempur is a Next.js learning platform for CPNS/SKD preparation. The app focuses on practice workflows, structured learning content, test readiness, and Supabase-backed product features.
+Siap Tempur is a Next.js learning platform for CPNS/SKD and TKA (school-level assessment) preparation. The app focuses on practice workflows, structured learning content, test readiness, and Supabase-backed product features.
 
 ## Highlights
 
@@ -39,4 +39,7 @@ Run the available project checks from `package.json` before deploying.
 
 ## Status
 
-Private active product repository.
+Schema V2 (Production V1) cutover selesai 2026-09-01, tetapi **domain publik sengaja belum diaktifkan** (dark launch).
+
+- Status, blocker, dan gate rilis terkini: [`docs/STATUS.md`](docs/STATUS.md)
+- Aturan kerja developer & AI: [`AGENTS.md`](AGENTS.md)

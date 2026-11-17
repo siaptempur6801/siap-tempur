@@ -1,14 +1,14 @@
 'use client'
 
-import { useState, useEffect, startTransition } from 'react'
+import { useEffect, useRef, startTransition, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { User, Clock, Shield, ClipboardList } from 'lucide-react'
-import { PageAnimateContainer, PageAnimateItem } from '@/components/ui/PageAnimate'
-import PaperBackground from '@/components/PaperBackground'
-
+import { Clock, ClipboardList, Shield, User } from 'lucide-react'
 import { ProfileTab } from './ProfileTab'
 import { HistoryTab } from './HistoryTab'
 import { SettingsTab } from './SettingsTab'
+import { cn } from '@/lib/utils'
+import { useProfileNavigation } from './useProfileNavigation'
+import tkaStyles from './TkaProfile.module.css'
 
 type Profile = {
     id: string
@@ -44,6 +44,26 @@ type UsageSession = {
     id: string
     start_time: string
     mode: string
+    label: string
+    amount: number
+    balance_after: number
+}
+
+type TokenCredit = {
+    id: string
+    created_at: string
+    amount: number
+    balance_after: number
+    source_label: string
+    source_detail: string
+}
+
+type HistoryPageInfo = {
+    page: number
+    pageSize: number
+    total: number
+    from: string
+    to: string
 }
 
 interface ProfileClientProps {
@@ -51,7 +71,17 @@ interface ProfileClientProps {
     user: UserData
     transactions: Transaction[]
     usageSessions: UsageSession[]
+    tokenCredits: TokenCredit[]
+    transactionPage: HistoryPageInfo
+    usagePage: HistoryPageInfo
+    creditPage: HistoryPageInfo
     level: number
+}
+
+type ProfileTabId = 'profile' | 'history' | 'settings'
+
+function parseProfileTab(value: string | null): ProfileTabId {
+    return value === 'history' || value === 'settings' ? value : 'profile'
 }
 
 export default function ProfileClient({
@@ -59,83 +89,105 @@ export default function ProfileClient({
     user,
     transactions,
     usageSessions,
-    level
+    tokenCredits,
+    transactionPage,
+    usagePage,
+    creditPage,
+    level,
 }: ProfileClientProps) {
     const searchParams = useSearchParams()
+    const { profilePath, isTka } = useProfileNavigation()
     const router = useRouter()
-    
-    // Support direct linking to tabs e.g. ?tab=history
-    const initialTab = (searchParams.get('tab') as 'profile' | 'history' | 'settings') || 'profile'
-    
-    const [activeTab, setActiveTab] = useState<'profile' | 'history' | 'settings'>(initialTab)
+    const requestedTab = searchParams.get('tab')
+    const [activeTab, setActiveTab] = useState<ProfileTabId>(() => parseProfileTab(requestedTab))
     const [profile, setProfile] = useState(initialProfile)
+    const activeTabRef = useRef<HTMLButtonElement>(null)
 
-    // Sync state if URL changes
     useEffect(() => {
-        const tab = searchParams.get('tab') as 'profile' | 'history' | 'settings' | null
-        if (tab && ['profile', 'history', 'settings'].includes(tab)) {
-            startTransition(() => {
-                setActiveTab(tab)
-            })
-        }
-    }, [searchParams])
+        startTransition(() => setActiveTab(parseProfileTab(requestedTab)))
+    }, [requestedTab])
 
-    const handleTabChange = (tabId: 'profile' | 'history' | 'settings') => {
+    useEffect(() => {
+        activeTabRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+    }, [activeTab])
+
+    const handleTabChange = (tabId: ProfileTabId) => {
         setActiveTab(tabId)
-        // Update URL to reflect active tab without causing a full reload
-        router.push(`/cpns/dashboard/profile?tab=${tabId}`, { scroll: false })
+        const params = new URLSearchParams(searchParams.toString())
+        params.set('tab', tabId)
+        router.push(`${profilePath}?${params.toString()}`, { scroll: false })
     }
 
     const tabs = [
         { id: 'profile', label: 'Profil', icon: <User size={18} /> },
-        { id: 'history', label: 'Riwayat', icon: <Clock size={18} /> },
-        { id: 'settings', label: 'Pengaturan', icon: <Shield size={18} /> }
+        { id: 'history', label: 'Transaksi & penggunaan', icon: <Clock size={18} /> },
+        { id: 'settings', label: 'Pengaturan', icon: <Shield size={18} /> },
     ] as const
 
     return (
-        <div className="w-full min-h-screen relative font-body">
-            <PaperBackground />
-            <PageAnimateContainer className="font-handwriting space-y-6 pb-20 relative z-10">
-                {/* Header with Tabs - Notebook Style */}
-                <PageAnimateItem className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div className="transform -rotate-1 flex items-center gap-3">
-                        <ClipboardList className="w-8 h-8 md:w-10 md:h-10 text-gray-900" />
-                        <div>
-                            <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-gray-900">Profil Saya</h2>
-                            <p className="text-lg text-gray-600">Kelola akun dan lihat progress belajar kamu</p>
-                        </div>
+        <div className={cn('st-product space-y-7 font-body text-[var(--st-ink)]', isTka && tkaStyles.profile)}>
+            {isTka ? (
+                <header className="border-b border-slate-200/80 pb-6 text-slate-950">
+                    <div className="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-xs font-black text-indigo-700 ring-1 ring-indigo-200/50">
+                        <User size={14} className="text-indigo-600" aria-hidden="true" />
+                        <span>Profil Siswa · TKA</span>
                     </div>
-                </PageAnimateItem>
+                    <h1 className="mt-3 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
+                        Profil & Pengaturan Akun
+                    </h1>
+                    <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600 sm:text-base">
+                        Kelola data identitas belajarmu, pantau riwayat pemakaian token ujian, dan atur preferensi keamanan akun SiapTempur dalam satu dashboard terpadu.
+                    </p>
+                </header>
+            ) : (
+                <header className="max-w-3xl">
+                    <div className="st-kicker"><ClipboardList size={15} /> Akun SiapTempur</div>
+                    <h1 className="st-heading-display mt-5 text-4xl sm:text-5xl md:text-6xl">Profil dan pengaturan akunmu.</h1>
+                    <p className="st-muted mt-3 max-w-2xl text-base font-semibold leading-relaxed md:text-lg">
+                        Perbarui informasi profil, lihat riwayat transaksi dan penggunaan token, serta kelola pengaturan akun dari satu tempat.
+                    </p>
+                </header>
+            )}
 
-                {/* Tabs - Notebook Paper Tabs */}
-                <PageAnimateItem className="flex gap-2 overflow-x-auto pb-2 -mx-2 px-2">
-                    {tabs.map((tab) => (
-                        <button
-                            key={tab.id}
-                            onClick={() => handleTabChange(tab.id as 'profile' | 'history' | 'settings')}
-                            className={`flex items-center gap-2 px-5 py-3 text-base font-bold whitespace-nowrap transition-all border-2 border-gray-900 ${activeTab === tab.id
-                                ? 'bg-yellow-300 text-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] -translate-y-1'
-                                : 'bg-white text-gray-600 hover:bg-gray-50 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.2)]'
-                                }`}
-                        >
-                            {tab.icon}
-                            <span className="hidden sm:inline">{tab.label}</span>
-                        </button>
-                    ))}
-                </PageAnimateItem>
+            <nav className="flex gap-2 overflow-x-auto pb-1" aria-label="Bagian profil">
+                {tabs.map((tab) => (
+                    <button
+                        key={tab.id}
+                        ref={activeTab === tab.id ? activeTabRef : undefined}
+                        type="button"
+                        onClick={() => handleTabChange(tab.id)}
+                        aria-current={activeTab === tab.id ? 'page' : undefined}
+                        className={cn(
+                            'inline-flex min-h-11 shrink-0 items-center gap-2 px-4 py-2.5 text-xs font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600',
+                            isTka
+                                ? activeTab === tab.id
+                                    ? 'rounded-xl bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200 shadow-2xs'
+                                    : 'rounded-xl bg-white text-slate-600 hover:bg-slate-50 border border-slate-200/80 shadow-2xs'
+                                : activeTab === tab.id
+                                    ? 'border-2 border-[var(--st-ink)] bg-[var(--st-yellow)] st-shadow-sm font-black text-sm'
+                                    : 'border-2 border-[var(--st-ink)] bg-white text-gray-600 hover:bg-blue-50 font-black text-sm'
+                        )}
+                    >
+                        {tab.icon}
+                        <span>{tab.label}</span>
+                    </button>
+                ))}
+            </nav>
 
-                {activeTab === 'profile' && (
-                    <ProfileTab profile={profile} setProfile={setProfile} user={user} level={level} />
-                )}
-
-                {activeTab === 'history' && (
-                    <HistoryTab transactions={transactions} usageSessions={usageSessions} />
-                )}
-
-                {activeTab === 'settings' && (
-                    <SettingsTab />
-                )}
-            </PageAnimateContainer>
+            {activeTab === 'profile' && (
+                <ProfileTab profile={profile} setProfile={setProfile} user={user} level={level} />
+            )}
+            {activeTab === 'history' && (
+                <HistoryTab
+                    transactions={transactions}
+                    usageSessions={usageSessions}
+                    tokenCredits={tokenCredits}
+                    transactionPage={transactionPage}
+                    usagePage={usagePage}
+                    creditPage={creditPage}
+                />
+            )}
+            {activeTab === 'settings' && <SettingsTab />}
         </div>
     )
 }

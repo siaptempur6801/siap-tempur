@@ -1,0 +1,80 @@
+import { createV2Client } from '@/lib/utils/supabase/server'
+import { PASS_FEATURE_BY_SCOPE, PASS_SCOPES, type PassScope } from '@/src/tka/pass-scope'
+
+/**
+ * Tempur Pass per program + jenjang.
+ *
+ * Hak akses di SiapTempur diikat ke **program (+jenjang)**, bukan ke akun, karena satu akun bisa
+ * punya beberapa target (CPNS, TKA SD/SMP/SMA). Helper di file ini adalah satu-satunya tempat
+ * pemetaan scope → fitur pass, supaya tidak ada lagi pengecekan yang "hardcode" ke satu jenjang
+ * (bug lama: `hasActiveTempurPass()` selalu memeriksa fitur TKA SMP, sehingga pass TKA SD/SMA dan
+ * pass CPNS tidak terdeteksi dengan benar).
+ */
+export {
+    PASS_SCOPES,
+    PASS_FEATURE_BY_SCOPE,
+    passScopeForTkaLevel,
+    tkaLevelFromPassScope,
+    passScopeLabel,
+} from '@/src/tka/pass-scope'
+export type { PassScope } from '@/src/tka/pass-scope'
+
+/** @deprecated Gunakan `PASS_FEATURE_BY_SCOPE`. Dipertahankan untuk kompatibilitas. */
+export const TEMPUR_PASS_FEATURE_CODE = PASS_FEATURE_BY_SCOPE['tka:smp']
+
+function isUsableEntitlement(input: {
+    startsAt: string | null
+    expiresAt: string | null
+    usageLimit: number | null
+    usageCount: number
+}, now = Date.now()) {
+    const startsAt = input.startsAt ? Date.parse(input.startsAt) : Number.NaN
+    const expiresAt = input.expiresAt ? Date.parse(input.expiresAt) : null
+    const withinWindow = Number.isFinite(startsAt)
+        && startsAt <= now
+        && (expiresAt === null || (Number.isFinite(expiresAt) && expiresAt > now))
+    const withinUsage = input.usageLimit === null || input.usageCount < input.usageLimit
+    return withinWindow && withinUsage
+}
+
+/**
+ * Scope mana saja yang punya pass aktif untuk pengguna ini — satu query untuk semua scope,
+ * dipakai halaman yang perlu menampilkan status beberapa program sekaligus (mis. halaman akun).
+ */
+export async function getActivePassScopes(userId: string): Promise<PassScope[]> {
+    const supabase = await createV2Client()
+    // Same authenticated RLS and entitlement rules, one read instead of a
+    // feature-id lookup followed by a dependent entitlement request.
+    const { data: entitlements, error: entitlementError } = await supabase
+        .from('entitlements')
+        .select('starts_at, expires_at, usage_limit, usage_count, status, features!inner(code)')
+        .eq('user_id', userId)
+        .in('features.code', Object.values(PASS_FEATURE_BY_SCOPE))
+        .in('status', ['active', 'ACTIVE'])
+    if (entitlementError) throw entitlementError
+
+    const active = new Set<PassScope>()
+    for (const entitlement of entitlements ?? []) {
+        const usable = isUsableEntitlement({
+            startsAt: entitlement.starts_at ? String(entitlement.starts_at) : null,
+            expiresAt: entitlement.expires_at ? String(entitlement.expires_at) : null,
+            usageLimit: entitlement.usage_limit === null ? null : Number(entitlement.usage_limit),
+            usageCount: Number(entitlement.usage_count ?? 0),
+        })
+        const scope = PASS_SCOPES.find(scope => PASS_FEATURE_BY_SCOPE[scope] === String(entitlement.features?.code))
+        if (usable && scope) active.add(scope)
+    }
+
+    return PASS_SCOPES.filter((scope) => active.has(scope))
+}
+
+/** Apakah pengguna punya pass aktif pada scope tertentu. */
+export async function hasActivePass(userId: string, scope: PassScope) {
+    const scopes = await getActivePassScopes(userId)
+    return scopes.includes(scope)
+}
+
+/** @deprecated Perilaku lama: hanya pass TKA SMP. Gunakan `hasActivePass(userId, scope)`. */
+export async function hasActiveTempurPass(userId: string) {
+    return hasActivePass(userId, 'tka:smp')
+}

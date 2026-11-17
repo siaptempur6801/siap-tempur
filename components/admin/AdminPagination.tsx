@@ -1,69 +1,92 @@
-import Link from 'next/link'
-import { ADMIN_BASE_PATH } from '@/lib/admin-dashboard'
+import { adminSecondaryButtonClass } from '@/components/admin/AdminUi'
+import { ADMIN_PAGE_SIZE,adminPageHref,adminPageSummaryLabel,type AdminPageSummary } from '@/lib/admin-pagination'
+import { cn } from '@/lib/utils'
+import { ChevronLeft,ChevronRight } from 'lucide-react'
+import Link from '@/components/admin/navigation/AdminLink'
 
-interface AdminPaginationProps {
-    currentPage: number
-    totalPages: number
-    pageSize: number
-    totalItems: number
-    baseParams: URLSearchParams
-}
-
-function buildPageHref(baseParams: URLSearchParams, page: number) {
-    const params = new URLSearchParams(baseParams)
-    params.set('page', String(page))
-    return `${ADMIN_BASE_PATH}?${params.toString()}`
-}
-
+/**
+ * Pager daftar admin.
+ *
+ * Semua daftar sebelumnya memuat satu jendela tetap dan diam tentang sisanya.
+ * Komponen ini menampilkan posisi halaman secara eksplisit, dan — lewat
+ * `adminPageSummaryLabel` — menyatakan "ini baru sepotong" alih-alih membiarkan
+ * admin mengira sudah melihat semuanya.
+ *
+ * Pager sengaja tidak dirender bila hanya ada satu halaman: kontrol yang tidak
+ * bisa dipakai lebih baik tidak ditampilkan (`docs/ADMIN_UI_UX_STANDARD.md` §8).
+ */
 export default function AdminPagination({
-    currentPage,
-    totalPages,
-    pageSize,
-    totalItems,
-    baseParams,
-}: AdminPaginationProps) {
-    if (totalItems === 0 || totalPages <= 1) {
-        return null
+    pathname,
+    params,
+    summary,
+    noun = 'data',
+    plural,
+    className,
+    pageKey = 'page',
+}: {
+    pathname: string
+    pageKey?: string
+    /** Filter aktif yang harus dipertahankan saat berpindah halaman. */
+    params: Record<string, string | undefined>
+    summary: AdminPageSummary
+    noun?: string
+    /** Bentuk jamak untuk label; jatuh ke `noun` bila tidak diisi. */
+    plural?: string
+    className?: string
+}) {
+    const { page, totalPages, total } = summary
+    const label = (plural ?? noun)
+    const href = (nextPage: number) => {
+        if(pageKey === 'page') return adminPageHref(pathname,params,nextPage)
+        const q = new URLSearchParams(Object.entries(params).filter((entry): entry is [string,string] => Boolean(entry[1])))
+        if(nextPage > 1) q.set(pageKey,String(nextPage)); else q.delete(pageKey)
+        return `${pathname}?${q}`
     }
-
-    const startItem = (currentPage - 1) * pageSize + 1
-    const endItem = Math.min(currentPage * pageSize, totalItems)
-
     return (
-        <div className="flex flex-col gap-3 border-2 border-gray-900 bg-white p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm font-bold text-gray-600">
-                Menampilkan {startItem}-{endItem} dari {totalItems} soal
-            </p>
+        <div className={cn('flex flex-wrap items-center justify-between gap-3 border-t border-border p-4', className)}>
+            <p className="text-xs font-medium text-muted-foreground">{adminPageSummaryLabel(summary, noun, label)}</p>
 
-            <div className="flex items-center gap-2">
-                <Link
-                    href={buildPageHref(baseParams, currentPage - 1)}
-                    aria-disabled={currentPage <= 1}
-                    className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
-                        currentPage <= 1
-                            ? 'pointer-events-none border-2 border-gray-200 bg-gray-100 text-gray-400'
-                            : 'border-2 border-gray-900 bg-white text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5'
-                    }`}
-                >
-                    Sebelumnya
-                </Link>
+            {totalPages > 1 ? (
+                <nav className="flex items-center gap-2" aria-label={`Navigasi halaman ${noun}`}>
+                    {page > 1 ? (
+                        <Link
+                            className={cn(adminSecondaryButtonClass, 'px-2.5 text-xs')}
+                            href={href(page - 1)}
+                            rel="prev"
+                            aria-label={`Halaman sebelumnya dari ${totalPages}`}
+                        >
+                            <ChevronLeft size={14}/> Sebelumnya
+                        </Link>
+                    ) : (
+                        <span className={cn(adminSecondaryButtonClass, 'min-h-9 cursor-not-allowed bg-muted px-3 text-xs text-muted-foreground')} aria-hidden="true">
+                            <ChevronLeft size={14}/> Sebelumnya
+                        </span>
+                    )}
 
-                <span className="text-sm font-bold text-gray-600">
-                    Halaman {currentPage} / {totalPages}
-                </span>
+                    <span className="px-1 text-xs font-semibold text-muted-foreground" aria-live="polite">
+                        {page} / {totalPages}
+                    </span>
 
-                <Link
-                    href={buildPageHref(baseParams, currentPage + 1)}
-                    aria-disabled={currentPage >= totalPages}
-                    className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
-                        currentPage >= totalPages
-                            ? 'pointer-events-none border-2 border-gray-200 bg-gray-100 text-gray-400'
-                            : 'border-2 border-gray-900 bg-white text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5'
-                    }`}
-                >
-                    Berikutnya
-                </Link>
-            </div>
+                    {page < totalPages ? (
+                        <Link
+                            className={cn(adminSecondaryButtonClass, 'px-2.5 text-xs')}
+                            href={href(page + 1)}
+                            rel="next"
+                            aria-label={`Halaman berikutnya dari ${totalPages}`}
+                        >
+                            Berikutnya <ChevronRight size={14}/>
+                        </Link>
+                    ) : (
+                        <span className={cn(adminSecondaryButtonClass, 'min-h-9 cursor-not-allowed bg-muted px-3 text-xs text-muted-foreground')} aria-hidden="true">
+                            Berikutnya <ChevronRight size={14}/>
+                        </span>
+                    )}
+                </nav>
+            ) : (
+                <span className="text-xs font-medium text-muted-foreground">{total} {noun}</span>
+            )}
         </div>
     )
 }
+
+export { ADMIN_PAGE_SIZE }

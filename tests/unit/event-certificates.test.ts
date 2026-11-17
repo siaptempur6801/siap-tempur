@@ -8,7 +8,6 @@ import {
     shouldShowCertificateScore,
 } from '@/lib/event-certificates'
 import { createEventCertificatePdf } from '@/lib/event-certificate-pdf'
-import { getEventCertificateRankings } from '@/lib/event-certificate-snapshots'
 
 describe('event certificates', () => {
     it('normalizes a valid certificate name and collapses whitespace', () => {
@@ -48,44 +47,6 @@ describe('event certificates', () => {
             ['user-a', 1],
             ['user-b', 2],
             ['user-c', 3],
-        ])
-    })
-
-    it('builds release rankings from completed event sessions only', async () => {
-        const admin = {
-            from: () => ({
-                select: () => ({
-                    eq: () => ({
-                        eq: () => Promise.resolve({
-                            data: [
-                                {
-                                    user_id: 'user-b',
-                                    finished_at: '2026-07-13T03:05:00.000Z',
-                                    test_sessions: { status: 'completed', total_score: 420, end_time: null },
-                                },
-                                {
-                                    user_id: 'user-a',
-                                    finished_at: '2026-07-13T03:00:00.000Z',
-                                    test_sessions: { status: 'completed', total_score: 420, end_time: null },
-                                },
-                                {
-                                    user_id: 'user-c',
-                                    finished_at: '2026-07-13T03:10:00.000Z',
-                                    test_sessions: { status: 'in_progress', total_score: 500, end_time: null },
-                                },
-                            ],
-                            error: null,
-                        }),
-                    }),
-                }),
-            }),
-        }
-
-        const ranked = await getEventCertificateRankings(admin as never, 'event-id')
-
-        expect(ranked.map((entry) => [entry.user_id, entry.rank])).toEqual([
-            ['user-a', 1],
-            ['user-b', 2],
         ])
     })
 

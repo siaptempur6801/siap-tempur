@@ -41,13 +41,6 @@ export async function GET(
         return NextResponse.json({ error: 'Gagal menyiapkan file sertifikat' }, { status: 500 })
     }
 
-    if (!result.row.storage_path) {
-        await result.admin
-            .from('event_certificates')
-            .update({ storage_path: result.storagePath, generated_at: result.row.generated_at || new Date().toISOString() })
-            .eq('id', result.row.id)
-    }
-
     return new NextResponse(Buffer.from(pdfBytes), {
         status: 200,
         headers: {

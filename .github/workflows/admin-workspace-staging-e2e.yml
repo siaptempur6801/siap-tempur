@@ -1,0 +1,257 @@
+name: Admin Workspace Staging E2E
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'app/admin/**'
+      - 'app/cpns/admin/**'
+      - 'components/admin/**'
+      - 'src/repositories/authorization.repository.ts'
+      - 'src/services/authorization.service.ts'
+      - 'tests/e2e/admin.*.ts'
+      - 'tests/e2e/specs/10-admin-workspace-authenticated.spec.ts'
+      - 'playwright.config.ts'
+      - 'app/api/health/route.ts'
+      - '.github/workflows/admin-workspace-staging-e2e.yml'
+      - 'supabase/functions/ci-e2e-admin/**'
+  workflow_dispatch:
+    inputs:
+      preview_url:
+        description: Exact Vercel Preview URL for the selected branch head
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+  id-token: write
+
+concurrency:
+  group: admin-workspace-staging-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: 'true'
+  APP_ENV: staging
+  NEXT_PUBLIC_APP_ENV: staging
+  E2E_ADMIN_STAGING: '1'
+  E2E_REMOTE_BASE_URL: '1'
+  # Suite staging membuat banyak user disposabel & login dari satu alamat runner,
+  # sehingga limiter auth per-IP memblokir skenario yang sah. Hanya untuk gate staging.
+  E2E_DISABLE_AUTH_RATE_LIMIT: '1'
+  PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+  PR_NUMBER: ${{ github.event.pull_request.number || '' }}
+  VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+  GITHUB_TOKEN: ${{ github.token }}
+  NEXT_PUBLIC_SUPABASE_URL: https://lpgrivowdcepcxradavu.supabase.co
+  NEXT_PUBLIC_SUPABASE_EXPECTED_PROJECT_REF: lpgrivowdcepcxradavu
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_9MDt_8bH6lsECYEaX9zqeg_6Upvnpaf
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_9MDt_8bH6lsECYEaX9zqeg_6Upvnpaf
+
+jobs:
+  workspace-authenticated:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout exact branch head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Require Vercel Automation Bypass
+        shell: bash
+        run: |
+          if [ -z "$VERCEL_AUTOMATION_BYPASS_SECRET" ]; then
+            echo "VERCEL_AUTOMATION_BYPASS_SECRET is required for protected Preview QA."
+            exit 1
+          fi
+
+      - name: Resolve exact protected Vercel Preview
+        shell: bash
+        env:
+          INPUT_PREVIEW_URL: ${{ inputs.preview_url }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { appendFile } from 'node:fs/promises'
+
+          const expectedSha = process.env.PR_HEAD_SHA || process.env.GITHUB_SHA
+          const githubEnv = process.env.GITHUB_ENV
+          const eventName = process.env.GITHUB_EVENT_NAME
+          const bypassSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET
+          if (!expectedSha || !githubEnv || !bypassSecret) {
+            throw new Error('Admin preview resolver environment incomplete')
+          }
+
+          const diagnostic = (hostname, mode, response, returnedSha = null) => {
+            const type = response.headers.get('content-type') || 'unknown'
+            const location = response.headers.get('location')
+            let locationHost = null
+            if (location) {
+              try { locationHost = new URL(location).hostname } catch {}
+            }
+            console.log(JSON.stringify({
+              previewHost: hostname,
+              bypassMode: mode,
+              status: response.status,
+              contentType: type.split(';')[0],
+              redirectHost: locationHost,
+              returnedSha,
+            }))
+          }
+
+          const verifyPreview = async (candidate) => {
+            let url
+            try {
+              url = new URL(candidate)
+            } catch {
+              return false
+            }
+            if (url.protocol !== 'https:' || !url.hostname.endsWith('.vercel.app')) return false
+
+            const attempts = [
+              {
+                mode: 'header',
+                healthUrl: new URL('/api/health', url.origin),
+                headers: {
+                  'x-vercel-protection-bypass': bypassSecret,
+                },
+              },
+              {
+                mode: 'query',
+                healthUrl: (() => {
+                  const health = new URL('/api/health', url.origin)
+                  health.searchParams.set('x-vercel-protection-bypass', bypassSecret)
+                  return health
+                })(),
+                headers: {},
+              },
+            ]
+
+            for (const attempt of attempts) {
+              try {
+                const response = await fetch(attempt.healthUrl, {
+                  headers: attempt.headers,
+                  redirect: 'manual',
+                  signal: AbortSignal.timeout(15_000),
+                })
+
+                if (!response.ok) {
+                  diagnostic(url.hostname, attempt.mode, response)
+                  continue
+                }
+
+                const contentType = response.headers.get('content-type') || ''
+                if (!contentType.toLowerCase().includes('application/json')) {
+                  diagnostic(url.hostname, attempt.mode, response)
+                  continue
+                }
+
+                const payload = await response.json()
+                const returnedSha = payload?.deploymentCommitSha || null
+                diagnostic(url.hostname, attempt.mode, response, returnedSha)
+                if (returnedSha === expectedSha) return true
+              } catch (error) {
+                console.log(JSON.stringify({
+                  previewHost: url.hostname,
+                  bypassMode: attempt.mode,
+                  error: error instanceof Error ? error.name : 'request_error',
+                }))
+              }
+            }
+            return false
+          }
+
+          if (eventName === 'workflow_dispatch') {
+            const input = process.env.INPUT_PREVIEW_URL
+            if (!input || !(await verifyPreview(input))) {
+              throw new Error(`Manual Admin Preview is not READY for exact head ${expectedSha}`)
+            }
+            await appendFile(githubEnv, `BASE_URL=${new URL(input).origin}\nE2E_EXPECTED_HEAD_SHA=${expectedSha}\n`)
+            console.log('Manual exact protected Vercel Preview verified.')
+            process.exit(0)
+          }
+
+          const repository = process.env.GITHUB_REPOSITORY
+          const prNumber = process.env.PR_NUMBER
+          const token = process.env.GITHUB_TOKEN
+          const apiUrl = process.env.GITHUB_API_URL || 'https://api.github.com'
+          if (!repository || !prNumber || !token) {
+            throw new Error('Vercel PR-comment resolver credentials missing')
+          }
+
+          const fetchComments = async () => {
+            const response = await fetch(`${apiUrl}/repos/${repository}/issues/${prNumber}/comments?per_page=100`, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                Accept: 'application/vnd.github+json',
+                'X-GitHub-Api-Version': '2022-11-28',
+              },
+              signal: AbortSignal.timeout(15_000),
+            })
+            if (!response.ok) throw new Error(`GitHub PR comments failed: ${response.status}`)
+            return response.json()
+          }
+
+          const deadline = Date.now() + 3 * 60_000
+          let lastCandidateSet = ''
+          while (Date.now() < deadline) {
+            const comments = await fetchComments()
+            const candidates = []
+            for (const comment of comments) {
+              if (comment?.user?.login !== 'vercel[bot]' || typeof comment.body !== 'string') continue
+              const matches = comment.body.match(/https:\/\/[a-z0-9-]+\.vercel\.app/gi) || []
+              candidates.push(...matches)
+            }
+
+            const uniqueCandidates = [...new Set(candidates)]
+            const candidateSet = uniqueCandidates.map((candidate) => new URL(candidate).hostname).join(',')
+            if (candidateSet !== lastCandidateSet) {
+              console.log(`Vercel Preview candidates: ${candidateSet || 'none'}`)
+              lastCandidateSet = candidateSet
+            }
+
+            for (const candidate of uniqueCandidates) {
+              if (await verifyPreview(candidate)) {
+                const previewUrl = new URL(candidate).origin
+                await appendFile(githubEnv, `BASE_URL=${previewUrl}\nE2E_EXPECTED_HEAD_SHA=${expectedSha}\n`)
+                console.log(`Exact protected Vercel Preview resolved: ${previewUrl}`)
+                process.exit(0)
+              }
+            }
+
+            await new Promise((resolve) => setTimeout(resolve, 5000))
+          }
+
+          throw new Error(`Exact protected Vercel Preview not resolved for ${expectedSha}`)
+          NODE
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run authenticated Admin Workspace E2E on Vercel Preview
+        run: npx playwright test --project=chromium-admin-staging
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-workspace-playwright-report
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore
+          retention-days: 7

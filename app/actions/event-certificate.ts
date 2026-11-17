@@ -4,49 +4,43 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { validateCsrf } from '@/lib/csrf'
 import { logger } from '@/lib/logger'
-import { createAdminClient, createClient } from '@/lib/utils/supabase/server'
+import { createAdminClient, createV2AdminClient, createV2Client } from '@/lib/utils/supabase/server'
 import {
     buildCertificateNumber,
     getCertificateKindForRank,
     normalizeCertificateName,
 } from '@/lib/event-certificates'
-import { getEventCertificateRankings } from '@/lib/event-certificate-snapshots'
 
-type CertificateEventRow = {
-    id: string
-    title: string
-    status: string
-    certificate_enabled: boolean | null
-    certificate_released_at: string | null
+type ClaimCertificateResult = {
+    success: boolean
+    message: string
+    certificateNumber?: string
 }
 
-async function getCertificateRank(admin: Awaited<ReturnType<typeof createAdminClient>>, eventId: string, userId: string) {
-    try {
-        const ranked = await getEventCertificateRankings(admin, eventId)
-        return ranked.find((candidate) => candidate.user_id === userId) || null
-    } catch (error) {
-        logger.error('Certificate rank fetch failed', error, { eventId, userId })
-        throw new Error('Gagal memeriksa ranking sertifikat')
-    }
+type EventRow = { id: string; code: string; title: string; status: string; ends_at: string }
+type RegistrationRow = { id: string; status: string }
+type RankingRow = { rank: number; score: number | null }
+type TemplateRow = { id: string }
+type ExistingCertificateRow = { certificate_number: string; name_locked_at: string | null }
+
+function eventIsFinished(event: { status: string; ends_at: string }) {
+    return String(event.status).toLowerCase() === 'closed' || Date.now() > Date.parse(event.ends_at)
 }
 
-export async function claimEventCertificate(eventId: string, rawCertificateName: string) {
+export async function claimEventCertificate(eventId: string, rawCertificateName: string): Promise<ClaimCertificateResult> {
     try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
 
     const nameResult = normalizeCertificateName(rawCertificateName)
-    if (!nameResult.success) {
-        return { success: false, message: nameResult.message }
-    }
+    if (!nameResult.success) return { success: false, message: nameResult.message }
 
-    const supabase = await createClient()
+    const supabase = await createV2Client()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) redirect('/login?next=/cpns/dashboard/event')
 
-    const admin = await createAdminClient()
-
+    const admin = await createV2AdminClient()
     const { data: existingCertificate, error: existingError } = await admin
-        .from('event_certificates')
-        .select('id, certificate_number, certificate_name, storage_path, name_locked_at')
+        .from('certificates')
+        .select('certificate_number, name_locked_at')
         .eq('event_id', eventId)
         .eq('user_id', user.id)
         .maybeSingle()
@@ -55,154 +49,109 @@ export async function claimEventCertificate(eventId: string, rawCertificateName:
         logger.error('Existing certificate fetch failed', existingError, { eventId, userId: user.id })
         return { success: false, message: 'Gagal memeriksa sertifikat.' }
     }
-
-    if (existingCertificate?.name_locked_at) {
+    const existing = existingCertificate as ExistingCertificateRow | null
+    if (existing?.name_locked_at) {
         return {
             success: true,
             message: 'Sertifikat sudah tersedia.',
-            certificateNumber: existingCertificate.certificate_number as string,
+            certificateNumber: existing.certificate_number,
         }
     }
 
-    const { data: event, error: eventError } = await admin
-        .from('tryout_events')
-        .select('id, title, status, certificate_enabled, certificate_released_at')
-        .eq('id', eventId)
-        .maybeSingle()
+    const [{ data: event, error: eventError }, { data: registration, error: registrationError }] = await Promise.all([
+        admin
+            .from('events')
+            .select('id, code, title, status, ends_at')
+            .eq('id', eventId)
+            .maybeSingle(),
+        admin
+            .from('event_registrations')
+            .select('id, status')
+            .eq('event_id', eventId)
+            .eq('user_id', user.id)
+            .maybeSingle(),
+    ])
 
-    const certificateEvent = event as CertificateEventRow | null
-    if (eventError || !certificateEvent) {
-        return { success: false, message: 'Event tidak ditemukan.' }
-    }
-
-    if (certificateEvent.status !== 'closed' || !certificateEvent.certificate_enabled || !certificateEvent.certificate_released_at) {
-        return { success: false, message: 'Sertifikat event belum dirilis.' }
-    }
-
-    const { data: participant, error: participantError } = await admin
-        .from('tryout_event_participants')
-        .select('id, status')
-        .eq('event_id', eventId)
-        .eq('user_id', user.id)
-        .maybeSingle()
-
-    if (participantError || participant?.status !== 'completed') {
+    const eventRow = event as EventRow | null
+    const registrationRow = registration as RegistrationRow | null
+    if (eventError || !eventRow) return { success: false, message: 'Event tidak ditemukan.' }
+    if (!eventIsFinished(eventRow)) return { success: false, message: 'Sertifikat tersedia setelah event selesai.' }
+    if (registrationError || String(registrationRow?.status).toLowerCase() !== 'completed') {
         return { success: false, message: 'Sertifikat hanya tersedia untuk peserta yang sudah menyelesaikan event.' }
     }
 
-    if (existingCertificate) {
-        const now = new Date().toISOString()
-        const storagePath = existingCertificate.storage_path
-            ? String(existingCertificate.storage_path)
-            : `${eventId}/${user.id}/${existingCertificate.certificate_number}.pdf`
+    const rpcAdmin = await createAdminClient()
+    const { error: rankingSyncError } = await rpcAdmin.rpc('recalculate_event_rankings', { p_event_id: eventId })
+    if (rankingSyncError) {
+        logger.error('Certificate ranking sync failed', rankingSyncError, { eventId, userId: user.id })
+        return { success: false, message: 'Gagal memfinalisasi ranking sertifikat.' }
+    }
 
-        if (existingCertificate.storage_path) {
-            const { error: removeError } = await admin.storage
-                .from('event-certificates')
-                .remove([String(existingCertificate.storage_path)])
-
-            if (removeError) {
-                logger.warn('Old unlocked certificate PDF removal failed', {
-                    error: removeError.message,
-                    eventId,
-                    userId: user.id,
-                    storagePath,
-                })
-            }
-        }
-
-        const { data: lockedCertificate, error: updateError } = await admin
-            .from('event_certificates')
-            .update({
-                certificate_name: nameResult.name,
-                storage_path: storagePath,
-                generated_at: now,
-                name_locked_at: now,
-                updated_at: now,
-                updated_by: user.id,
-            })
-            .eq('id', existingCertificate.id)
-            .is('name_locked_at', null)
-            .select('certificate_number')
-            .maybeSingle()
-
-        if (updateError) {
-            logger.error('Certificate name lock failed', updateError, { eventId, userId: user.id })
-            return { success: false, message: 'Gagal menyimpan nama sertifikat.' }
-        }
-
-        if (lockedCertificate) {
-            revalidatePath('/cpns/dashboard/event')
-            return {
-                success: true,
-                message: 'Nama sertifikat tersimpan. Sertifikat siap diunduh.',
-                certificateNumber: lockedCertificate.certificate_number as string,
-            }
-        }
-
-        const { data: lockedAfterRace } = await admin
-            .from('event_certificates')
-            .select('certificate_number')
+    const [{ data: ranking, error: rankingError }, { data: template, error: templateError }] = await Promise.all([
+        admin
+            .from('event_rankings')
+            .select('rank, score')
             .eq('event_id', eventId)
             .eq('user_id', user.id)
-            .maybeSingle()
+            .maybeSingle(),
+        admin
+            .from('certificate_templates')
+            .select('id')
+            .eq('template_url', 'builtin:event-certificate-v1')
+            .maybeSingle(),
+    ])
 
-        if (lockedAfterRace) {
-            return {
-                success: true,
-                message: 'Sertifikat sudah tersedia.',
-                certificateNumber: lockedAfterRace.certificate_number as string,
-            }
-        }
-    }
+    const rankingRow = ranking as RankingRow | null
+    const templateRow = template as TemplateRow | null
+    if (rankingError || !rankingRow) return { success: false, message: 'Data hasil event belum lengkap.' }
+    if (templateError || !templateRow) return { success: false, message: 'Template sertifikat belum tersedia.' }
 
-    const rankedEntry = await getCertificateRank(admin, eventId, user.id)
-    if (!rankedEntry) {
-        return { success: false, message: 'Data hasil event belum lengkap.' }
-    }
-
-    const kind = getCertificateKindForRank(rankedEntry.rank)
-    const rank = kind === 'participant' ? null : rankedEntry.rank
+    const kind = getCertificateKindForRank(rankingRow.rank)
+    const rank = kind === 'participant' ? null : rankingRow.rank
     const certificateNumber = buildCertificateNumber({
-        eventCode: certificateEvent.title,
+        eventCode: eventRow.code || eventRow.title,
         eventId,
         userId: user.id,
         kind,
     })
-    const storagePath = `${eventId}/${user.id}/${certificateNumber}.pdf`
+    const issuedAt = new Date().toISOString()
 
     const { data: certificate, error: insertError } = await admin
-        .from('event_certificates')
+        .from('certificates')
         .insert({
-            event_id: eventId,
             user_id: user.id,
+            event_id: eventId,
             certificate_number: certificateNumber,
             certificate_name: nameResult.name,
             certificate_kind: kind,
             rank,
-            score: Math.trunc(Number(rankedEntry.total_score || 0)),
-            storage_path: storagePath,
-            generated_at: new Date().toISOString(),
-            name_locked_at: new Date().toISOString(),
-            created_by: user.id,
+            score: Number(rankingRow.score ?? 0),
+            template_id: templateRow.id,
+            storage_path: `${eventId}/${user.id}/${certificateNumber}.pdf`,
+            verification_code: certificateNumber,
+            issued_at: issuedAt,
+            name_locked_at: issuedAt,
+            updated_at: issuedAt,
         })
         .select('certificate_number')
         .single()
 
-    if (insertError || !certificate) {
+    const insertedCertificate = certificate as { certificate_number: string } | null
+    if (insertError || !insertedCertificate) {
         if (insertError?.code === '23505') {
             const { data: duplicateCertificate } = await admin
-                .from('event_certificates')
+                .from('certificates')
                 .select('certificate_number')
                 .eq('event_id', eventId)
                 .eq('user_id', user.id)
                 .maybeSingle()
 
-            if (duplicateCertificate) {
+            const duplicate = duplicateCertificate as { certificate_number: string } | null
+            if (duplicate) {
                 return {
                     success: true,
                     message: 'Sertifikat sudah tersedia.',
-                    certificateNumber: duplicateCertificate.certificate_number as string,
+                    certificateNumber: duplicate.certificate_number,
                 }
             }
         }
@@ -215,6 +164,6 @@ export async function claimEventCertificate(eventId: string, rawCertificateName:
     return {
         success: true,
         message: 'Nama sertifikat tersimpan. Sertifikat siap diunduh.',
-        certificateNumber: certificate.certificate_number as string,
+        certificateNumber: insertedCertificate.certificate_number,
     }
 }

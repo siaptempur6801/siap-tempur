@@ -2,6 +2,7 @@
 
 import { logger } from '@/lib/logger'
 import { createClient } from '@/lib/utils/supabase/server'
+import { leaderboardService } from '@/src/services/leaderboard.service'
 
 export interface LeaderboardEntry {
     rank_pos: number
@@ -12,6 +13,8 @@ export interface LeaderboardEntry {
     score_twk: number
     score_tiu: number
     score_tkp: number
+    duration_seconds?: number | null
+    attempt_id?: string | null
     is_current_user?: boolean
 }
 
@@ -35,28 +38,22 @@ export async function getNationalLeaderboardAction(): Promise<NationalLeaderboar
         }
     }
 
-    const { data, error } = await supabase.rpc('get_national_leaderboard', {
-        p_limit: 100,
-        p_user_id: user.id,
-    })
-
-    if (error) {
-        logger.warn('National leaderboard fetch failed', { error: error.message })
+    try {
+        const result = await leaderboardService.getNationalLeaderboard(user.id, 100)
+        return {
+            currentUserId: user.id,
+            rankings: result.rankings,
+            currentUserRank: result.currentUserRank,
+        }
+    } catch (error) {
+        logger.warn('National leaderboard fetch failed', {
+            error: error instanceof Error ? error.message : String(error),
+        })
         return {
             currentUserId: user.id,
             rankings: [],
             currentUserRank: null,
             error: 'Gagal memuat ranking nasional',
         }
-    }
-
-    const entries = (data ?? []) as LeaderboardEntry[]
-    const rankings = entries.filter((entry) => entry.rank_pos <= 100)
-    const currentUserRank = entries.find((entry) => entry.user_id === user.id) ?? null
-
-    return {
-        currentUserId: user.id,
-        rankings,
-        currentUserRank,
     }
 }
