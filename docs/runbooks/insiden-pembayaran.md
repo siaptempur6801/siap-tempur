@@ -1,7 +1,9 @@
 # Runbook — Insiden pembayaran (Midtrans → order → token/tiket)
 
-Dibuat dalam audit fase 1 (2026-11-17) dari pembacaan kode, bukan dari uji di production.
-Perbarui bila alurnya berubah. Rujukan kode ada di setiap langkah.
+Dibuat dalam audit fase 1 (2026-11-17), diperbarui 2026-11-18 setelah perbaikan yang disetujui.
+Sumbernya pembacaan kode dan uji Postgres lokal, bukan uji di production. Perbarui bila alurnya
+berubah. Bagian yang bergantung pada migration `20261118*` baru berlaku setelah migration itu
+diterapkan (lihat [`rilis.md`](rilis.md)).
 
 ## Alur singkat
 
@@ -16,8 +18,12 @@ Perbarui bila alurnya berubah. Rujukan kode ada di setiap langkah.
    `entitlements`, dan untuk produk tiket event membuat `event_registrations`.
 4. Jalur cadangan:
    - tombol/aksi peserta `syncPaymentStatus` / `syncEventPaymentStatus` (cek status ke Midtrans);
-   - cron harian `GET /api/cron/reconcile-payments` (`vercel.json`: `0 0 * * *` UTC = 07.00 WIB),
-     memproses **50 pembayaran pending tertua** per jalan.
+   - admin: tombol **Sinkronkan dengan Midtrans** di detail pesanan (permission `payment.manage`);
+   - `GET /api/cron/reconcile-payments`, dipanggil **tiap jam** oleh GitHub Actions
+     (`reconcile-payments-cron.yml`) dan harian oleh Vercel (`vercel.json`, 07.00 WIB). Satu jalan
+     memproses 50 pembayaran pending (yang paling lama tidak dicek lebih dulu), memeriksa ulang 20
+     order lunas 30 hari terakhir untuk refund yang terlewat, memfinalisasi attempt kedaluwarsa,
+     dan menghitung ulang ranking event yang sedang/baru berjalan.
 
 ## Gejala A — "Sudah bayar tapi token/tiket belum masuk"
 
@@ -26,13 +32,12 @@ Perbarui bila alurnya berubah. Rujukan kode ada di setiap langkah.
    - `settlement`/`capture` + `fraud_status=accept` → lanjut ke langkah 3.
    - `pending` → pembayaran belum selesai di sisi Midtrans; tidak ada yang perlu dipenuhi.
    - `expire`/`cancel`/`deny` → peserta tidak terdebit; arahkan membeli ulang.
-3. Picu sinkronisasi; semua jalur memanggil `fulfill_paid_order` yang idempoten, jadi aman diulang:
-   - peserta membuka **Profil → Riwayat**, menekan bayar pada order yang masih `pending`, lalu
-     menutup jendela Snap. Penutupan memanggil `syncPaymentStatus` (`components/profile/HistoryTab.tsx`).
-     Belum ada tombol "cek status" khusus, dan belum ada alat admin untuk menyinkronkan satu order
-     (kesenjangan operasional, lihat laporan audit);
-   - untuk tiket event, modal event memanggil `syncEventPaymentStatus`;
-   - jalankan cron manual (Gejala B). Cara ini hanya mencakup order yang baris `payments`-nya masih `pending`;
+3. Buka pesanan di **Admin → Commerce → Pesanan → detail**, lalu tekan **Sinkronkan dengan
+   Midtrans**. Jalurnya sama dengan webhook (`fulfill_paid_order`, idempoten), jadi aman diulang,
+   dan hasilnya tercatat di audit log. Alternatif:
+   - peserta menekan bayar pada order `pending` di **Profil → Riwayat** lalu menutup jendela Snap
+     (memanggil `syncPaymentStatus`);
+   - jalankan cron manual (Gejala B);
    - minta Midtrans mengirim ulang notifikasi, bila fitur itu tersedia di Dashboard akun.
 4. Bila tetap gagal, cari di log Vercel (Runtime Logs) berdasarkan nomor order:
    - `Midtrans webhook ditolak karena nominal tidak cocok` → `PAYMENT_AMOUNT_MISMATCH`.
@@ -52,10 +57,15 @@ Perbarui bila alurnya berubah. Rujukan kode ada di setiap langkah.
 - Panggil `/api/health` dengan `Authorization: Bearer <HEALTH_CHECK_TOKEN>` dan baca
   `payments.oldestPendingPaymentMinutes`. Nilai > ~1.500 (25 jam) berarti cron rekonsiliasi
   tidak berjalan atau terus gagal.
-- Cek di Vercel → Project → Cron Jobs bahwa job terdaftar dan terakhir sukses.
+- Cek GitHub → Actions → **Reconcile payments (hourly)**: jalan terakhir harus hijau. Job merah
+  berarti endpoint tidak menjawab 200 (GitHub juga mengirim email kegagalan). Di repo publik,
+  workflow terjadwal dinonaktifkan GitHub setelah 60 hari tanpa aktivitas; aktifkan kembali.
+- Cek di Vercel → Project → Cron Jobs bahwa job harian terdaftar dan terakhir sukses.
 - Respons cron `401` berarti `CRON_SECRET` hilang/berbeda (fail-closed).
 - Cari log `Cron reconcile-payments perlu perhatian` (`alert=cron_reconcile_payments_attention`):
-  `orders.failed > 0` atau `orders.hasMorePending = true`.
+  `orders.failed > 0`, `orders.hasMorePending = true`, `refunds.failed > 0`, atau kegagalan
+  finalisasi attempt/ranking event. Alert terkait lain: `attempt_post_scoring_sync_failed`,
+  `attempt_auto_finalize_failed`, `event_ranking_refresh_failed`.
 - Menjalankan cron manual (pemegang `CRON_SECRET` saja), boleh diulang untuk batch berikutnya:
 
   ```bash
@@ -64,12 +74,17 @@ Perbarui bila alurnya berubah. Rujukan kode ada di setiap langkah.
 
 ## Gejala C — Refund / chargeback
 
-- Hanya produk **token TKA** (`exam_token_tka`) yang otomatis ditarik (`reverse_tka_token_order`);
-  saldo boleh menjadi negatif bila token sudah terpakai.
-- Produk lain (tiket event, token CPNS, pass) **tidak** dicabut otomatis dan order tetap `paid`
-  (temuan audit A-05). Setelah refund, cabut akses secara manual dan catat di audit log.
-- Refund yang terjadi saat webhook hilang tidak pernah direkonsiliasi (cron hanya memproses
-  `pending`). Setelah refund dari Midtrans Dashboard, pastikan notifikasi refund diterima.
+Kebijakan (keputusan pemilik 2026-11-17, `reverse_paid_order`):
+
+- Refund/chargeback **penuh**: semua token dari pesanan itu ditarik (saldo boleh negatif bila sudah
+  terpakai; peserta melihat penjelasannya), entitlement dicabut (`revoked`), tiket event dibatalkan
+  (`cancelled`; attempt dan skor tidak dihapus), pesanan menjadi `refunded`/`chargeback`.
+- Refund/chargeback **sebagian**: pesanan ditandai `partial_*_review`; admin meninjau dan
+  menyesuaikan manual.
+- Notifikasi refund yang hilang tertangkap oleh cron (order lunas 30 hari terakhir) atau tombol
+  **Sinkronkan dengan Midtrans**.
+- Pesanan yang pemiliknya sudah menghapus akun dicatat lunas tanpa pemenuhan
+  (`payments.raw_response.fulfillment_skipped = ORDER_OWNER_DELETED`); refund dilakukan manual.
 
 ## Gejala D — Midtrans / Upstash / Supabase tidak tersedia
 
