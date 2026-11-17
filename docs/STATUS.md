@@ -158,7 +158,7 @@ Di luar cakupan (ditunda): TKA SD, TKA SMA/SMK, B2B sekolah.
 | 2. TKA SMP Mini + Core Product | ✅ selesai |
 | 3. TKA SMP Learning Loop V1 | ✅ selesai |
 | 4. TKA SMP Monetization | ✅ selesai (staging verified) — `docs/TKA_SMP_MONETIZATION_AUDIT.md` |
-| 5. Schema V2 Production Cutover | ✅ cutover DB selesai; eksposur publik ditahan |
+| 5. Schema V2 Production Cutover | ✅ cutover DB selesai; domain publik aktif (keputusan 2026-11-17) |
 | 6. TKA SD hardening | ⏸ ditunda |
 | 7. TKA SMA | ⏸ ditunda |
 | 8. Platform expansion (B2B, notifikasi, analytics) | ⏸ ditunda |
