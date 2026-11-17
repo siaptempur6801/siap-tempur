@@ -30,6 +30,7 @@ dan `VERCEL_ENV=preview` → staging.
 | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | wajib | disarankan | Lihat catatan rate limit |
 | `CRON_SECRET` | wajib | bila cron dijadwalkan | Kosong → `/api/cron/*` selalu 401 dan rekonsiliasi berhenti diam-diam |
 | `CSP_REPORT_URI` | opsional | opsional | Endpoint laporan pelanggaran CSP |
+| `HEALTH_CHECK_TOKEN` | disarankan | — | `Authorization: Bearer …` membuka detail `/api/health` (commit SHA, store rate limit) di production; tanpa token publik hanya melihat `status` |
 
 **Rate limit.** Di production, limiter auth/payment bersifat **fail-closed**:
 tanpa Upstash atau saat Upstash gagal, permintaan dianggap terkena limit
