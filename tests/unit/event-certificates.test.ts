@@ -50,15 +50,28 @@ describe('event certificates', () => {
     ])
   })
 
-  it('builds stable certificate numbers per event, user, and kind', () => {
+  it('builds certificate numbers from event, kind, ids and a random part', () => {
     expect(
       buildCertificateNumber({
         eventCode: 'tryout akbar batch 1',
         eventId: '12345678-aaaa-bbbb-cccc-1234567890ab',
         userId: 'abcdef12-3456-7890-abcd-ef1234567890',
         kind: 'winner_1',
+        randomPart: '0A1B2C3D',
       }),
-    ).toBe('ST-TRYOUT-AKBAR-BATCH-1-W1-12345678-ABCDEF12')
+    ).toBe('ST-TRYOUT-AKBAR-BATCH-1-W1-12345678-ABCDEF12-0A1B2C3D')
+  })
+
+  it('makes certificate numbers unguessable from event and user ids (N-08)', () => {
+    const input = {
+      eventCode: 'tryout akbar batch 1',
+      eventId: '12345678-aaaa-bbbb-cccc-1234567890ab',
+      userId: 'abcdef12-3456-7890-abcd-ef1234567890',
+      kind: 'participant' as const,
+    }
+    const numbers = new Set(Array.from({ length: 20 }, () => buildCertificateNumber(input)))
+    expect(numbers.size).toBe(20)
+    for (const value of numbers) expect(value).toMatch(/-[0-9A-F]{8}$/)
   })
 
   it('hides scores for non-passing participant certificates but keeps winner and passing scores', () => {

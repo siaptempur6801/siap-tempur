@@ -83,22 +83,43 @@ function certificateKindCode(kind: EventCertificateKind) {
   return 'P'
 }
 
+/** 8 karakter heksadesimal acak (32 bit) dari CSPRNG. */
+function randomCertificatePart() {
+  const bytes = new Uint8Array(4)
+  globalThis.crypto.getRandomValues(bytes)
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0'))
+    .join('')
+    .toUpperCase()
+}
+
+/**
+ * Nomor sertifikat baru.
+ *
+ * Halaman verifikasi publik menampilkan nama, peringkat, dan skor berdasarkan
+ * nomor ini. Dulu nomor sepenuhnya diturunkan dari kode event + 8 hex event id +
+ * 8 hex user id, sedangkan user id peserta lain terlihat di leaderboard event —
+ * sehingga nomor orang lain bisa ditebak (audit N-08). Kini ditambah 32 bit acak.
+ * Nomor yang sudah terbit tidak berubah karena disimpan di tabel `certificates`.
+ */
 export function buildCertificateNumber({
   eventCode,
   eventId,
   userId,
   kind,
+  randomPart = randomCertificatePart(),
 }: {
   eventCode: string | null | undefined
   eventId: string
   userId: string
   kind: EventCertificateKind
+  /** Hanya untuk test; produksi memakai nilai acak. */
+  randomPart?: string
 }) {
   const eventPart = slugCertificatePart(eventCode || eventId).slice(0, 24)
   const eventIdPart = eventId.replace(/-/g, '').slice(0, 8).toUpperCase()
   const userIdPart = userId.replace(/-/g, '').slice(0, 8).toUpperCase()
 
-  return ['ST', eventPart, certificateKindCode(kind), eventIdPart, userIdPart].join('-')
+  return ['ST', eventPart, certificateKindCode(kind), eventIdPart, userIdPart, randomPart].join('-')
 }
 
 export function getCertificateTitle(kind: EventCertificateKind) {
