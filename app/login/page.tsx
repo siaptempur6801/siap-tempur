@@ -1,8 +1,14 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import LoginForm from '@/components/auth/LoginForm'
 import { MascotBubble } from '@/components/brand/playful'
 import { resolveAuthBackHref, sanitizeAuthReturnTo } from '@/lib/auth-redirect'
+
+export const metadata: Metadata = {
+  title: 'Masuk',
+  description: 'Masuk ke akun SiapTempur untuk melanjutkan latihan CPNS dan TKA.',
+}
 
 export default async function LoginPage({
   searchParams,

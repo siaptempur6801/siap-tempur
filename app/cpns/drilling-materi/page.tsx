@@ -11,7 +11,7 @@ import { ArrowLeft, Brain, CheckCircle2, Shield, Target, Users } from 'lucide-re
 import SeoNavbar from '@/components/SeoNavbar'
 
 export const metadata: Metadata = {
-  title: 'Latihan Fokus CPNS - TWK, TIU & TKP | SiapTempur',
+  title: 'Latihan Fokus CPNS - TWK, TIU & TKP',
   description:
     'Pilih latihan fokus CPNS untuk memperdalam TWK, TIU, atau TKP dan gunakan hasilnya sebagai bagian dari persiapan SKD yang lebih terarah.',
   alternates: {

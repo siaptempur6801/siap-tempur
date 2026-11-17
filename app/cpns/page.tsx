@@ -4,7 +4,7 @@ import { getAuthUserIdVerified } from '@/lib/utils/supabase/server'
 import { listLatestPublishedArticleCards } from '@/src/services/article-read.service'
 
 export const metadata: Metadata = {
-  title: 'Persiapan SKD CPNS - TWK, TIU, TKP, Drill & Tryout | SiapTempur',
+  title: 'Persiapan SKD CPNS - TWK, TIU, TKP, Drill & Tryout',
   description:
     'Persiapan SKD CPNS dengan Drill TWK, TIU, TKP, Mini Tryout, Full Tryout, pembahasan, soal salah, remedial, dan analisis hasil agar belajar lebih terarah.',
   keywords: [

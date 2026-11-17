@@ -8,7 +8,7 @@ import SeoNavbar from '@/components/SeoNavbar'
 import { Button } from '@/components/ui/Button'
 
 export const metadata: Metadata = {
-  title: 'Mini Tryout CPNS - TWK, TIU & TKP | SiapTempur',
+  title: 'Mini Tryout CPNS - TWK, TIU & TKP',
   description:
     'Gunakan mini tryout CPNS untuk mengukur TWK, TIU, atau TKP dalam sesi yang lebih ringkas sebelum melanjutkan ke full tryout.',
 }

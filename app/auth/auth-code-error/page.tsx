@@ -1,5 +1,11 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowLeft, LogIn } from 'lucide-react'
+
+export const metadata: Metadata = {
+  title: 'Gagal Masuk',
+  robots: { index: false, follow: false },
+}
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0

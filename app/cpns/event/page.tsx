@@ -11,7 +11,7 @@ import { ArrowLeft, BarChart3, CalendarDays, Clock3, Trophy } from 'lucide-react
 import SeoNavbar from '@/components/SeoNavbar'
 
 export const metadata: Metadata = {
-  title: 'Event Tryout CPNS | SiapTempur',
+  title: 'Event Tryout CPNS',
   description:
     'Lihat event tryout CPNS yang tersedia di SiapTempur, ikuti sesi terjadwal, dan tinjau hasil setelah event selesai.',
   alternates: {

@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import {
@@ -16,6 +17,11 @@ import {
   batchStatusLabel,
 } from '@/src/services/organization.service'
 import { joinBatchAction } from '@/app/actions/organization-join'
+
+export const metadata: Metadata = {
+  title: 'Undangan Instansi',
+  robots: { index: false, follow: false },
+}
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0

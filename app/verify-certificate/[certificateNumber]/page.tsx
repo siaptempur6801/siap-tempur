@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Award, CheckCircle2 } from 'lucide-react'
@@ -7,6 +8,13 @@ import {
   getCertificateTitle,
   type EventCertificateKind,
 } from '@/lib/event-certificates'
+
+export const metadata: Metadata = {
+  title: 'Verifikasi Sertifikat',
+  // Halaman memuat nama dan peringkat peserta; dapat dibuka lewat tautan
+  // sertifikat, tetapi tidak untuk diindeks mesin pencari.
+  robots: { index: false, follow: false },
+}
 
 export const dynamic = 'force-dynamic'
 

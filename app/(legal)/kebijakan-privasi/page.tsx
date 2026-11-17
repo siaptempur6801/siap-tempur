@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Kebijakan Privasi - SiapTempur',
+  title: 'Kebijakan Privasi',
   description: 'Bagaimana SiapTempur mengelola dan melindungi data pribadi Anda.',
 }
 

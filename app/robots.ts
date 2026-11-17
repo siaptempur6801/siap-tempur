@@ -7,11 +7,17 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: '*',
       allow: '/',
+      // Aturan robots adalah pencocokan prefiks. Pola lama `/*/dashboard/`
+      // (dengan garis miring penutup) tidak mencocokkan `/cpns/dashboard` itu sendiri.
+      // Halaman privat juga memasang `robots: noindex` lewat metadata.
       disallow: [
         '/api/',
-        '/auth/callback',
-        '/*/dashboard/', // Prevent dashboard indexing
-        '/admin/',
+        '/auth/',
+        '/admin',
+        '/*/dashboard',
+        '/onboarding',
+        '/cpns/join/',
+        '/verify-certificate/',
       ],
     },
     sitemap: `${baseUrl}/sitemap.xml`,

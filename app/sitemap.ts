@@ -19,8 +19,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     '/cpns/twk',
     '/cpns/tiu',
     '/cpns/tkp',
+    '/tka',
     '/blog',
-    '/faq',
   ].map((route) => ({
     url: `${baseUrl}${route}`,
     lastModified: new Date(),

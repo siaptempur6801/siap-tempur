@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Kebijakan Pengembalian - SiapTempur',
+  title: 'Kebijakan Pengembalian',
   description: 'Kebijakan pengembalian dana untuk layanan SiapTempur.',
 }
 

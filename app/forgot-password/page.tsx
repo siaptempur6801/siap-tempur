@@ -1,6 +1,12 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import ForgotPasswordForm from '@/components/auth/ForgotPasswordForm'
+
+export const metadata: Metadata = {
+  title: 'Lupa Password',
+  robots: { index: false, follow: false },
+}
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0

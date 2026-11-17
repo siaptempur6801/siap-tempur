@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { signout } from '@/app/auth/actions'
 import UnifiedAdminShell from '@/components/admin/UnifiedAdminShell'
 import { adminLandingPath, hasAdminSurface } from '@/lib/admin-nav'
@@ -6,6 +7,11 @@ import { authorizationService } from '@/src/services/authorization.service'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import React from 'react'
+
+export const metadata: Metadata = {
+  title: 'Admin',
+  robots: { index: false, follow: false },
+}
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0

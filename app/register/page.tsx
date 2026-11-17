@@ -1,8 +1,14 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { MascotBubble } from '@/components/brand/playful'
 import { ArrowLeft } from 'lucide-react'
 import RegisterForm from '@/components/auth/RegisterForm'
 import { resolveAuthBackHref, sanitizeAuthReturnTo } from '@/lib/auth-redirect'
+
+export const metadata: Metadata = {
+  title: 'Daftar',
+  description: 'Buat akun SiapTempur gratis untuk mulai latihan CPNS/SKD dan TKA.',
+}
 
 export default async function RegisterPage({
   searchParams,

@@ -7,7 +7,7 @@ import { MascotBubble } from '@/components/brand/playful'
 import { createV2Client } from '@/lib/utils/supabase/server'
 
 export const metadata: Metadata = {
-  title: 'Pilih jenjang TKA — Siap Tempur',
+  title: 'Pilih Jenjang TKA',
   description: 'Tentukan jenjang TKA yang ingin dilanjutkan: SD, SMP, atau SMA.',
   robots: { index: false, follow: false },
 }

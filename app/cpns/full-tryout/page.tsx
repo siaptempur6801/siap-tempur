@@ -16,7 +16,7 @@ import SeoNavbar from '@/components/SeoNavbar'
 import { Button } from '@/components/ui/Button'
 
 export const metadata: Metadata = {
-  title: 'Full Tryout SKD CPNS | SiapTempur',
+  title: 'Full Tryout SKD CPNS',
   description:
     'Latihan full tryout SKD CPNS untuk TWK, TIU, dan TKP dengan batas waktu, hasil per bagian, pembahasan, dan riwayat pengerjaan.',
 }

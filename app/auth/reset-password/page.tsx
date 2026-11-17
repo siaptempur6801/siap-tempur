@@ -1,5 +1,11 @@
+import type { Metadata } from 'next'
 import PaperBackground from '@/components/PaperBackground'
 import ResetPasswordForm from '@/components/auth/ResetPasswordForm'
+
+export const metadata: Metadata = {
+  title: 'Atur Ulang Password',
+  robots: { index: false, follow: false },
+}
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0

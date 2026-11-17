@@ -18,7 +18,7 @@ import {
 } from '@/components/home/landing/sections'
 
 export const metadata: Metadata = {
-  title: 'SiapTempur - Persiapan CPNS & TKA SD, SMP, SMA',
+  title: { absolute: 'SiapTempur - Persiapan CPNS & TKA SD, SMP, SMA' },
   description:
     'Satu akun untuk persiapan CPNS/SKD dan TKA jenjang SD, SMP, hingga SMA dengan latihan, tryout, pembahasan, analisis hasil, drill, dan remedial yang lebih terarah.',
   alternates: { canonical: '/' },

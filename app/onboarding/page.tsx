@@ -5,7 +5,7 @@ import { ArrowRight, BookOpenCheck, CheckCircle2, GraduationCap, ShieldCheck } f
 import { createV2Client } from '@/lib/utils/supabase/server'
 
 export const metadata: Metadata = {
-  title: 'Pilih Program Belajar - SiapTempur',
+  title: 'Pilih Program Belajar',
   description:
     'Pilih program CPNS atau jenjang TKA untuk melanjutkan perjalanan belajar di SiapTempur.',
   robots: { index: false, follow: false },

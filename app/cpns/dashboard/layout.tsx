@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { createClient } from '@/lib/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
@@ -5,6 +6,11 @@ import { signout } from '@/app/auth/actions'
 import DashboardShell from '@/components/dashboard/DashboardShell'
 import { logger } from '@/lib/logger'
 import { walletService } from '@/src/services/wallet.service'
+
+export const metadata: Metadata = {
+  title: 'Dashboard CPNS',
+  robots: { index: false, follow: false },
+}
 
 type UserMetadata = {
   full_name?: string

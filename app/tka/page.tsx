@@ -23,7 +23,7 @@ import {
 } from '@/src/tka/context'
 
 export const metadata: Metadata = {
-  title: 'Persiapan TKA SD, SMP, SMA - SiapTempur',
+  title: 'Persiapan TKA SD, SMP, SMA',
   description:
     'Persiapan TKA untuk jenjang SD, SMP, dan SMA dengan latihan, tryout, pembahasan, analisis hasil, serta remedial dalam satu akun SiapTempur.',
   alternates: { canonical: '/tka' },
