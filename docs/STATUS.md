@@ -24,7 +24,9 @@ Audit menyeluruh dan perbaikannya ada di [`docs/audits/AUDIT_2026-11-17.md`](aud
   ke staging dulu; migration menggagalkan diri bila ACL live memberi hak tulis ke `authenticated`.
 - Set `HEALTH_CHECK_TOKEN` (production) dan, bila perlu, `ALLOWED_DEV_ORIGINS` di `.env.local`.
 - Pastikan kotak surat `halo@siaptempur.id` aktif — dipakai di Kebijakan Privasi dan S&K.
-- Putuskan retensi transaksi: menghapus akun saat ini ikut menghapus order (`ON DELETE CASCADE`).
+- Apply migration `20261117100000_retain_anonymized_transactions_on_account_delete.sql` sebelum
+  atau bersamaan dengan deploy: keputusan pemilik — transaksi disimpan, data pribadinya dianonimkan
+  saat akun dihapus; Kebijakan Privasi baru sudah menyatakan perilaku ini.
 
 ### Sinkronisasi database — 2026-10-12
 
