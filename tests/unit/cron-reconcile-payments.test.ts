@@ -1,13 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { fromMock, syncUserOrderMock, createV2AdminClientMock, closeExpiredEventsMock } = vi.hoisted(
-  () => ({
-    fromMock: vi.fn(),
-    syncUserOrderMock: vi.fn(),
-    createV2AdminClientMock: vi.fn(),
-    closeExpiredEventsMock: vi.fn(),
-  }),
-)
+const {
+  fromMock,
+  syncUserOrderMock,
+  refreshPaidOrderMock,
+  createV2AdminClientMock,
+  closeExpiredEventsMock,
+} = vi.hoisted(() => ({
+  fromMock: vi.fn(),
+  syncUserOrderMock: vi.fn(),
+  refreshPaidOrderMock: vi.fn(),
+  createV2AdminClientMock: vi.fn(),
+  closeExpiredEventsMock: vi.fn(),
+}))
 
 vi.mock('@/lib/utils/supabase/server', () => ({
   createV2AdminClient: createV2AdminClientMock,
@@ -16,6 +21,7 @@ vi.mock('@/lib/utils/supabase/server', () => ({
 vi.mock('@/src/services/payment.service', () => ({
   paymentService: {
     syncUserOrder: syncUserOrderMock,
+    refreshPaidOrder: refreshPaidOrderMock,
   },
 }))
 
@@ -30,6 +36,15 @@ vi.mock('@/src/services/event.service', () => ({
   },
 }))
 
+const finalizationMocks = vi.hoisted(() => ({
+  finalizeExpired: vi.fn(),
+  refreshRecentEventRankings: vi.fn(),
+}))
+
+vi.mock('@/src/services/attempt-finalization.service', () => ({
+  attemptFinalizationService: finalizationMocks,
+}))
+
 vi.mock('@/lib/logger', () => ({
   logger: {
     info: vi.fn(),
@@ -39,6 +54,7 @@ vi.mock('@/lib/logger', () => ({
 }))
 
 import { GET } from '@/app/api/cron/reconcile-payments/route'
+import { logger } from '@/lib/logger'
 
 type PendingPaymentRow = {
   order_id: string
@@ -52,6 +68,8 @@ type OrderRow = {
 }
 
 let pendingPayments: PendingPaymentRow[]
+let paidPayments: Array<{ order_id: string }>
+let checkedOrderIds: string[]
 let orders: OrderRow[]
 let paymentError: unknown
 let orderError: unknown
@@ -65,20 +83,34 @@ function authorizedRequest() {
 function installCanonicalQueryMocks() {
   fromMock.mockImplementation((table: string) => {
     if (table === 'payments') {
-      return {
-        select: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            eq: vi.fn(() => ({
-              order: vi.fn(() => ({
-                limit: vi.fn(async () => ({
-                  data: pendingPayments,
-                  error: paymentError,
-                })),
-              })),
-            })),
-          })),
-        })),
+      let refundQuery = false
+      const query = {
+        select: vi.fn(() => query),
+        eq: vi.fn(() => query),
+        in: vi.fn(() => {
+          refundQuery = true
+          return query
+        }),
+        gte: vi.fn(() => query),
+        order: vi.fn(() => query),
+        limit: vi.fn(async () =>
+          refundQuery
+            ? { data: paidPayments, error: null }
+            : { data: pendingPayments, error: paymentError },
+        ),
+        update: vi.fn((values: unknown) => {
+          const chain = {
+            eq: vi.fn((column: string, value: string) => {
+              if (column === 'order_id') checkedOrderIds.push(value)
+              return chain
+            }),
+            then: (resolve: (value: { error: null }) => void) => resolve({ error: null }),
+          }
+          void values
+          return chain
+        }),
       }
+      return query
     }
 
     if (table === 'orders') {
@@ -100,6 +132,10 @@ describe('payment reconciliation cron', () => {
   beforeEach(() => {
     process.env.CRON_SECRET = 'cron-secret'
     pendingPayments = []
+    paidPayments = []
+    checkedOrderIds = []
+    refreshPaidOrderMock.mockReset()
+    refreshPaidOrderMock.mockResolvedValue({ status: 'settlement', reversed: false })
     orders = []
     paymentError = null
     orderError = null
@@ -108,6 +144,16 @@ describe('payment reconciliation cron', () => {
     syncUserOrderMock.mockReset()
     createV2AdminClientMock.mockReset()
     closeExpiredEventsMock.mockReset()
+    vi.mocked(logger.error).mockClear()
+    finalizationMocks.finalizeExpired.mockReset()
+    finalizationMocks.refreshRecentEventRankings.mockReset()
+    finalizationMocks.finalizeExpired.mockResolvedValue({
+      checked: 0,
+      finalized: 0,
+      skipped: 0,
+      failed: 0,
+    })
+    finalizationMocks.refreshRecentEventRankings.mockResolvedValue({ events: 0, failed: 0 })
     createV2AdminClientMock.mockResolvedValue({ from: fromMock })
     closeExpiredEventsMock.mockResolvedValue({ closed: 0 })
     installCanonicalQueryMocks()
@@ -208,5 +254,109 @@ describe('payment reconciliation cron', () => {
     expect(syncUserOrderMock).not.toHaveBeenCalled()
     expect(payload.data.orders.skipped).toBe(1)
     expect(payload.data.orders.checked).toBe(0)
+  })
+  it('menaikkan log error beralert bila ada order yang gagal direkonsiliasi', async () => {
+    pendingPayments = [{ order_id: 'order-1' }]
+    orders = [{ id: 'order-1', user_id: 'user-1', status: 'pending' }]
+    syncUserOrderMock.mockRejectedValueOnce(new Error('PAYMENT_AMOUNT_MISMATCH'))
+
+    const response = await GET(authorizedRequest())
+
+    expect(response.status).toBe(200)
+    expect(logger.error).toHaveBeenCalledWith(
+      'Cron reconcile-payments perlu perhatian',
+      undefined,
+      expect.objectContaining({
+        alert: 'cron_reconcile_payments_attention',
+        orders: expect.objectContaining({ failed: 1 }),
+      }),
+    )
+  })
+
+  it('menaikkan log error beralert bila backlog pending melebihi satu batch', async () => {
+    pendingPayments = Array.from({ length: 51 }, (_, index) => ({ order_id: `order-${index}` }))
+    orders = []
+
+    await GET(authorizedRequest())
+
+    expect(logger.error).toHaveBeenCalledWith(
+      'Cron reconcile-payments perlu perhatian',
+      undefined,
+      expect.objectContaining({ orders: expect.objectContaining({ hasMorePending: true }) }),
+    )
+  })
+
+  it('tidak membuat log alert saat rekonsiliasi bersih', async () => {
+    pendingPayments = [{ order_id: 'order-1' }]
+    orders = [{ id: 'order-1', user_id: 'user-1', status: 'pending' }]
+    syncUserOrderMock.mockResolvedValueOnce({ status: 'settlement', paid: true })
+
+    await GET(authorizedRequest())
+
+    expect(logger.error).not.toHaveBeenCalledWith(
+      'Cron reconcile-payments perlu perhatian',
+      expect.anything(),
+      expect.anything(),
+    )
+  })
+
+  it('menjalankan finalisasi attempt dan ranking event, dan melaporkan hasilnya', async () => {
+    finalizationMocks.finalizeExpired.mockResolvedValueOnce({
+      checked: 2,
+      finalized: 2,
+      skipped: 0,
+      failed: 0,
+    })
+    finalizationMocks.refreshRecentEventRankings.mockResolvedValueOnce({ events: 1, failed: 0 })
+
+    const payload = await (await GET(authorizedRequest())).json()
+
+    expect(payload.data.attempts.finalized).toBe(2)
+    expect(payload.data.rankings.events).toBe(1)
+  })
+
+  it('kegagalan finalisasi tidak menggagalkan rekonsiliasi dan memicu log alert', async () => {
+    pendingPayments = [{ order_id: 'order-1' }]
+    orders = [{ id: 'order-1', user_id: 'user-1', status: 'pending' }]
+    syncUserOrderMock.mockResolvedValueOnce({ status: 'settlement', paid: true })
+    finalizationMocks.finalizeExpired.mockRejectedValueOnce(new Error('rpc down'))
+
+    const response = await GET(authorizedRequest())
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(payload.data.orders.settled).toBe(1)
+    expect(payload.data.attempts).toEqual({ error: 'rpc down' })
+    expect(logger.error).toHaveBeenCalledWith(
+      'Cron reconcile-payments perlu perhatian',
+      undefined,
+      expect.objectContaining({ alert: 'cron_reconcile_payments_attention' }),
+    )
+  })
+
+  it('baris yang gagal dicek ditandai agar berpindah ke belakang antrean (A-12)', async () => {
+    pendingPayments = [{ order_id: 'order-1' }, { order_id: 'order-2' }]
+    orders = [
+      { id: 'order-1', user_id: 'user-1', status: 'pending' },
+      { id: 'order-2', user_id: 'user-2', status: 'paid' },
+    ]
+    syncUserOrderMock.mockRejectedValueOnce(new Error('PAYMENT_AMOUNT_MISMATCH'))
+
+    await GET(authorizedRequest())
+
+    expect(checkedOrderIds).toEqual(expect.arrayContaining(['order-1', 'order-2']))
+  })
+
+  it('memeriksa ulang order lunas untuk refund yang notifikasinya hilang (A-06)', async () => {
+    paidPayments = [{ order_id: 'paid-1' }, { order_id: 'paid-2' }]
+    refreshPaidOrderMock
+      .mockResolvedValueOnce({ status: 'refund', reversed: true })
+      .mockResolvedValueOnce({ status: 'settlement', reversed: false })
+
+    const payload = await (await GET(authorizedRequest())).json()
+
+    expect(refreshPaidOrderMock).toHaveBeenCalledWith('paid-1')
+    expect(payload.data.refunds).toEqual({ checked: 2, reversed: 1, failed: 0 })
+    expect(checkedOrderIds).toContain('paid-2')
   })
 })

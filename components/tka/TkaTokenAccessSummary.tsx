@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { ArrowRight, Ticket } from 'lucide-react'
+import { negativeTokenBalanceNote } from '@/lib/token-balance'
 
 export default function TkaTokenAccessSummary({
   tokenBalance,
@@ -10,6 +11,7 @@ export default function TkaTokenAccessSummary({
   tokenCost?: number
   href: string
 }) {
+  const negativeNote = negativeTokenBalanceNote(tokenBalance)
   return (
     <section
       aria-label="Informasi token TKA"
@@ -24,6 +26,7 @@ export default function TkaTokenAccessSummary({
           <p className="mt-0.5 text-2xl font-bold tabular-nums text-foreground">
             {tokenBalance} <span className="text-sm font-medium text-muted-foreground">token</span>
           </p>
+          {negativeNote && <p className="mt-1 max-w-xs text-xs text-danger">{negativeNote}</p>}
         </div>
       </div>
       <div className="col-span-2 row-start-2 min-w-0 border-t border-border pt-3 lg:col-span-1 lg:col-start-2 lg:row-start-1 lg:border-t-0 lg:border-l lg:pl-6 lg:pt-0">

@@ -8,6 +8,17 @@
 
 ## 1. Produk
 
+### Audit fase 1 (bisnis & operasional) — 2026-11-18
+
+Branch `audit/fase1-2026-11-17`, laporan [`docs/audit/fase1-2026-11-17.md`](audit/fase1-2026-11-17.md),
+runbook [`rilis.md`](runbooks/rilis.md) dan [`insiden-pembayaran.md`](runbooks/insiden-pembayaran.md).
+**Belum di-merge dan belum di-deploy.** Lima migration baru **belum diterapkan** di staging maupun
+production dan wajib diterapkan berurutan sebelum merge: `20261118090000` (ranking event
+berserialisasi), `20261118091000` (leaderboard nasional hanya Direct), `20261118092000`
+(finalisasi attempt kedaluwarsa), `20261118093000` (refund mencabut akses semua produk),
+`20261118094000` (pemakaian entitlement per attempt). Semuanya diuji di Postgres lokal, bukan di
+staging/production. Setelah merge, isi secret GitHub `CRON_SECRET` untuk cron rekonsiliasi per jam.
+
 ### Status domain & audit — 2026-11-17
 
 **Rilis production 2026-11-17 — selesai.** Migration `20261117090000_scope_ranking_reads_and_drop_unused_write_policies`
@@ -158,7 +169,7 @@ Di luar cakupan (ditunda): TKA SD, TKA SMA/SMK, B2B sekolah.
 | 2. TKA SMP Mini + Core Product | ✅ selesai |
 | 3. TKA SMP Learning Loop V1 | ✅ selesai |
 | 4. TKA SMP Monetization | ✅ selesai (staging verified) — `docs/TKA_SMP_MONETIZATION_AUDIT.md` |
-| 5. Schema V2 Production Cutover | ✅ cutover DB selesai; eksposur publik ditahan |
+| 5. Schema V2 Production Cutover | ✅ cutover DB selesai; domain publik aktif (keputusan 2026-11-17) |
 | 6. TKA SD hardening | ⏸ ditunda |
 | 7. TKA SMA | ⏸ ditunda |
 | 8. Platform expansion (B2B, notifikasi, analytics) | ⏸ ditunda |

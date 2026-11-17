@@ -5,8 +5,28 @@ import { subjectProgressService } from '@/src/services/subject-progress.service'
 import { walletService, WalletDomainError } from '@/src/services/wallet.service'
 import { eventRankingService } from '@/src/services/event-ranking.service'
 import { leaderboardService } from '@/src/services/leaderboard.service'
-import { PracticeDomainError } from '@/src/services/exam-attempt.service'
+import { hasEntitlementMarker, PracticeDomainError } from '@/src/services/exam-attempt.service'
 import { attemptRepository } from '@/src/repositories/attempt.repository'
+import { logger } from '@/lib/logger'
+
+async function bestEffort<T>(
+  step: string,
+  userId: string,
+  attemptId: string,
+  run: () => Promise<T>,
+): Promise<T | null> {
+  try {
+    return await run()
+  } catch (error) {
+    logger.error('Sinkronisasi pasca-penilaian gagal', error, {
+      alert: 'attempt_post_scoring_sync_failed',
+      step,
+      userId,
+      attemptId,
+    })
+    return null
+  }
+}
 
 class ExamCompletionService {
   async completeAttempt(userId: string, attemptId: string) {
@@ -31,7 +51,8 @@ class ExamCompletionService {
 
     // A distribution grants access to this attempt. Its completion must not
     // depend on the participant having a personal token balance.
-    if (!organizationContext && !eventContext) {
+    // Attempt yang ditanggung entitlement tidak dipotong token (audit A-16).
+    if (!organizationContext && !eventContext && !hasEntitlementMarker(metadata)) {
       try {
         wallet = await walletService.debitForAttempt(userId, attemptId)
       } catch (error) {
@@ -48,13 +69,25 @@ class ExamCompletionService {
       }
     }
 
+    // Skor sudah tersimpan di atas. Sinkronisasi turunan (aktivitas, progres, ranking,
+    // leaderboard, streak) bersifat best-effort: kegagalannya dicatat dengan kunci
+    // alert, bukan dikembalikan sebagai "gagal mengumpulkan" ke peserta (audit A-11).
+    // Ranking event dihitung ulang lagi oleh cron. Baris leaderboard nasional peserta
+    // ini baru tersinkron lagi pada submit berikutnya atau saat papan dibangun ulang
+    // (`rebuild_leaderboard`); kegagalannya terlihat lewat kunci alert di atas.
     const [activity, subjectProgress, eventRanking, nationalLeaderboards] = await Promise.all([
-      activityService.syncAttemptDay(userId, attemptId),
-      subjectProgressService.sync(userId),
-      eventRankingService.syncForAttempt(userId, attemptId),
-      leaderboardService.syncForAttempt(userId, attemptId),
+      bestEffort('activity', userId, attemptId, () =>
+        activityService.syncAttemptDay(userId, attemptId),
+      ),
+      bestEffort('subject_progress', userId, attemptId, () => subjectProgressService.sync(userId)),
+      bestEffort('event_ranking', userId, attemptId, () =>
+        eventRankingService.syncForAttempt(userId, attemptId),
+      ),
+      bestEffort('leaderboard', userId, attemptId, () =>
+        leaderboardService.syncForAttempt(userId, attemptId),
+      ),
     ])
-    const streak = await streakService.sync(userId)
+    const streak = await bestEffort('streak', userId, attemptId, () => streakService.sync(userId))
 
     return {
       scoring,

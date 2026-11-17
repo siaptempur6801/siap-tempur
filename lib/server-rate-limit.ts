@@ -94,6 +94,12 @@ export const AUTH_RATE_LIMITS: Record<AuthRateLimitAction, { ip: RateWindow; ema
     },
   }
 
+/** Action auth yang jatuh ke limiter memori (bukan ditolak) saat store bersama gagal. */
+const AUTH_ACTIONS_WITH_MEMORY_FALLBACK: ReadonlySet<AuthRateLimitAction> = new Set([
+  'login',
+  'signup',
+])
+
 /**
  * Kunci rate limit yang memuat data pribadi (email) di-hash supaya Redis tidak
  * menyimpan PII dan key-nya tidak bisa dibaca balik.
@@ -136,7 +142,14 @@ export async function isAuthActionRateLimited(
   const policy = AUTH_RATE_LIMITS[action]
   const ip = await getRequestIp()
 
-  if (await checkRateLimit(`auth_ip_${action}_${ip}`, policy.ip.limit, policy.ip.windowMs)) {
+  // Login/daftar memakai limiter memori per-instance saat Upstash tidak tersedia
+  // (keputusan pemilik 2026-11-17, audit B-06): gangguan Redis tidak boleh
+  // mematikan login. Rate limit Supabase Auth tetap menjadi lapis terluar.
+  // Aksi yang mengirim email tetap fail-closed karena berbiaya dan berisiko spam.
+  const ipOptions = AUTH_ACTIONS_WITH_MEMORY_FALLBACK.has(action) ? { failClosed: false } : {}
+  if (
+    await checkRateLimit(`auth_ip_${action}_${ip}`, policy.ip.limit, policy.ip.windowMs, ipOptions)
+  ) {
     return true
   }
 

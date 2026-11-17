@@ -9,6 +9,7 @@ import { validateCsrf } from '@/lib/csrf'
 import type { CreateEventPaymentTransactionResult } from '@/lib/event-payment'
 import { commerceService } from '@/src/services/commerce.service'
 import { paymentService } from '@/src/services/payment.service'
+import { eventService, EventDomainError } from '@/src/services/event.service'
 
 export async function createEventPaymentTransaction(
   eventId: string,
@@ -64,6 +65,16 @@ export async function createEventPaymentTransaction(
     }
     if (existingOrder && String(existingOrder.status).toLowerCase() === 'paid') {
       return { success: false, message: 'Tiket sudah dibayar. Muat ulang halaman event.' }
+    }
+
+    // Tagihan BARU hanya boleh dibuat selama pendaftaran buka dan kuota tersedia
+    // (audit A-01). Tagihan pending yang sudah ada tetap boleh dibuka di atas
+    // (Snap kedaluwarsa sendiri setelah 15 menit).
+    try {
+      await eventService.assertTicketPurchaseAllowed(eventId, offer.sessionId)
+    } catch (error) {
+      if (error instanceof EventDomainError) return { success: false, message: error.message }
+      throw error
     }
 
     if (existingOrder?.paymentStatus === 'pending' && options.refreshPending) {

@@ -1,0 +1,58 @@
+name: Reconcile payments (hourly)
+
+# Jadwal tambahan gratis untuk /api/cron/reconcile-payments (audit B-03, keputusan
+# pemilik 2026-11-17: pakai alternatif gratis, bukan Vercel Pro). Cron Vercel harian di
+# vercel.json tetap ada sebagai cadangan.
+#
+# Prasyarat (sekali, oleh pemilik):
+#   - Repository secret `CRON_SECRET` = nilai yang sama dengan env Vercel Production.
+#   - Opsional: repository variable `RECONCILE_URL` (default domain production).
+#
+# Catatan:
+#   - Jadwal GitHub Actions bersifat best-effort (bisa telat beberapa menit).
+#   - Di repo publik, GitHub menonaktifkan workflow terjadwal setelah 60 hari tanpa
+#     aktivitas repo; aktifkan kembali dari tab Actions bila itu terjadi.
+#   - Log Actions repo publik dapat dibaca siapa pun: hanya kode HTTP dan angka
+#     ringkasan yang dicetak, tidak pernah isi respons mentah.
+#   - Job gagal (bukan 200) → GitHub mengirim email kegagalan workflow ke pemilik.
+#     Itu alarm gratis bila cron/secret rusak.
+
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: reconcile-payments-cron
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    if: github.repository_owner == 'siaptempur6801' || github.repository_owner == '8shagrid'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Call the production reconciliation endpoint
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          RECONCILE_URL: ${{ vars.RECONCILE_URL || 'https://siaptempur.id/api/cron/reconcile-payments' }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CRON_SECRET}" ]; then
+            echo "::error::Repository secret CRON_SECRET belum diset."
+            exit 1
+          fi
+          response="$(mktemp)"
+          code="$(curl -sS -o "$response" -w '%{http_code}' --max-time 90 \
+            -H "Authorization: Bearer ${CRON_SECRET}" "${RECONCILE_URL}")"
+          echo "HTTP ${code}"
+          jq -c '{
+            orders: (.data.orders // {} | with_entries(select(.value | type == "number" or type == "boolean"))),
+            refunds: (.data.refunds // {} | with_entries(select(.value | type == "number"))),
+            attempts: (.data.attempts // {} | with_entries(select(.value | type == "number"))),
+            rankings: (.data.rankings // {} | with_entries(select(.value | type == "number")))
+          }' "$response" || echo "Ringkasan tidak dapat dibaca."
+          rm -f "$response"
+          test "${code}" = "200"

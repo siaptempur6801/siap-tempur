@@ -1,8 +1,26 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+const paymentProbe = vi.hoisted(() => ({
+  rows: [] as Array<{ created_at: string }>,
+  error: null as unknown,
+}))
+
 vi.mock('@/lib/utils/supabase/server', () => ({
   createAdminClient: async () => ({
-    from: () => ({ select: () => ({ limit: async () => ({ error: null }) }) }),
+    from: (table: string) =>
+      table === 'payments'
+        ? {
+            select: () => ({
+              eq: () => ({
+                eq: () => ({
+                  order: () => ({
+                    limit: async () => ({ data: paymentProbe.rows, error: paymentProbe.error }),
+                  }),
+                }),
+              }),
+            }),
+          }
+        : { select: () => ({ limit: async () => ({ error: null }) }) },
   }),
 }))
 
@@ -33,6 +51,8 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllEnvs()
+  paymentProbe.rows = []
+  paymentProbe.error = null
 })
 
 describe('/api/health — paparan detail (N-06)', () => {
@@ -75,5 +95,37 @@ describe('/api/health — paparan detail (N-06)', () => {
     for (let index = 0; index < 31; index += 1) statuses.push((await GET(request(ip))).status)
     expect(statuses.at(-1)).toBe(429)
     expect(statuses.slice(0, 30)).not.toContain(429)
+  })
+})
+
+describe('/api/health — sinyal pembayaran pending', () => {
+  it('detail melaporkan umur pembayaran pending tertua tanpa mengubah status HTTP', async () => {
+    vi.stubEnv('APP_ENV', 'staging')
+    paymentProbe.rows = [{ created_at: new Date(Date.now() - 90 * 60_000).toISOString() }]
+    const response = await GET(request())
+    const body = await response.json()
+    expect(response.status).toBe(200)
+    expect(body.payments.oldestPendingPaymentMinutes).toBeGreaterThanOrEqual(89)
+    expect(body.payments.oldestPendingPaymentMinutes).toBeLessThanOrEqual(91)
+  })
+
+  it('null bila tidak ada pending atau probe gagal; health tetap 200', async () => {
+    vi.stubEnv('APP_ENV', 'staging')
+    expect((await (await GET(request())).json()).payments).toEqual({
+      oldestPendingPaymentMinutes: null,
+    })
+    paymentProbe.error = new Error('payments down')
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const response = await GET(request())
+    warn.mockRestore()
+    expect(response.status).toBe(200)
+    expect((await response.json()).payments.oldestPendingPaymentMinutes).toBeNull()
+  })
+
+  it('pemanggil publik production tidak melihat sinyal pembayaran', async () => {
+    vi.stubEnv('APP_ENV', 'production')
+    paymentProbe.rows = [{ created_at: new Date().toISOString() }]
+    const body = await (await GET(request())).json()
+    expect(body.payments).toBeUndefined()
   })
 })

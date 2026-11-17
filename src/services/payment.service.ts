@@ -294,11 +294,73 @@ class PaymentService {
       amount,
       rawResponse: asJson(result),
     })
+    await this.applyReversalIfAny(canonicalOrderId, status, result)
 
     return {
       status: fulfilment.status,
       paid: isMidtransSuccessStatus(fulfilment.status),
     }
+  }
+
+  /**
+   * Cek ulang order yang sudah `paid` ke Midtrans untuk menangkap refund/chargeback
+   * yang notifikasinya hilang (audit A-06). Dipanggil cron dan aksi admin; tidak
+   * pernah memberi akses baru — status sukses diabaikan karena order sudah lunas.
+   */
+  async refreshPaidOrder(orderId: string) {
+    const order = await commerceService.getOrderById(orderId)
+    if (!order) throw new Error('ORDER_NOT_FOUND')
+    const result = await this.fetchProviderStatus(asString(order.order_number))
+    if (!result) return { status: 'unknown', reversed: false }
+    const status = normalizeMidtransStatus(result.transaction_status)
+    if (!isMidtransReversalStatus(status)) return { status, reversed: false }
+
+    const amount = Number(result.gross_amount)
+    if (!Number.isFinite(amount) || amount !== asNumber(order.total_amount)) {
+      throw new Error('PAYMENT_AMOUNT_MISMATCH')
+    }
+    await commerceService.applyProviderStatus({
+      orderId: asString(order.id),
+      status: canonicalMidtransStatus(status),
+      providerTransactionId:
+        typeof result.transaction_id === 'string' ? result.transaction_id : null,
+      paymentMethod: typeof result.payment_type === 'string' ? result.payment_type : null,
+      amount,
+      rawResponse: asJson(result),
+    })
+    await this.applyReversalIfAny(asString(order.id), status, result)
+    return { status, reversed: true }
+  }
+
+  private async applyReversalIfAny(
+    orderId: string,
+    status: string,
+    result: Record<string, unknown>,
+  ) {
+    if (!isMidtransReversalStatus(status)) return
+    const transactionId =
+      typeof result.transaction_id === 'string' ? result.transaction_id : orderId
+    await commerceService.applyOrderReversal({
+      orderId,
+      eventId: `${transactionId}:${status}:reconcile`,
+      status,
+      rawResponse: asJson(result),
+    })
+  }
+
+  private async fetchProviderStatus(orderNumber: string) {
+    const { serverKey, baseUrl } = providerBaseUrl()
+    const response = await fetch(`${baseUrl}/${encodeURIComponent(orderNumber)}/status`, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        Authorization: `Basic ${Buffer.from(`${serverKey}:`).toString('base64')}`,
+      },
+      cache: 'no-store',
+    })
+    if (!response.ok) return null
+    return (await response.json()) as Record<string, unknown>
   }
 
   async processWebhook(input: {
@@ -364,7 +426,7 @@ class PaymentService {
     })
 
     if (isMidtransReversalStatus(status)) {
-      await commerceService.applyTkaTokenReversal({
+      await commerceService.applyOrderReversal({
         orderId: canonicalOrderId,
         eventId: input.eventId,
         status,

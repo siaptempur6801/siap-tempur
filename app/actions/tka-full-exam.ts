@@ -2,6 +2,7 @@
 
 import { validateCsrf } from '@/lib/csrf'
 import { logger } from '@/lib/logger'
+import { eventRankingService } from '@/src/services/event-ranking.service'
 import { EXAM_ACTION_RATE_LIMITED_MESSAGE, isExamActionRateLimited } from '@/lib/server-rate-limit'
 import { createV2Client, getAuthUserIdVerified } from '@/lib/utils/supabase/server'
 import { activityService } from '@/src/services/activity.service'
@@ -116,6 +117,18 @@ export async function submitTkaFullExamAttempt(attemptId: string) {
       } catch (syncError) {
         logger.warn('[tka-full-exam] gamification sync failed', {
           error: syncError instanceof Error ? syncError.message : String(syncError),
+          attemptId,
+          userId: user.id,
+        })
+      }
+      // Attempt Event TKA: jalur RPC ini tidak menyinkronkan ranking event, sehingga
+      // ranking baru muncul saat admin menghitung ulang. Best-effort; cron menjadi
+      // jaring pengaman (audit A-07/A-11).
+      try {
+        await eventRankingService.syncForAttempt(user.id, attemptId)
+      } catch (rankingError) {
+        logger.warn('[tka-full-exam] event ranking sync failed', {
+          error: rankingError instanceof Error ? rankingError.message : String(rankingError),
           attemptId,
           userId: user.id,
         })

@@ -19,6 +19,18 @@ type HealthChecks = {
 
 type RateLimitStoreStatus = 'redis' | 'memory' | 'unconfigured'
 
+/**
+ * Sinyal operasional (bukan bagian `checks`, tidak mengubah status HTTP): umur
+ * pembayaran Midtrans `pending` tertua dalam menit. Normalnya < 1 hari karena
+ * Snap kedaluwarsa 15 menit dan cron rekonsiliasi berjalan harian. Nilai yang
+ * terus tumbuh melewati ~1.500 menit berarti cron berhenti (mis. `CRON_SECRET`
+ * hilang) atau ada order yang terus gagal direkonsiliasi. `null` = tidak ada
+ * pending atau probe gagal.
+ */
+type PaymentSignals = {
+  oldestPendingPaymentMinutes: number | null
+}
+
 const NO_STORE_HEADERS = {
   'Cache-Control': 'no-store, max-age=0',
   'CDN-Cache-Control': 'no-store',
@@ -47,6 +59,7 @@ function healthResponse(
   clientIpSource: ClientIpSource,
   rateLimitStore: RateLimitStoreStatus,
   detail: boolean,
+  payments: PaymentSignals | null = null,
 ) {
   const status = Object.values(checks).every(Boolean) ? 'ok' : 'degraded'
   const timestamp = new Date().toISOString()
@@ -66,6 +79,7 @@ function healthResponse(
       status,
       checks,
       rateLimitStore,
+      payments,
       // Nama header sumber untuk diagnosis. Ini tidak membuktikan ingress telah
       // membersihkan header; sanitasi tetap bergantung pada konfigurasi proxy.
       clientIpSource,
@@ -81,6 +95,31 @@ function healthResponse(
       },
     },
   )
+}
+
+async function readPaymentSignals(): Promise<PaymentSignals> {
+  try {
+    const admin = await createAdminClient()
+    const { data, error } = await admin
+      .from('payments')
+      .select('created_at')
+      .eq('provider', 'midtrans')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: true })
+      .limit(1)
+    if (error) throw error
+    const createdAt = Date.parse(String(data?.[0]?.created_at ?? ''))
+    return {
+      oldestPendingPaymentMinutes: Number.isFinite(createdAt)
+        ? Math.max(0, Math.floor((Date.now() - createdAt) / 60_000))
+        : null,
+    }
+  } catch (error) {
+    logger.warn('Health payment signal probe failed', {
+      error: error instanceof Error ? error.message : 'Unknown payment probe error',
+    })
+    return { oldestPendingPaymentMinutes: null }
+  }
 }
 
 export async function GET(request: Request) {
@@ -142,11 +181,15 @@ export async function GET(request: Request) {
     })
   }
 
+  // Hanya untuk pemanggil detail: probe ini tidak dibayar oleh monitor publik.
+  const payments = detail ? await readPaymentSignals() : null
+
   return healthResponse(
     Object.values(checks).every(Boolean) ? 200 : 503,
     checks,
     clientIpSource,
     rateLimitStore,
     detail,
+    payments,
   )
 }

@@ -73,3 +73,22 @@ describe('TKA token controls', () => {
     expect(html).not.toContain('1 token untuk satu sesi baru')
   })
 })
+
+describe('saldo token negatif setelah refund (A-10)', () => {
+  it('menjelaskan saldo minus kepada peserta', () => {
+    const html = renderToStaticMarkup(
+      <TkaTokenAccessSummary tokenBalance={-3} href="/tka/smp/beli-token" />,
+    )
+    expect(html).toContain('-3')
+    expect(html).toContain('Saldo minus karena dana pembelian dikembalikan')
+  })
+
+  it('tidak menampilkan catatan untuk saldo nol atau positif', () => {
+    for (const balance of [0, 4]) {
+      const html = renderToStaticMarkup(
+        <TkaTokenAccessSummary tokenBalance={balance} href="/tka/smp/beli-token" />,
+      )
+      expect(html).not.toContain('Saldo minus')
+    }
+  })
+})

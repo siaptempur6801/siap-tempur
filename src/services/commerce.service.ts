@@ -342,6 +342,19 @@ class CommerceService {
     return data
   }
 
+  async getOrderById(orderId: string) {
+    const admin = await createV2AdminClient()
+    const { data, error } = await admin
+      .from('orders')
+      .select(
+        'id, order_number, user_id, status, subtotal, total_amount, currency, paid_at, created_at',
+      )
+      .eq('id', orderId)
+      .maybeSingle()
+    if (error) throw error
+    return data
+  }
+
   async getOrderByNumber(orderNumber: string) {
     const admin = await createV2AdminClient()
     const { data, error } = await admin
@@ -376,14 +389,19 @@ class CommerceService {
     if (error) throw error
   }
 
-  async applyTkaTokenReversal(input: {
+  /**
+   * Refund/chargeback: tarik token, cabut entitlement, batalkan tiket event, dan tandai
+   * order untuk semua jenis produk (audit A-05, keputusan pemilik 2026-11-17).
+   * Idempoten; refund/chargeback sebagian hanya ditandai untuk ditinjau admin.
+   */
+  async applyOrderReversal(input: {
     orderId: string
     eventId: string
     status: string
     rawResponse: Json
   }) {
     const admin = await createAdminClient()
-    const { error } = await admin.rpc('reverse_tka_token_order', {
+    const { error } = await admin.rpc('reverse_paid_order', {
       p_order_id: input.orderId,
       p_event_id: input.eventId,
       p_status: input.status,
@@ -392,7 +410,13 @@ class CommerceService {
     if (error) throw error
   }
 
-  async getEventOffer(eventId: string) {
+  /**
+   * Status tiket event. `mapped` = event punya produk tiket aktif (`event_products`).
+   * `offer` bernilai `null` bila produk diarsipkan atau tidak punya harga yang berlaku;
+   * event seperti itu tetap berbayar dan pendaftaran harus ditolak, bukan dianggap
+   * gratis (audit A-02).
+   */
+  async getEventTicket(eventId: string) {
     const untyped = await createAdminClient()
     const { data: mapping, error: mappingError } = await untyped
       .from('event_products')
@@ -401,7 +425,7 @@ class CommerceService {
       .eq('status', 'active')
       .maybeSingle()
     if (mappingError) throw mappingError
-    if (!mapping) return null
+    if (!mapping) return { mapped: false as const, offer: null }
 
     const admin = await createV2AdminClient()
     const { data: product, error: productError } = await admin
@@ -410,32 +434,30 @@ class CommerceService {
       .eq('id', String(mapping.product_id))
       .maybeSingle()
     if (productError) throw productError
-    if (!product) return null
+    if (!product) return { mapped: true as const, offer: null }
 
     const offer = await this.getProductOfferByCode(stringValue(product.code))
-    if (!offer) return null
-    return { ...offer, eventId, sessionId: String(mapping.session_id || '') || null }
+    if (!offer) return { mapped: true as const, offer: null }
+    return {
+      mapped: true as const,
+      offer: { ...offer, eventId, sessionId: String(mapping.session_id || '') || null },
+    }
+  }
+
+  async getEventOffer(eventId: string) {
+    return (await this.getEventTicket(eventId)).offer
   }
 
   async getLatestOrderForProduct(userId: string, productId: string) {
     const admin = await createV2AdminClient()
-    const { data: items, error: itemError } = await admin
-      .from('order_items')
-      .select('order_id')
-      .eq('product_id', productId)
-      .order('id', { ascending: false })
-      .limit(100)
-    if (itemError) throw itemError
-    const orderIds = Array.from(
-      new Set((items ?? []).map((item) => stringValue(item.order_id)).filter(Boolean)),
-    )
-    if (orderIds.length === 0) return null
-
+    // Disaring per pengguna DI DALAM query (join `order_items!inner`) sebelum limit.
+    // Versi lama mengambil 100 `order_items` lintas pengguna lebih dulu sehingga
+    // order peserta hilang begitu produk punya >100 order (audit A-03).
     const { data: orders, error: orderError } = await admin
       .from('orders')
-      .select('id, order_number, status, total_amount, created_at')
+      .select('id, order_number, status, total_amount, created_at, order_items!inner(product_id)')
       .eq('user_id', userId)
-      .in('id', orderIds)
+      .eq('order_items.product_id', productId)
       .order('created_at', { ascending: false })
       .limit(1)
     if (orderError) throw orderError
