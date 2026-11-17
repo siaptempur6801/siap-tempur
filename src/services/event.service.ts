@@ -264,6 +264,41 @@ export class EventService {
     }
   }
 
+  /**
+   * Syarat membuat tagihan tiket event berbayar (audit A-01): pendaftaran masih
+   * buka, sesi tiket masih berlaku, dan kuota sesi belum penuh. Sebelumnya checkout
+   * hanya mengecek produk, sehingga peserta bisa membayar untuk event yang sudah
+   * ditutup atau penuh lalu tidak bisa mengerjakannya.
+   *
+   * Kuota dihitung dari pendaftaran yang sudah ada; tagihan yang belum dibayar tidak
+   * memesan kursi, jadi pembayaran serentak di detik terakhir masih bisa melebihi
+   * kuota sedikit.
+   */
+  async assertTicketPurchaseAllowed(eventId: string, sessionId: string) {
+    const event = await eventRepository.getEvent(eventId)
+    if (!event) throw new EventDomainError('EVENT_NOT_FOUND', 'Event tidak ditemukan')
+    if (!isRegistrationOpen(event)) {
+      throw new EventDomainError('EVENT_REGISTRATION_CLOSED', 'Pendaftaran event sudah ditutup')
+    }
+
+    const session = await eventRepository.getSession(sessionId)
+    if (
+      !session ||
+      session.event_id !== eventId ||
+      !['scheduled', 'live', 'active'].includes(String(session.status).toLowerCase()) ||
+      Date.parse(session.ends_at) <= Date.now()
+    ) {
+      throw new EventDomainError('EVENT_SESSION_NOT_FOUND', 'Sesi tiket event sudah tidak tersedia')
+    }
+
+    if (session.capacity !== null) {
+      const counts = await eventRepository.countRegistrationsForSessions([session.id])
+      if ((counts.get(session.id) ?? 0) >= session.capacity) {
+        throw new EventDomainError('EVENT_SESSION_FULL', 'Kuota sesi event sudah penuh')
+      }
+    }
+  }
+
   async start(userId: string, eventId: string) {
     const event = await eventRepository.getEvent(eventId)
     if (!event) throw new EventDomainError('EVENT_NOT_FOUND', 'Event tidak ditemukan')

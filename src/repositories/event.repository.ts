@@ -231,19 +231,21 @@ class EventRepository {
   async countRegistrationsForSessions(sessionIds: string[]) {
     if (sessionIds.length === 0) return new Map<string, number>()
     const admin = await createV2AdminClient()
-    const { data, error } = await admin
-      .from('event_registrations')
-      .select('session_id, status')
-      .in('session_id', sessionIds)
-      .not('status', 'in', '(cancelled,CANCELLED)')
-    if (error) throw error
-
-    const counts = new Map<string, number>()
-    for (const row of (data ?? []) as Array<{ session_id: string | null; status: string }>) {
-      if (!row.session_id) continue
-      counts.set(row.session_id, (counts.get(row.session_id) ?? 0) + 1)
-    }
-    return counts
+    // Hitung di database per sesi. Membaca baris lalu menghitung di aplikasi
+    // terpotong batas baris PostgREST (default 1.000), sehingga kuota sesi besar
+    // tidak pernah terlihat penuh.
+    const entries = await Promise.all(
+      Array.from(new Set(sessionIds)).map(async (sessionId) => {
+        const { count, error } = await admin
+          .from('event_registrations')
+          .select('id', { count: 'exact', head: true })
+          .eq('session_id', sessionId)
+          .not('status', 'in', '(cancelled,CANCELLED)')
+        if (error) throw error
+        return [sessionId, count ?? 0] as const
+      }),
+    )
+    return new Map<string, number>(entries)
   }
 
   async listUserEventAttempts(

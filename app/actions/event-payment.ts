@@ -9,6 +9,7 @@ import { validateCsrf } from '@/lib/csrf'
 import type { CreateEventPaymentTransactionResult } from '@/lib/event-payment'
 import { commerceService } from '@/src/services/commerce.service'
 import { paymentService } from '@/src/services/payment.service'
+import { eventService, EventDomainError } from '@/src/services/event.service'
 
 export async function createEventPaymentTransaction(
   eventId: string,
@@ -48,6 +49,15 @@ export async function createEventPaymentTransaction(
     if (registrationError) throw registrationError
     if (registration) {
       return { success: false, message: 'Kamu sudah terdaftar di event ini.' }
+    }
+
+    // Tagihan baru hanya boleh dibuat selama pendaftaran buka dan kuota tersedia
+    // (audit A-01). Tagihan pending yang sudah ada tetap boleh dibuka di bawah.
+    try {
+      await eventService.assertTicketPurchaseAllowed(eventId, offer.sessionId)
+    } catch (error) {
+      if (error instanceof EventDomainError) return { success: false, message: error.message }
+      throw error
     }
 
     const existingOrder = await commerceService.getLatestOrderForProduct(user.id, offer.id)
