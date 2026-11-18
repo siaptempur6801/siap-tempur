@@ -6,7 +6,9 @@ name: Reconcile payments (hourly)
 #
 # Prasyarat (sekali, oleh pemilik):
 #   - Repository secret `CRON_SECRET` = nilai yang sama dengan env Vercel Production.
-#   - Opsional: repository variable `RECONCILE_URL` (default domain production).
+#   - Opsional: repository variable `RECONCILE_URL` (default host `www` production).
+#     Pakai host kanonik `www`: apex `siaptempur.id` mengalihkan (308) ke `www`, dan
+#     curl tidak membawa header Authorization ke host lain saat mengikuti redirect.
 #
 # Catatan:
 #   - Jadwal GitHub Actions bersifat best-effort (bisa telat beberapa menit).
@@ -37,7 +39,7 @@ jobs:
       - name: Call the production reconciliation endpoint
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
-          RECONCILE_URL: ${{ vars.RECONCILE_URL || 'https://siaptempur.id/api/cron/reconcile-payments' }}
+          RECONCILE_URL: ${{ vars.RECONCILE_URL || 'https://www.siaptempur.id/api/cron/reconcile-payments' }}
         run: |
           set -euo pipefail
           if [ -z "${CRON_SECRET}" ]; then
