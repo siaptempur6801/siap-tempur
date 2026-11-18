@@ -69,7 +69,7 @@ diterapkan (lihat [`rilis.md`](rilis.md)).
 - Menjalankan cron manual (pemegang `CRON_SECRET` saja), boleh diulang untuk batch berikutnya:
 
   ```bash
-  curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://siaptempur.id/api/cron/reconcile-payments
+  curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://www.siaptempur.id/api/cron/reconcile-payments
   ```
 
 ## Gejala C — Refund / chargeback
