@@ -8,16 +8,34 @@
 
 ## 1. Produk
 
-### Audit fase 1 (bisnis & operasional) — 2026-11-18
+### Audit fase 1 (bisnis & operasional) — rilis 2026-11-18 selesai
 
-Branch `audit/fase1-2026-11-17`, laporan [`docs/audit/fase1-2026-11-17.md`](audit/fase1-2026-11-17.md),
-runbook [`rilis.md`](runbooks/rilis.md) dan [`insiden-pembayaran.md`](runbooks/insiden-pembayaran.md).
-**Belum di-merge dan belum di-deploy.** Lima migration baru **belum diterapkan** di staging maupun
-production dan wajib diterapkan berurutan sebelum merge: `20261118090000` (ranking event
-berserialisasi), `20261118091000` (leaderboard nasional hanya Direct), `20261118092000`
-(finalisasi attempt kedaluwarsa), `20261118093000` (refund mencabut akses semua produk),
-`20261118094000` (pemakaian entitlement per attempt). Semuanya diuji di Postgres lokal, bukan di
-staging/production. Setelah merge, isi secret GitHub `CRON_SECRET` untuk cron rekonsiliasi per jam.
+Laporan [`docs/audit/fase1-2026-11-17.md`](audit/fase1-2026-11-17.md), runbook
+[`rilis.md`](runbooks/rilis.md) dan [`insiden-pembayaran.md`](runbooks/insiden-pembayaran.md).
+
+- **Database:** lima migration diterapkan satu per satu ke staging lalu production lewat
+  `supabase db query --project-ref`, masing-masing dalam satu transaksi bersama baris ledger
+  (versi = nama file): `20261118090000` ranking event berserialisasi, `20261118091000`
+  leaderboard nasional hanya Direct, `20261118092000` finalisasi attempt kedaluwarsa,
+  `20261118093000` refund mencabut akses semua produk, `20261118094000` pemakaian entitlement
+  per attempt. Sidik jari md5 sepuluh fungsi yang berubah identik di staging dan production.
+  ACL: hanya `service_role`. Production setelah migration: 50 attempt `in_progress` (semuanya
+  impor legacy) tidak masuk daftar finalisasi; leaderboard aktif tetap 244 entri.
+- **Aplikasi:** PR siaptempur6801/siap-tempur#2 di-merge (`a278bdf`) lalu di-deploy. Build ID
+  production berubah; smoke publik, `/api/health`, cron tanpa token (401), dan webhook tanpa
+  tanda tangan (400) lulus.
+- **Sumber deploy:** Vercel production men-deploy dari `main` di **`8shagrid/siap-tempur`**, bukan
+  dari `siaptempur6801/siap-tempur` tempat PR dibuka. Setelah merge, `main` harus di-push
+  (fast-forward) ke repo `8shagrid`. Satukan sumber deploy agar langkah ini tidak terlewat.
+
+Masih menunggu tindakan pemilik:
+
+- Isi repository secret `CRON_SECRET` di `siaptempur6801/siap-tempur`; tanpa itu workflow
+  **Reconcile payments (hourly)** gagal setiap jam (cron harian Vercel tetap berjalan).
+- Isi `VERCEL_AUTOMATION_BYPASS_SECRET` di repo yang sama; tanpanya workflow E2E staging gagal
+  di langkah pertama.
+- Proteksi branch `main`, log drain/alert, uji restore, dan uji beban Tryout Akbar
+  (B-01, B-04, B-05, B-07 di laporan audit).
 
 ### Status domain & audit — 2026-11-17
 
